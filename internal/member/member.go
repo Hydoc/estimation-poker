@@ -28,7 +28,8 @@ func NewProductOwner(name, room string, connection *websocket.Conn) *ProductOwne
 
 func NewDeveloper(name, room string, connection *websocket.Conn) *Developer {
 	return &Developer{
-		&ClientInformation{
+		Guess: 0,
+		clientInformation: &ClientInformation{
 			RoomId:     room,
 			Name:       name,
 			connection: connection,

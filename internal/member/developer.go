@@ -7,13 +7,14 @@ import (
 
 type Developer struct {
 	clientInformation *ClientInformation
+	Guess             int
 }
 
-func (developer Developer) Send(message []byte) {
+func (developer *Developer) Send(message []byte) {
 	developer.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
 }
 
-func (developer Developer) Reader(broadcastInRoom func(roomId, message string)) {
+func (developer *Developer) Reader(broadcastInRoom func(roomId, message string)) {
 	for {
 		messageType, message, err := developer.clientInformation.connection.ReadMessage()
 		if err != nil {
@@ -36,6 +37,10 @@ func (developer Developer) Reader(broadcastInRoom func(roomId, message string)) 
 	}
 }
 
-func (developer Developer) RoomId() string {
+func (developer *Developer) DoGuess(value int) {
+	developer.Guess = value
+}
+
+func (developer *Developer) RoomId() string {
 	return developer.clientInformation.RoomId
 }
