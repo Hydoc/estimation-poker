@@ -12,8 +12,6 @@ services:
     build:
       context: frontend
       target: dev
-      args:
-        node_env: development
     restart: always
     volumes:
       - ./frontend:/opt/frontend
