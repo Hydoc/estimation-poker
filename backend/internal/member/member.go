@@ -6,9 +6,13 @@ import (
 
 type Member interface {
 	Send(message []byte)
-	WebsocketReader(broadcastInRoom func(roomId, message string))
+	WebsocketReader(broadcastInRoom func(roomId, message string), removeFromRoom func(m Member))
 	RoomId() string
+	Name() string
+	ToJson() UserDTO
 }
+
+type UserDTO map[string]interface{}
 
 type ClientInformation struct {
 	Name       string

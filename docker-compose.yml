@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     build:
       context: backend
+    ports:
+      - "8090:8080"
     networks:
       - guess-dev
 

@@ -10,22 +10,24 @@ type Developer struct {
 	Guess             int
 }
 
-func (developer *Developer) Send(message []byte) {
+func (developer Developer) Send(message []byte) {
 	developer.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
 }
 
-func (developer *Developer) WebsocketReader(broadcastInRoom func(roomId, message string)) {
+func (developer Developer) WebsocketReader(broadcastInRoom func(roomId, message string), removeFromRoom func(m Member)) {
 	for {
 		messageType, message, err := developer.clientInformation.connection.ReadMessage()
 		if err != nil {
 			log.Println("read:", err)
-			broadcastInRoom(developer.clientInformation.RoomId, "leave")
 			developer.clientInformation.connection.Close()
+			removeFromRoom(developer)
+			broadcastInRoom(developer.clientInformation.RoomId, "leave")
 			break
 		}
 		if messageType == websocket.CloseMessage {
-			broadcastInRoom(developer.clientInformation.RoomId, "leave")
 			developer.clientInformation.connection.Close()
+			removeFromRoom(developer)
+			broadcastInRoom(developer.clientInformation.RoomId, "leave")
 			break
 		}
 		log.Printf("receive: %s (type %d)", message, messageType)
@@ -37,10 +39,22 @@ func (developer *Developer) WebsocketReader(broadcastInRoom func(roomId, message
 	}
 }
 
-func (developer *Developer) DoGuess(value int) {
-	developer.Guess = value
+//func (developer *Developer) DoGuess(value int) {
+//	developer.Guess = value
+//}
+
+func (developer Developer) RoomId() string {
+	return developer.clientInformation.RoomId
 }
 
-func (developer *Developer) RoomId() string {
-	return developer.clientInformation.RoomId
+func (developer Developer) Name() string {
+	return developer.clientInformation.Name
+}
+
+func (developer Developer) ToJson() UserDTO {
+	return map[string]interface{}{
+		"name":  developer.clientInformation.Name,
+		"role":  "developer",
+		"guess": developer.Guess,
+	}
 }

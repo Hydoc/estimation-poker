@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/Hydoc/guess-dev/backend/internal/member"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -18,10 +20,50 @@ type Application struct {
 func (app *Application) ConfigureRouting() {
 	app.router.HandleFunc("/room/{id}/product-owner", app.handleWs)
 	app.router.HandleFunc("/room/{id}/developer", app.handleWs)
+	app.router.HandleFunc("/room/{id}/users", app.handleFetchUsers)
 }
 
 func (app *Application) Listen(addr string) {
 	log.Fatal(http.ListenAndServe(addr, app.router))
+}
+
+func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Set("Content-Type", "application/json")
+
+	roomId, ok := mux.Vars(request)["id"]
+	if !ok {
+		log.Println("users: id is missing in parameters")
+		r := map[string]string{
+			"message": "id is missing in parameters",
+		}
+		json.NewEncoder(writer).Encode(r)
+		return
+	}
+
+	var usersInRoom = map[string][]member.UserDTO{
+		"productOwnerList": {},
+		"developerList":    {},
+	}
+
+	for _, mem := range app.memberList {
+		fmt.Println("%T", mem)
+		switch mem.(type) {
+		case member.Developer:
+			if mem.RoomId() == roomId {
+				usersInRoom["developerList"] = append(usersInRoom["developerList"], mem.ToJson())
+			}
+			break
+		case member.ProductOwner:
+			if mem.RoomId() == roomId {
+				usersInRoom["productOwnerList"] = append(usersInRoom["productOwnerList"], mem.ToJson())
+			}
+			break
+		default:
+			break
+		}
+	}
+	json.NewEncoder(writer).Encode(usersInRoom)
 }
 
 func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
@@ -52,13 +94,21 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 
 	app.memberList = append(app.memberList, newMember)
 	app.broadcastInRoom(roomId, "join")
-	newMember.WebsocketReader(app.broadcastInRoom)
+	newMember.WebsocketReader(app.broadcastInRoom, app.removeMember)
 }
 
 func (app *Application) broadcastInRoom(roomId, message string) {
 	for _, m := range app.memberList {
 		if m.RoomId() == roomId {
 			m.Send([]byte(message))
+		}
+	}
+}
+
+func (app *Application) removeMember(mem member.Member) {
+	for i, m := range app.memberList {
+		if m.Name() == mem.Name() && m.RoomId() == mem.RoomId() {
+			app.memberList = append(app.memberList[:i], app.memberList[i+1:]...)
 		}
 	}
 }
