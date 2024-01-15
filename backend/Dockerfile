@@ -4,9 +4,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 RUN go mod tidy
-#COPY cmd/ ./
-#COPY internal/ ./
-#RUN cd /app/cmd/server
+COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 
-CMD ["ls", "-lisa"]
+CMD ["/server"]

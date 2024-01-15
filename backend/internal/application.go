@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"github.com/Hydoc/guess-dev/internal/member"
+	"github.com/Hydoc/guess-dev/backend/internal/member"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"log"

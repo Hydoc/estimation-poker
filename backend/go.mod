@@ -1,4 +1,4 @@
-module github.com/Hydoc/guess-dev
+module github.com/Hydoc/guess-dev/backend
 
 go 1.21.6
 

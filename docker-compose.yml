@@ -4,25 +4,21 @@ services:
   backend:
     restart: unless-stopped
     build:
-      context: ./
-      dockerfile: ./Dockerfile
-    volumes:
-      - ./cmd:/app/cmd
-      - ./go.mod:/app/go.mod
-      - ./go.sum:/app/go.sum
-      - ./internal:/app/internal
+      context: backend
+    networks:
+      - guess-dev
 
   frontend:
-    restart: always
-    volumes:
-      - ./frontend:/opt/frontend
-    ports:
-      - "8089:5173"
     build:
       context: frontend
       target: dev
       args:
         node_env: development
+    restart: always
+    volumes:
+      - ./frontend:/opt/frontend
+    ports:
+      - "8089:5173"
     networks:
       - guess-dev
 

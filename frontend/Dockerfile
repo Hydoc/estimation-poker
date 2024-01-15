@@ -1,22 +1,11 @@
-FROM node:18-alpine as base
-
-ARG node_env="production"
-
-ENV NODE_ENV=${node_env}
-ENV TZ=Europe/Berlin
-
-RUN mkdir -p /opt/frontend
+FROM node:20-alpine as base
 
 WORKDIR /opt/frontend
-
-FROM base as build
 RUN npm i -g pnpm
-
 COPY . .
 RUN pnpm install --production=false
 RUN pnpm run build
 
-
-FROM build as dev
+FROM base as dev
 
 CMD ["pnpm", "dev"]

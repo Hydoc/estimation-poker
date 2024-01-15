@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/Hydoc/guess-dev/internal"
-	"github.com/Hydoc/guess-dev/internal/member"
+	"github.com/Hydoc/guess-dev/backend/internal"
+	"github.com/Hydoc/guess-dev/backend/internal/member"
 	"net/http"
 
 	"github.com/gorilla/mux"
