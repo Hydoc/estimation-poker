@@ -17,8 +17,8 @@ type Application struct {
 }
 
 func (app *Application) ConfigureRouting() {
-	app.router.HandleFunc("/room/{id}/product-owner/{name}", app.handleWs)
-	app.router.HandleFunc("/room/{id}/developer/{name}", app.handleWs)
+	app.router.HandleFunc("/room/{id}/product-owner", app.handleWs)
+	app.router.HandleFunc("/room/{id}/developer", app.handleWs)
 }
 
 func (app *Application) Listen(addr string) {
@@ -26,21 +26,21 @@ func (app *Application) Listen(addr string) {
 }
 
 func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
-	connection, err := app.upgrader.Upgrade(writer, request, nil)
-	if err != nil {
-		log.Println("upgrade:", err)
-		return
-	}
-
 	routeParams := mux.Vars(request)
 	roomId, ok := routeParams["id"]
 	if !ok {
 		log.Println("id is missing in parameters")
 		return
 	}
-	name, ok := routeParams["name"]
-	if !ok {
-		log.Println("name is missing in parameters")
+	name := request.URL.Query().Get("name")
+	if len(name) == 0 {
+		log.Println("name is missing in query")
+		return
+	}
+
+	connection, err := app.upgrader.Upgrade(writer, request, nil)
+	if err != nil {
+		log.Println("upgrade:", err)
 		return
 	}
 
