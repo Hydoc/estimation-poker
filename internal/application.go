@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"github.com/Hydoc/guess-dev/internal/member"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -11,7 +10,7 @@ import (
 )
 
 type Application struct {
-	memberList []*member.Member
+	memberList []member.Member
 	router     *mux.Router
 	upgrader   websocket.Upgrader
 }
@@ -44,28 +43,27 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	var memberType string
+	var newMember member.Member
 	if strings.Contains(request.URL.Path, "product-owner") {
-		memberType = member.ProductOwner
+		newMember = member.NewProductOwner(name, roomId, connection)
 	} else {
-		memberType = member.Developer
+		newMember = member.NewDeveloper(name, roomId, connection)
 	}
 
-	newMember := member.NewMember(name, roomId, memberType, connection)
 	app.memberList = append(app.memberList, newMember)
-	app.broadcastInRoom(roomId, fmt.Sprintf("%s joined.", newMember.Name))
+	app.broadcastInRoom(roomId, "join")
 	newMember.Reader(app.broadcastInRoom)
 }
 
 func (app *Application) broadcastInRoom(roomId, message string) {
 	for _, m := range app.memberList {
-		if m.RoomId == roomId {
+		if m.RoomId() == roomId {
 			m.Send([]byte(message))
 		}
 	}
 }
 
-func NewApplication(memberList []*member.Member, router *mux.Router, upgrader websocket.Upgrader) *Application {
+func NewApplication(memberList []member.Member, router *mux.Router, upgrader websocket.Upgrader) *Application {
 	return &Application{
 		memberList: memberList,
 		router:     router,

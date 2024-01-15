@@ -15,7 +15,7 @@ func main() {
 			return true
 		},
 	}
-	app := internal.NewApplication([]*member.Member{}, mux.NewRouter(), upgrader)
+	app := internal.NewApplication([]member.Member{}, mux.NewRouter(), upgrader)
 	app.ConfigureRouting()
 	app.Listen(":8080")
 }
