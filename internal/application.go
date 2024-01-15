@@ -52,7 +52,7 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 
 	app.memberList = append(app.memberList, newMember)
 	app.broadcastInRoom(roomId, "join")
-	newMember.Reader(app.broadcastInRoom)
+	newMember.WebsocketReader(app.broadcastInRoom)
 }
 
 func (app *Application) broadcastInRoom(roomId, message string) {

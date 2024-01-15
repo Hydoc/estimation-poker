@@ -14,7 +14,7 @@ func (developer *Developer) Send(message []byte) {
 	developer.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
 }
 
-func (developer *Developer) Reader(broadcastInRoom func(roomId, message string)) {
+func (developer *Developer) WebsocketReader(broadcastInRoom func(roomId, message string)) {
 	for {
 		messageType, message, err := developer.clientInformation.connection.ReadMessage()
 		if err != nil {

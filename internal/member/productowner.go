@@ -13,7 +13,7 @@ func (productOwner ProductOwner) Send(message []byte) {
 	productOwner.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
 }
 
-func (productOwner ProductOwner) Reader(broadcastInRoom func(roomId, message string)) {
+func (productOwner ProductOwner) WebsocketReader(broadcastInRoom func(roomId, message string)) {
 	for {
 		messageType, message, err := productOwner.clientInformation.connection.ReadMessage()
 		if err != nil {

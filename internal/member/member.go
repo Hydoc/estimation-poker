@@ -6,7 +6,7 @@ import (
 
 type Member interface {
 	Send(message []byte)
-	Reader(broadcastInRoom func(roomId, message string))
+	WebsocketReader(broadcastInRoom func(roomId, message string))
 	RoomId() string
 }
 
