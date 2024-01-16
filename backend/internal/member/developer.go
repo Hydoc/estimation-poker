@@ -35,9 +35,6 @@ func (developer *Developer) WebsocketReader(broadcastChannel chan interface{}) {
 			break
 		}
 	}
-	//func (developer *Developer) DoGuess(value int) {
-	//	developer.Guess = value
-	//}
 }
 
 //func (developer *Developer) DoGuess(value int) {
