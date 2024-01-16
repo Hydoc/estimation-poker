@@ -12,10 +12,16 @@ if (!websocketStore.isConnected) {
 const usersInRoom = computed(() => websocketStore.usersInRoom);
 const roomId = computed(() => websocketStore.roomId);
 const currentUsername = computed(() => websocketStore.username);
+const userRole = computed(() => websocketStore.userRole);
 </script>
 
 <template>
-  <RoomDetail :current-username="currentUsername" :room-id="roomId" :users-in-room="usersInRoom" />
+  <RoomDetail
+    :current-username="currentUsername"
+    :room-id="roomId"
+    :users-in-room="usersInRoom"
+    :user-role="userRole"
+  />
 </template>
 
 <style scoped></style>

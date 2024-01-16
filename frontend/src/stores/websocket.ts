@@ -12,6 +12,7 @@ type WebsocketStore = {
   isConnected: Ref<boolean>;
   usersInRoom: Ref<UserOverview>;
   roomId: Ref<string>;
+  userRole: Ref<Role>;
 };
 
 enum WebsocketMessage {
@@ -91,5 +92,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     roomId: userRoomId,
     username,
     userExistsInRoom,
+    userRole,
   };
 });

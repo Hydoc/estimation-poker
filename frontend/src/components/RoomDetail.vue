@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import type { UserOverview } from "@/components/types";
+import { Role, type UserOverview } from "@/components/types";
 import UserBox from "@/components/UserBox.vue";
+import CommandCenter from "@/components/CommandCenter.vue";
 
 type Props = {
   roomId: string;
   usersInRoom: UserOverview;
   currentUsername: string;
+  userRole: Role;
 };
 
 const props = defineProps<Props>();
@@ -29,6 +31,12 @@ const props = defineProps<Props>();
           :user-list="usersInRoom.developerList"
           :current-username="currentUsername"
         />
+      </v-col>
+    </v-row>
+
+    <v-row class="mt-15">
+      <v-col cols="12">
+        <CommandCenter :user-role="props.userRole" />
       </v-col>
     </v-row>
   </v-container>
