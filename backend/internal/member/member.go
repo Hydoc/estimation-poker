@@ -32,8 +32,8 @@ func (leave Leave) Payload() Member {
 	return leave.member
 }
 
-func NewLeave(member Member) Leave {
-	return Leave{
+func NewLeave(member Member) *Leave {
+	return &Leave{
 		member: member,
 	}
 }
