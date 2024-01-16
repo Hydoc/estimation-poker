@@ -1,14 +1,16 @@
-import { computed, ref } from "vue";
 import type { Ref } from "vue";
+import { computed, ref } from "vue";
 import { defineStore } from "pinia";
+import type { UserOverview } from "@/components/types";
 import { Role } from "@/components/types";
-import type { Developer, ProductOwner } from "@/components/types";
 
 type WebsocketStore = {
   connect(name: string, role: string, roomId: string): void;
+  disconnect(): void;
+  userExistsInRoom(name: string, roomId: string): Promise<boolean>;
   username: Ref<string>;
   isConnected: Ref<boolean>;
-  usersInRoom: Ref<(Developer | ProductOwner)[]>;
+  usersInRoom: Ref<UserOverview>;
   roomId: Ref<string>;
 };
 
@@ -22,9 +24,19 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const userRole: Ref<Role> = ref(Role.Empty);
   const userRoomId = ref("");
   const websocket: Ref<WebSocket | null> = ref(null);
-  const usersInRoom = ref([]);
+  const usersInRoom: Ref<UserOverview> = ref({
+    developerList: [],
+    productOwnerList: [],
+  });
 
   const isConnected = computed(() => websocket.value !== null);
+
+  function disconnect() {
+    if (websocket.value) {
+      websocket.value!.close();
+      websocket.value = null;
+    }
+  }
 
   function connect(name: string, role: Role, roomId: string): void {
     username.value = name;
@@ -36,8 +48,11 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
 
     websocket.value!.onerror = () => {
       websocket.value!.close();
-      setTimeout(() => connect(name, role, roomId), 3000);
-    }
+    };
+
+    websocket.value!.onclose = () => {
+      websocket.value!.close();
+    };
 
     websocket.value!.onmessage = async (message: MessageEvent) => {
       switch (message.data) {
@@ -47,18 +62,34 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           break;
       }
       console.log("Message flew", message);
-    }
+    };
+  }
+
+  async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
+    const response = await fetch(`http://localhost:8090/room/${roomId}/users/exists?name=${name}`);
+    return (await response.json()).exists;
   }
 
   async function fetchUsersInRoom() {
     const response = await fetch(`http://localhost:8090/room/${userRoomId.value}/users`);
     if (!response.ok) {
-      usersInRoom.value = [];
+      usersInRoom.value = {
+        productOwnerList: [],
+        developerList: [],
+      };
       return;
     }
 
     usersInRoom.value = await response.json();
   }
 
-  return { connect, isConnected, usersInRoom, roomId: userRoomId, username };
+  return {
+    connect,
+    disconnect,
+    isConnected,
+    usersInRoom,
+    roomId: userRoomId,
+    username,
+    userExistsInRoom,
+  };
 });

@@ -16,21 +16,42 @@ function isThisUser(user: ProductOwner | Developer) {
   return user.name === websocketStore.username;
 }
 
-function roleForUser(user: ProductOwner | Developer) {
-  return user.role === "developer" ? "Entwickler" : "Product Owner";
+function formatUser(user: ProductOwner | Developer): string {
+  return `${user.name}${isThisUser(user) ? ` (Du)` : ""}`;
 }
 </script>
 
 <template>
   <h1>Raum: {{ roomId }}</h1>
-  <span>* = Du</span>
-<ul>
-  <li v-for="user in usersInRoom">
-    {{ user.name }} ({{ roleForUser(user) }})<span v-if="isThisUser(user)">*</span>
-  </li>
-</ul>
+
+  <v-container width="200">
+    <v-row>
+      <v-col>
+        <v-card>
+          <v-card-title>Product Owner</v-card-title>
+          <v-card-text>
+            <ul v-if="usersInRoom.productOwnerList.length > 0">
+              <li v-for="user in usersInRoom.productOwnerList" :key="user.name">
+                {{ formatUser(user) }}
+              </li>
+            </ul>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col>
+        <v-card>
+          <v-card-title>Entwickler</v-card-title>
+          <v-card-text>
+            <ul v-if="usersInRoom.developerList.length > 0">
+              <li v-for="user in usersInRoom.developerList" :key="user.name">
+                {{ formatUser(user) }}
+              </li>
+            </ul>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

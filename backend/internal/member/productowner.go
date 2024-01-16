@@ -10,7 +10,10 @@ type ProductOwner struct {
 }
 
 func (productOwner *ProductOwner) Send(message []byte) {
-	productOwner.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
+	err := productOwner.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
+	if err != nil {
+		log.Println("productowner send:", err)
+	}
 }
 
 func (productOwner *ProductOwner) WebsocketReader(broadcastChannel chan interface{}) {

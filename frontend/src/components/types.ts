@@ -14,3 +14,9 @@ export type Developer = {
   name: string;
   role: "developer";
 };
+
+
+export type UserOverview = {
+  productOwnerList: ProductOwner[];
+  developerList: Developer[];
+};

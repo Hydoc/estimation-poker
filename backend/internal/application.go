@@ -17,8 +17,11 @@ type Application struct {
 }
 
 func (app *Application) ConfigureRouting() {
+	// Query ?name=NAME required
 	app.router.HandleFunc("/room/{id}/product-owner", app.handleWs)
 	app.router.HandleFunc("/room/{id}/developer", app.handleWs)
+	app.router.HandleFunc("/room/{id}/users/exists", app.handleUserInRoomExists)
+
 	app.router.HandleFunc("/room/{id}/users", app.handleFetchUsers)
 }
 
@@ -26,9 +29,54 @@ func (app *Application) Listen(addr string) {
 	log.Fatal(http.ListenAndServe(addr, app.router))
 }
 
+func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Set("Content-Type", "application/json")
+	if request.Method != http.MethodGet {
+		json.NewEncoder(writer).Encode(map[string]string{
+			"message": "method not allowed",
+		})
+		return
+	}
+
+	roomId, ok := mux.Vars(request)["id"]
+	if !ok {
+		log.Println("users in room exist: id is missing in parameters")
+		r := map[string]string{
+			"message": "id is missing in parameters",
+		}
+		json.NewEncoder(writer).Encode(r)
+		return
+	}
+
+	name := request.URL.Query().Get("name")
+	if len(name) == 0 {
+		log.Println("name is missing in query")
+		return
+	}
+
+	for _, mem := range app.memberList {
+		if mem.Name() == name && roomId == mem.RoomId() {
+			json.NewEncoder(writer).Encode(map[string]bool{
+				"exists": true,
+			})
+			return
+		}
+	}
+	json.NewEncoder(writer).Encode(map[string]bool{
+		"exists": false,
+	})
+}
+
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.Header().Set("Content-Type", "application/json")
+	if request.Method != http.MethodGet {
+		json.NewEncoder(writer).Encode(map[string]string{
+			"message": "method not allowed",
+		})
+		return
+	}
 
 	roomId, ok := mux.Vars(request)["id"]
 	if !ok {
@@ -61,7 +109,11 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 			break
 		}
 	}
-	json.NewEncoder(writer).Encode(usersInRoom)
+	err := json.NewEncoder(writer).Encode(usersInRoom)
+	if err != nil {
+		log.Println("error while encoding usersInRoom:", err)
+		return
+	}
 }
 
 func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
@@ -98,9 +150,11 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 }
 
 func (app *Application) handleBroadcastMessage(broadcastMessage interface{}, roomId string) {
+	log.Println(broadcastMessage, roomId)
 	switch broadcastMessage.(type) {
 	case member.Leave:
-		app.removeMember(broadcastMessage.(member.Leave).Payload())
+		memberToRemove := broadcastMessage.(member.Leave).Payload()
+		app.removeMember(memberToRemove)
 		app.broadcastInRoom(roomId, "leave")
 		break
 	default:
@@ -120,6 +174,7 @@ func (app *Application) removeMember(mem member.Member) {
 	for i, m := range app.memberList {
 		if m.Name() == mem.Name() && m.RoomId() == mem.RoomId() {
 			app.memberList = append(app.memberList[:i], app.memberList[i+1:]...)
+			break
 		}
 	}
 }

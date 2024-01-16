@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { RouterView } from "vue-router";
+import { useWebsocketStore } from "@/stores/websocket";
+import { onBeforeUnmount } from "vue";
+const websocketStore = useWebsocketStore();
+onBeforeUnmount(() => {
+  websocketStore.disconnect();
+});
 </script>
 
 <template>
   <header>
     <div class="wrapper">
       <h1>Estimation Poker</h1>
-<!--      <nav>-->
-<!--        <RouterLink to="/">Home</RouterLink>-->
-<!--      </nav>-->
+      <!--      <nav>-->
+      <!--        <RouterLink to="/">Home</RouterLink>-->
+      <!--      </nav>-->
     </div>
   </header>
 

@@ -11,7 +11,10 @@ type Developer struct {
 }
 
 func (developer *Developer) Send(message []byte) {
-	developer.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
+	err := developer.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
+	if err != nil {
+		log.Println("developer send:", err)
+	}
 }
 
 func (developer *Developer) WebsocketReader(broadcastChannel chan interface{}) {
