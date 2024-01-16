@@ -2,7 +2,6 @@ package internal
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/Hydoc/guess-dev/backend/internal/member"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -47,14 +46,13 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 	}
 
 	for _, mem := range app.memberList {
-		fmt.Println("%T", mem)
 		switch mem.(type) {
-		case member.Developer:
+		case *member.Developer:
 			if mem.RoomId() == roomId {
 				usersInRoom["developerList"] = append(usersInRoom["developerList"], mem.ToJson())
 			}
 			break
-		case member.ProductOwner:
+		case *member.ProductOwner:
 			if mem.RoomId() == roomId {
 				usersInRoom["productOwnerList"] = append(usersInRoom["productOwnerList"], mem.ToJson())
 			}
@@ -94,7 +92,20 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 
 	app.memberList = append(app.memberList, newMember)
 	app.broadcastInRoom(roomId, "join")
-	newMember.WebsocketReader(app.broadcastInRoom, app.removeMember)
+	broadcastChannel := make(chan interface{})
+	go newMember.WebsocketReader(broadcastChannel)
+	app.handleBroadcastMessage(<-broadcastChannel, roomId)
+}
+
+func (app *Application) handleBroadcastMessage(broadcastMessage interface{}, roomId string) {
+	switch broadcastMessage.(type) {
+	case member.Leave:
+		app.removeMember(broadcastMessage.(member.Leave).Payload())
+		app.broadcastInRoom(roomId, "leave")
+		break
+	default:
+		return
+	}
 }
 
 func (app *Application) broadcastInRoom(roomId, message string) {

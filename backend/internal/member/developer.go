@@ -10,48 +10,49 @@ type Developer struct {
 	Guess             int
 }
 
-func (developer Developer) Send(message []byte) {
+func (developer *Developer) Send(message []byte) {
 	developer.clientInformation.connection.WriteMessage(websocket.TextMessage, message)
 }
 
-func (developer Developer) WebsocketReader(broadcastInRoom func(roomId, message string), removeFromRoom func(m Member)) {
+func (developer *Developer) WebsocketReader(broadcastChannel chan interface{}) {
 	for {
-		messageType, message, err := developer.clientInformation.connection.ReadMessage()
+		messageType, incomingMessage, err := developer.clientInformation.connection.ReadMessage()
 		if err != nil {
 			log.Println("read:", err)
 			developer.clientInformation.connection.Close()
-			removeFromRoom(developer)
-			broadcastInRoom(developer.clientInformation.RoomId, "leave")
+			broadcastChannel <- NewLeave(developer)
 			break
 		}
 		if messageType == websocket.CloseMessage {
 			developer.clientInformation.connection.Close()
-			removeFromRoom(developer)
-			broadcastInRoom(developer.clientInformation.RoomId, "leave")
+			broadcastChannel <- NewLeave(developer)
 			break
 		}
-		log.Printf("receive: %s (type %d)", message, messageType)
-		err = developer.clientInformation.connection.WriteMessage(messageType, message)
+		log.Printf("receive: %s (type %d)", incomingMessage, messageType)
+		err = developer.clientInformation.connection.WriteMessage(messageType, incomingMessage)
 		if err != nil {
 			log.Println("write:", err)
 			break
 		}
 	}
+	//func (developer *Developer) DoGuess(value int) {
+	//	developer.Guess = value
+	//}
 }
 
 //func (developer *Developer) DoGuess(value int) {
 //	developer.Guess = value
 //}
 
-func (developer Developer) RoomId() string {
+func (developer *Developer) RoomId() string {
 	return developer.clientInformation.RoomId
 }
 
-func (developer Developer) Name() string {
+func (developer *Developer) Name() string {
 	return developer.clientInformation.Name
 }
 
-func (developer Developer) ToJson() UserDTO {
+func (developer *Developer) ToJson() UserDTO {
 	return map[string]interface{}{
 		"name":  developer.clientInformation.Name,
 		"role":  "developer",

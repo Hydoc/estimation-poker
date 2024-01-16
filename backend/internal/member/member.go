@@ -6,10 +6,18 @@ import (
 
 type Member interface {
 	Send(message []byte)
-	WebsocketReader(broadcastInRoom func(roomId, message string), removeFromRoom func(m Member))
+	WebsocketReader(broadcastChannel chan interface{})
 	RoomId() string
 	Name() string
 	ToJson() UserDTO
+}
+
+type Message[T any] interface {
+	Payload() T
+}
+
+type Leave struct {
+	member Member
 }
 
 type UserDTO map[string]interface{}
@@ -18,6 +26,16 @@ type ClientInformation struct {
 	Name       string
 	RoomId     string
 	connection *websocket.Conn
+}
+
+func (leave Leave) Payload() Member {
+	return leave.member
+}
+
+func NewLeave(member Member) Leave {
+	return Leave{
+		member: member,
+	}
 }
 
 func NewProductOwner(name, room string, connection *websocket.Conn) *ProductOwner {
