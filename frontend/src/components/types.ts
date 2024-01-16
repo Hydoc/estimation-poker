@@ -4,17 +4,18 @@ export enum Role {
   Empty = "",
 }
 
-export type ProductOwner = {
+export type User = {
   name: string;
+};
+
+export type ProductOwner = User & {
   role: "product-owner";
 };
 
-export type Developer = {
+export type Developer = User & {
   guess: number;
-  name: string;
   role: "developer";
 };
-
 
 export type UserOverview = {
   productOwnerList: ProductOwner[];
