@@ -26,6 +26,10 @@ async function connect() {
 const isButtonEnabled = computed(
   () => roomId.value !== "" && name.value !== "" && role.value !== "",
 );
+
+const textFieldRules = computed(() => [
+  (value: string) => !!value || "Fehler: Hier müsste eigentlich was stehen",
+]);
 </script>
 
 <template>
@@ -36,28 +40,24 @@ const isButtonEnabled = computed(
           <template #title> Ich brauche noch ein paar Informationen bevor es los geht </template>
           <v-card-text>
             <v-container>
-              <v-form ref="form" :fast-fail="true" @submit.prevent="connect" validate-on="input">
-                <v-text-field
-                  label="Raum ID"
-                  v-model="roomId"
-                  required
-                  :rules="[(v) => !!v || 'Fehler: Hier müsste eigentlich was stehen']"
-                />
-                <v-text-field
-                  label="Name"
-                  v-model="name"
-                  required
-                  :rules="[(v) => !!v || 'Fehler: Hier müsste eigentlich was stehen']"
-                />
+              <v-form :fast-fail="true" @submit.prevent="connect" validate-on="input">
+                <v-col>
+                  <v-text-field label="Raum ID" v-model="roomId" required :rules="textFieldRules" />
+                  <v-text-field label="Name" v-model="name" required :rules="textFieldRules" />
+                </v-col>
 
                 <v-radio-group label="Deine Rolle" v-model="role">
                   <v-radio label="Product Owner" :value="Role.ProductOwner"></v-radio>
                   <v-radio label="Entwickler" :value="Role.Developer"></v-radio>
                 </v-radio-group>
 
-                <p v-if="showUserAlreadyExists">
-                  Ein Benutzer mit diesem Namen existiert in dem Raum bereits.
-                </p>
+                <v-col>
+                  <v-alert
+                    v-if="showUserAlreadyExists"
+                    color="error"
+                    text="Ein Benutzer mit diesem Namen existiert in dem Raum bereits."
+                  />
+                </v-col>
 
                 <v-col class="text-right">
                   <v-btn

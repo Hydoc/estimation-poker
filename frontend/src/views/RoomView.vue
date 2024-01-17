@@ -13,14 +13,16 @@ const usersInRoom = computed(() => websocketStore.usersInRoom);
 const roomId = computed(() => websocketStore.roomId);
 const currentUsername = computed(() => websocketStore.username);
 const userRole = computed(() => websocketStore.userRole);
+const roundState = computed(() => websocketStore.roundState);
 </script>
 
 <template>
-  <RoomDetail
+  <room-detail
     :current-username="currentUsername"
     :room-id="roomId"
     :users-in-room="usersInRoom"
     :user-role="userRole"
+    :round-state="roundState"
   />
 </template>
 

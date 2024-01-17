@@ -2,7 +2,7 @@ import type { Ref } from "vue";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import type { UserOverview } from "@/components/types";
-import { Role } from "@/components/types";
+import { Role, RoundState } from "@/components/types";
 
 type WebsocketStore = {
   connect(name: string, role: string, roomId: string): void;
@@ -13,6 +13,7 @@ type WebsocketStore = {
   usersInRoom: Ref<UserOverview>;
   roomId: Ref<string>;
   userRole: Ref<Role>;
+  roundState: Ref<RoundState>;
 };
 
 enum WebsocketMessage {
@@ -29,6 +30,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     developerList: [],
     productOwnerList: [],
   });
+  const roundState: Ref<RoundState> = ref(RoundState.Waiting);
 
   const isConnected = computed(() => websocket.value !== null);
 
@@ -52,11 +54,12 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     };
 
     websocket.value!.onclose = () => {
-      websocket.value!.close();
+      websocket.value?.close();
     };
 
     websocket.value!.onmessage = async (message: MessageEvent) => {
-      switch (message.data) {
+      const decoded = JSON.parse(message.data) as { type: WebsocketMessage; data?: any };
+      switch (decoded.type) {
         case WebsocketMessage.Leave:
         case WebsocketMessage.Join:
           await fetchUsersInRoom();
@@ -93,5 +96,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     username,
     userExistsInRoom,
     userRole,
+    roundState,
   };
 });

@@ -21,3 +21,9 @@ export type UserOverview = {
   productOwnerList: ProductOwner[];
   developerList: Developer[];
 };
+
+export enum RoundState {
+  Waiting,
+  InProgress,
+  End,
+}

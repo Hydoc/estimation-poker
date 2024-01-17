@@ -33,30 +33,32 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.Header().Set("Content-Type", "application/json")
 	if request.Method != http.MethodGet {
-		json.NewEncoder(writer).Encode(map[string]string{
-			"message": "method not allowed",
-		})
+		writer.WriteHeader(405)
 		return
 	}
 
 	roomId, ok := mux.Vars(request)["id"]
 	if !ok {
-		log.Println("users in room exist: id is missing in parameters")
 		r := map[string]string{
 			"message": "id is missing in parameters",
 		}
+		writer.WriteHeader(400)
 		json.NewEncoder(writer).Encode(r)
 		return
 	}
 
 	name := request.URL.Query().Get("name")
 	if len(name) == 0 {
-		log.Println("name is missing in query")
+		writer.WriteHeader(400)
+		json.NewEncoder(writer).Encode(map[string]string{
+			"message": "name is missing in query",
+		})
 		return
 	}
 
 	for _, mem := range app.memberList {
 		if mem.Name() == name && roomId == mem.RoomId() {
+			writer.WriteHeader(409)
 			json.NewEncoder(writer).Encode(map[string]bool{
 				"exists": true,
 			})
@@ -72,15 +74,13 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.Header().Set("Content-Type", "application/json")
 	if request.Method != http.MethodGet {
-		json.NewEncoder(writer).Encode(map[string]string{
-			"message": "method not allowed",
-		})
+		writer.WriteHeader(405)
 		return
 	}
 
 	roomId, ok := mux.Vars(request)["id"]
 	if !ok {
-		log.Println("users: id is missing in parameters")
+		writer.WriteHeader(400)
 		r := map[string]string{
 			"message": "id is missing in parameters",
 		}
@@ -120,12 +120,18 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 	routeParams := mux.Vars(request)
 	roomId, ok := routeParams["id"]
 	if !ok {
-		log.Println("id is missing in parameters")
+		writer.WriteHeader(400)
+		json.NewEncoder(writer).Encode(map[string]string{
+			"message": "id is missing in parameters",
+		})
 		return
 	}
 	name := request.URL.Query().Get("name")
 	if len(name) == 0 {
-		log.Println("name is missing in query")
+		writer.WriteHeader(400)
+		json.NewEncoder(writer).Encode(map[string]string{
+			"message": "id is missing in query",
+		})
 		return
 	}
 
@@ -143,7 +149,8 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 	}
 
 	app.memberList = append(app.memberList, newMember)
-	app.broadcastInRoom(roomId, "join")
+	encodedMessage, err := json.Marshal(member.NewJoin().ToJson())
+	app.broadcastInRoom(roomId, encodedMessage)
 	broadcastChannel := make(chan interface{})
 	go newMember.WebsocketReader(broadcastChannel)
 	app.handleBroadcastMessage(<-broadcastChannel, roomId)
@@ -155,17 +162,22 @@ func (app *Application) handleBroadcastMessage(broadcastMessage interface{}, roo
 	case member.Leave:
 		memberToRemove := broadcastMessage.(member.Leave).Payload()
 		app.removeMember(memberToRemove)
-		app.broadcastInRoom(roomId, "leave")
+		encoded, err := json.Marshal(broadcastMessage.(member.Leave).ToJson())
+		if err != nil {
+			log.Fatal("failed encoding leave message:", err)
+			return
+		}
+		app.broadcastInRoom(roomId, encoded)
 		break
 	default:
 		return
 	}
 }
 
-func (app *Application) broadcastInRoom(roomId, message string) {
+func (app *Application) broadcastInRoom(roomId string, message []byte) {
 	for _, m := range app.memberList {
 		if m.RoomId() == roomId {
-			m.Send([]byte(message))
+			m.Send(message)
 		}
 	}
 }

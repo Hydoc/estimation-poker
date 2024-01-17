@@ -12,13 +12,17 @@ type Member interface {
 	ToJson() UserDTO
 }
 
-type Message[T any] interface {
-	Payload() T
+type Message interface {
+	ToJson() MessageDTO
 }
 
 type Leave struct {
 	member Member
 }
+
+type Join struct{}
+
+type MessageDTO map[string]interface{}
 
 type UserDTO map[string]interface{}
 
@@ -28,8 +32,24 @@ type ClientInformation struct {
 	connection *websocket.Conn
 }
 
+func (join Join) ToJson() MessageDTO {
+	return map[string]interface{}{
+		"type": "join",
+	}
+}
+
 func (leave Leave) Payload() Member {
 	return leave.member
+}
+
+func (leave Leave) ToJson() MessageDTO {
+	return map[string]interface{}{
+		"type": "leave",
+	}
+}
+
+func NewJoin() Join {
+	return Join{}
 }
 
 func NewLeave(member Member) Leave {

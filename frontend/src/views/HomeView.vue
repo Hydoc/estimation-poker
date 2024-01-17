@@ -7,6 +7,6 @@ websocketStore.disconnect();
 
 <template>
   <main>
-    <TheRoomChoice />
+    <the-room-choice />
   </main>
 </template>
