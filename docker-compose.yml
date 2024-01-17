@@ -5,6 +5,9 @@ services:
     restart: unless-stopped
     build:
       context: backend
+      target: dev
+    volumes:
+      - ./backend:/app
     ports:
       - "8090:8080"
     networks:
