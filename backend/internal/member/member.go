@@ -6,7 +6,7 @@ import (
 
 type Member interface {
 	Send(message []byte)
-	WebsocketReader(broadcastChannel chan interface{})
+	WebsocketReader(broadcastChannel chan Message)
 	RoomId() string
 	Name() string
 	ToJson() UserDTO

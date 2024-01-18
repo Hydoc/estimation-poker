@@ -17,7 +17,7 @@ func (developer *Developer) Send(message []byte) {
 	}
 }
 
-func (developer *Developer) WebsocketReader(broadcastChannel chan interface{}) {
+func (developer *Developer) WebsocketReader(broadcastChannel chan Message) {
 	for {
 		messageType, incomingMessage, err := developer.clientInformation.connection.ReadMessage()
 		if err != nil {

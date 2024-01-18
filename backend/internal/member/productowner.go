@@ -16,7 +16,7 @@ func (productOwner *ProductOwner) Send(message []byte) {
 	}
 }
 
-func (productOwner *ProductOwner) WebsocketReader(broadcastChannel chan interface{}) {
+func (productOwner *ProductOwner) WebsocketReader(broadcastChannel chan Message) {
 	for {
 		messageType, incomingMessage, err := productOwner.clientInformation.connection.ReadMessage()
 		if err != nil {

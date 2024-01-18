@@ -151,12 +151,12 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 	app.memberList = append(app.memberList, newMember)
 	encodedMessage, err := json.Marshal(member.NewJoin().ToJson())
 	app.broadcastInRoom(roomId, encodedMessage)
-	broadcastChannel := make(chan interface{})
+	broadcastChannel := make(chan member.Message)
 	go newMember.WebsocketReader(broadcastChannel)
 	app.handleBroadcastMessage(<-broadcastChannel, roomId)
 }
 
-func (app *Application) handleBroadcastMessage(broadcastMessage interface{}, roomId string) {
+func (app *Application) handleBroadcastMessage(broadcastMessage member.Message, roomId string) {
 	log.Println(broadcastMessage, roomId)
 	switch broadcastMessage.(type) {
 	case member.Leave:
