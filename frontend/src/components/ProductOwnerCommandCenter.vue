@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {computed, type Ref, ref} from "vue";
-import type {VForm} from "vuetify/components";
-import { RoundState} from "@/components/types";
+import { computed, type Ref, ref } from "vue";
+import type { VForm } from "vuetify/components";
+import { RoundState } from "@/components/types";
 
 type Props = {
   roundState: RoundState;

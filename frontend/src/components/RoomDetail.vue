@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import {Role, RoundState, type UserOverview} from "@/components/types";
+import { Role, RoundState, type UserOverview } from "@/components/types";
 import UserBox from "@/components/UserBox.vue";
 import CommandCenter from "@/components/CommandCenter.vue";
-import {computed, ref} from "vue";
+import { computed, ref } from "vue";
+import RoundOverview from "@/components/RoundOverview.vue";
 
 type Props = {
   roomId: string;
@@ -12,6 +13,7 @@ type Props = {
   roundState: RoundState;
   ticketToGuess: string;
   guess: number;
+  showAllGuesses: boolean;
 };
 
 const props = defineProps<Props>();
@@ -19,6 +21,7 @@ const emit = defineEmits<{
   (e: "estimate", ticket: string): void;
   (e: "guess", guess: number): void;
   (e: "reveal"): void;
+  (e: "new-round"): void;
 }>();
 const showSnackbar = ref(false);
 const roundIsFinished = computed(() => props.roundState === RoundState.End);
@@ -56,22 +59,15 @@ function copyRoomName() {
 
     <v-row class="mt-15" v-if="ticketToGuess !== ''">
       <v-col cols="12">
-        <v-card :title="`Aktuelles Ticket zum schätzen: ${props.ticketToGuess}`">
-          <v-list>
-            <v-list-item v-for="developer in props.usersInRoom.developerList" :key="developer.name">
-              <v-list-item-title>
-                {{ developer.name }}
-                <v-icon color="green" v-if="developer.guess !== 0">mdi-check-circle</v-icon>
-                <v-icon v-else>mdi-help-circle</v-icon>
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
-
-          <v-card-actions v-if="roundIsFinished && userIsProductOwner">
-            <v-spacer />
-            <v-btn color="primary" @click="emit('reveal')">Auflösen</v-btn>
-          </v-card-actions>
-        </v-card>
+        <round-overview
+          :round-is-finished="roundIsFinished"
+          :show-all-guesses="props.showAllGuesses"
+          :developer-list="props.usersInRoom.developerList"
+          :ticket-to-guess="props.ticketToGuess"
+          :user-is-product-owner="userIsProductOwner"
+          @reveal="emit('reveal')"
+          @new-round="emit('new-round')"
+        />
       </v-col>
     </v-row>
 

@@ -36,6 +36,8 @@ type Join struct{}
 
 type DeveloperGuessed struct{}
 
+type ResetRound struct{}
+
 type YouGuessed struct {
 	Guess int
 }
@@ -55,6 +57,12 @@ type clientInformation struct {
 func (join Join) ToJson() MessageDTO {
 	return map[string]interface{}{
 		"type": "join",
+	}
+}
+
+func (newRound ResetRound) ToJson() MessageDTO {
+	return map[string]interface{}{
+		"type": "reset-round",
 	}
 }
 
@@ -109,6 +117,10 @@ func NewYouGuessed(guess int) YouGuessed {
 
 func NewEveryoneGuessed() EveryoneGuessed {
 	return EveryoneGuessed{}
+}
+
+func NewResetRound() ResetRound {
+	return ResetRound{}
 }
 
 func NewProductOwner(name, room string, connection *websocket.Conn) *ProductOwner {

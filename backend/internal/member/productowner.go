@@ -6,6 +6,10 @@ import (
 	"log"
 )
 
+const (
+	newRound = "new-round"
+)
+
 type ProductOwner struct {
 	clientInformation *clientInformation
 }
@@ -37,7 +41,10 @@ func (productOwner *ProductOwner) WebsocketReader(broadcastChannel chan Message)
 			log.Printf("productowner receive: could not unmarshal message %s", incomingMessage)
 		}
 
-		log.Println(productOwnerMessage, string(incomingMessage))
+		if productOwnerMessage.Type == newRound {
+			broadcastChannel <- NewResetRound()
+			continue
+		}
 		broadcastChannel <- productOwnerMessage
 	}
 }

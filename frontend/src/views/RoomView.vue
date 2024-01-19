@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type SendableWebsocketMessageType, useWebsocketStore} from "@/stores/websocket";
+import { type SendableWebsocketMessageType, useWebsocketStore } from "@/stores/websocket";
 import { useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
 import { computed } from "vue";
@@ -16,6 +16,7 @@ const userRole = computed(() => websocketStore.userRole);
 const roundState = computed(() => websocketStore.roundState);
 const ticketToGuess = computed(() => websocketStore.ticketToGuess);
 const guess = computed(() => websocketStore.guess);
+const showAllGuesses = computed(() => websocketStore.showAllGuesses);
 
 function sendMessage(type: SendableWebsocketMessageType, data: string | number | null) {
   websocketStore.send({ type, data });
@@ -31,9 +32,11 @@ function sendMessage(type: SendableWebsocketMessageType, data: string | number |
     :round-state="roundState"
     :ticket-to-guess="ticketToGuess"
     :guess="guess"
+    :show-all-guesses="showAllGuesses"
     @estimate="sendMessage('estimate', $event)"
     @guess="sendMessage('guess', $event)"
-    @reveal="sendMessage('reveal', 'blub')"
+    @reveal="sendMessage('reveal', null)"
+    @new-round="sendMessage('new-round', null)"
   />
 </template>
 

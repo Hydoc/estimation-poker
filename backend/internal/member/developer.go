@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Guess = "guess"
+	guess = "guess"
 )
 
 type Developer struct {
@@ -42,14 +42,18 @@ func (developer *Developer) WebsocketReader(broadcastChannel chan Message) {
 			log.Printf("developer receive: could not unmarshal message %s", incomingMessage)
 		}
 
-		if developerMessage.Type == Guess {
-			guess := int(developerMessage.Data.(float64))
-			developer.Guess = guess
-			encoded, _ := json.Marshal(NewYouGuessed(guess).ToJson())
+		if developerMessage.Type == guess {
+			actualGuess := int(developerMessage.Data.(float64))
+			developer.Guess = actualGuess
+			encoded, _ := json.Marshal(NewYouGuessed(actualGuess).ToJson())
 			developer.Send(encoded)
 			broadcastChannel <- NewDeveloperGuessed()
 		}
 	}
+}
+
+func (developer *Developer) Reset() {
+	developer.Guess = 0
 }
 
 func (developer *Developer) RoomId() string {

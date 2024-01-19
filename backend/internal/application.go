@@ -153,7 +153,12 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 	app.broadcastInRoom(roomId, encodedMessage)
 	broadcastChannel := make(chan member.Message)
 	go newMember.WebsocketReader(broadcastChannel)
-	app.handleBroadcastMessage(<-broadcastChannel, roomId)
+	for {
+		select {
+		case msg := <-broadcastChannel:
+			app.handleBroadcastMessage(msg, roomId)
+		}
+	}
 }
 
 func (app *Application) handleBroadcastMessage(broadcastMessage member.Message, roomId string) {
@@ -167,13 +172,16 @@ func (app *Application) handleBroadcastMessage(broadcastMessage member.Message, 
 	case member.DeveloperGuessed:
 		if app.everyDeveloperInRoomGuessed(roomId) {
 			app.broadcastInRoom(roomId, app.encodeMessage(member.NewEveryoneGuessed()))
-			return
+			break
 		}
 		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
-	default:
-		log.Println("asd", broadcastMessage)
+		break
+	case member.ResetRound:
+		app.resetDeveloperInRoom(roomId)
 		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
-		return
+	default:
+		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
+		break
 	}
 }
 
@@ -208,6 +216,18 @@ func (app *Application) everyDeveloperInRoomGuessed(roomId string) bool {
 	}
 
 	return true
+}
+
+func (app *Application) resetDeveloperInRoom(roomId string) {
+	for _, mem := range app.memberList {
+		if mem.RoomId() != roomId {
+			continue
+		}
+		switch mem.(type) {
+		case *member.Developer:
+			mem.(*member.Developer).Reset()
+		}
+	}
 }
 
 func (app *Application) encodeMessage(message member.Message) []byte {

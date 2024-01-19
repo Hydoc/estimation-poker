@@ -14,6 +14,6 @@ CMD ["/server"]
 
 FROM base as dev
 
-RUN go install github.com/cosmtrek/air@latest
+RUN go install github.com/cosmtrek/air@latest && go install github.com/go-delve/delve/cmd/dlv@latest
 
 CMD ["air", "-c", ".air.toml"]

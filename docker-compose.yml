@@ -10,6 +10,7 @@ services:
       - ./backend:/app
     ports:
       - "8090:8080"
+      - "2345:2345"
     networks:
       - guess-dev
 
