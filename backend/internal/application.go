@@ -157,7 +157,6 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 }
 
 func (app *Application) handleBroadcastMessage(broadcastMessage member.Message, roomId string) {
-	log.Println(broadcastMessage, roomId)
 	switch broadcastMessage.(type) {
 	case member.Leave:
 		memberToRemove := broadcastMessage.(member.Leave).Payload()
