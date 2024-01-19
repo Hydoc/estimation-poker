@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, type Ref } from "vue";
 
+const emit = defineEmits<{
+  (e: "guess", guess: number): void;
+}>();
+
 const possibleCards = [
   { value: 1, subtitle: "Bis zu 4 Std." },
   { value: 2, subtitle: "Bis zu 8 Std." },
@@ -16,7 +20,7 @@ function guess() {
     return;
   }
 
-  // send
+  emit("guess", chosenCard.value!);
 }
 </script>
 

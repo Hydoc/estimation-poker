@@ -162,14 +162,16 @@ func (app *Application) handleBroadcastMessage(broadcastMessage member.Message, 
 	case member.Leave:
 		memberToRemove := broadcastMessage.(member.Leave).Payload()
 		app.removeMember(memberToRemove)
-		encoded, err := json.Marshal(broadcastMessage.(member.Leave).ToJson())
-		if err != nil {
-			log.Fatal("failed encoding leave message:", err)
+		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
+		break
+	case member.DeveloperGuessed:
+		if app.everyDeveloperInRoomGuessed(roomId) {
+			app.broadcastInRoom(roomId, app.encodeMessage(member.NewEveryoneGuessed()))
 			return
 		}
-		app.broadcastInRoom(roomId, encoded)
-		break
+		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
 	default:
+		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
 		return
 	}
 }
@@ -189,6 +191,31 @@ func (app *Application) removeMember(mem member.Member) {
 			break
 		}
 	}
+}
+
+func (app *Application) everyDeveloperInRoomGuessed(roomId string) bool {
+	for _, mem := range app.memberList {
+		if mem.RoomId() != roomId {
+			continue
+		}
+		switch mem.(type) {
+		case *member.Developer:
+			if mem.(*member.Developer).Guess == 0 {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func (app *Application) encodeMessage(message member.Message) []byte {
+	encoded, err := json.Marshal(message.ToJson())
+	if err != nil {
+		log.Fatal("failed encoding message:", err)
+		return nil
+	}
+	return encoded
 }
 
 func NewApplication(memberList []member.Member, router *mux.Router, upgrader websocket.Upgrader) *Application {

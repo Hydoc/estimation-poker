@@ -1,20 +1,31 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, type Ref, ref } from "vue";
+import type { VForm } from "vuetify/components";
+
+const emit = defineEmits<{
+  (e: "estimate", ticket: string): void;
+}>();
 
 const ticketToGuess = ref("");
+const form: Ref<VForm | undefined> = ref();
 
 const ticketRules = [
   (value: string) => !!value || "Fehler: Hier müsste eigentlich was stehen",
   (value: string) => /^[A-Z]{2}-\d+$/.test(value) || "Fehler: Muss im Format ^[A-Z]{2}-\\d+$ sein",
 ];
-const canEstimate = computed(() => ticketToGuess.value !== "");
+const canEstimate = computed(() => ticketToGuess.value !== "" && form.value?.isValid);
 
-function doLetEstimate() {}
+function doLetEstimate() {
+  if (!canEstimate.value) {
+    return;
+  }
+  emit("estimate", ticketToGuess.value);
+}
 </script>
 
 <template>
   <v-container>
-    <v-form :fast-fail="true" @submit.prevent="doLetEstimate">
+    <v-form ref="form" :fast-fail="true" @submit.prevent="doLetEstimate">
       <v-row>
         <v-col>
           <v-text-field

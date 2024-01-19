@@ -10,9 +10,15 @@ type Props = {
   currentUsername: string;
   userRole: Role;
   roundState: RoundState;
+  ticketToGuess: string;
+  guess: number;
 };
 
 const props = defineProps<Props>();
+const emit = defineEmits<{
+  (e: "estimate", ticket: string): void;
+  (e: "guess", guess: number): void;
+}>();
 const showSnackbar = ref(false);
 
 function copyRoomName() {
@@ -45,15 +51,21 @@ function copyRoomName() {
       </v-col>
     </v-row>
 
-    <v-row class="mt-15">
+    <v-row class="mt-15" v-if="ticketToGuess !== ''">
       <v-col cols="12">
-        <p>Helo</p>
+        <p>Aktuelles Ticket zum schätzen: {{ props.ticketToGuess }}</p>
       </v-col>
     </v-row>
 
     <v-row class="mt-15">
       <v-col cols="12">
-        <command-center :user-role="props.userRole" :round-state="props.roundState" />
+        <command-center
+          :user-role="props.userRole"
+          :round-state="props.roundState"
+          :guess="props.guess"
+          @estimate="emit('estimate', $event)"
+          @guess="emit('guess', $event)"
+        />
       </v-col>
     </v-row>
   </v-container>

@@ -16,11 +16,29 @@ type Message interface {
 	ToJson() MessageDTO
 }
 
+type IncomingMessage struct {
+	Type string `json:"type"`
+	Data any    `json:"data"`
+}
+
+func (incMessage IncomingMessage) ToJson() MessageDTO {
+	return map[string]interface{}{
+		"type": incMessage.Type,
+		"data": incMessage.Data,
+	}
+}
+
 type Leave struct {
 	member Member
 }
 
 type Join struct{}
+
+type DeveloperGuessed struct {
+	Guess int
+}
+
+type EveryoneGuessed struct{}
 
 type MessageDTO map[string]interface{}
 
@@ -35,6 +53,19 @@ type ClientInformation struct {
 func (join Join) ToJson() MessageDTO {
 	return map[string]interface{}{
 		"type": "join",
+	}
+}
+
+func (devGuessed DeveloperGuessed) ToJson() MessageDTO {
+	return map[string]interface{}{
+		"type": "developer-guessed",
+		"data": devGuessed.Guess,
+	}
+}
+
+func (everyoneGuessed EveryoneGuessed) ToJson() MessageDTO {
+	return map[string]interface{}{
+		"type": "everyone-guessed",
 	}
 }
 
@@ -56,6 +87,16 @@ func NewLeave(member Member) Leave {
 	return Leave{
 		member: member,
 	}
+}
+
+func NewDeveloperGuessed(guess int) DeveloperGuessed {
+	return DeveloperGuessed{
+		Guess: guess,
+	}
+}
+
+func NewEveryoneGuessed() EveryoneGuessed {
+	return EveryoneGuessed{}
 }
 
 func NewProductOwner(name, room string, connection *websocket.Conn) *ProductOwner {

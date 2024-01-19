@@ -1,6 +1,7 @@
 package member
 
 import (
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
 )
@@ -30,12 +31,13 @@ func (productOwner *ProductOwner) WebsocketReader(broadcastChannel chan Message)
 			broadcastChannel <- NewLeave(productOwner)
 			break
 		}
-		log.Printf("receive: %s (type %d)", incomingMessage, messageType)
-		err = productOwner.clientInformation.connection.WriteMessage(messageType, incomingMessage)
+		var productOwnerMessage IncomingMessage
+		err = json.Unmarshal(incomingMessage, &productOwnerMessage)
 		if err != nil {
-			log.Println("write:", err)
-			break
+			log.Printf("productowner receive: could not unmarshal message %s", incomingMessage)
 		}
+
+		broadcastChannel <- productOwnerMessage
 	}
 }
 

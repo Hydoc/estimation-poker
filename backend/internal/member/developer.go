@@ -1,8 +1,13 @@
 package member
 
 import (
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
+)
+
+const (
+	Guess = "guess"
 )
 
 type Developer struct {
@@ -31,18 +36,22 @@ func (developer *Developer) WebsocketReader(broadcastChannel chan Message) {
 			broadcastChannel <- NewLeave(developer)
 			break
 		}
-		log.Printf("receive: %s (type %d)", incomingMessage, messageType)
-		err = developer.clientInformation.connection.WriteMessage(messageType, incomingMessage)
+		var developerMessage IncomingMessage
+		err = json.Unmarshal(incomingMessage, &developerMessage)
 		if err != nil {
-			log.Println("write:", err)
-			break
+			log.Printf("developer receive: could not unmarshal message %s", incomingMessage)
+		}
+
+		if developerMessage.Type == Guess {
+			guess := int(developerMessage.Data.(float64))
+			msg := NewDeveloperGuessed(guess)
+			developer.Guess = guess
+			encoded, _ := json.Marshal(msg.ToJson())
+			developer.Send(encoded)
+			broadcastChannel <- msg
 		}
 	}
 }
-
-//func (developer *Developer) DoGuess(value int) {
-//	developer.Guess = value
-//}
 
 func (developer *Developer) RoomId() string {
 	return developer.clientInformation.RoomId
