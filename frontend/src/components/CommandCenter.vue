@@ -8,6 +8,7 @@ type Props = {
   userRole: Role;
   roundState: RoundState;
   guess: number;
+  ticketToGuess: string;
 };
 
 const props = defineProps<Props>();
@@ -20,14 +21,16 @@ const isDeveloper = computed(() => props.userRole === Role.Developer);
 const isProductOwner = computed(() => props.userRole === Role.ProductOwner);
 const roundIsInProgress = computed(() => props.roundState === RoundState.InProgress);
 const didGuess = computed(() => props.guess !== 0);
+const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
 </script>
 
 <template>
   <developer-command-center
-    v-if="isDeveloper && roundIsInProgress && !didGuess"
+    v-if="isDeveloper && roundIsInProgress && !didGuess && hasTicketToGuess"
     @guess="emit('guess', $event)"
   />
   <product-owner-command-center
+    :round-state="roundState"
     v-else-if="isProductOwner && !roundIsInProgress"
     @estimate="emit('estimate', $event)"
   />

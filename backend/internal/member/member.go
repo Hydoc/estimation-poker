@@ -34,7 +34,9 @@ type Leave struct {
 
 type Join struct{}
 
-type DeveloperGuessed struct {
+type DeveloperGuessed struct{}
+
+type YouGuessed struct {
 	Guess int
 }
 
@@ -44,7 +46,7 @@ type MessageDTO map[string]interface{}
 
 type UserDTO map[string]interface{}
 
-type ClientInformation struct {
+type clientInformation struct {
 	Name       string
 	RoomId     string
 	connection *websocket.Conn
@@ -59,7 +61,13 @@ func (join Join) ToJson() MessageDTO {
 func (devGuessed DeveloperGuessed) ToJson() MessageDTO {
 	return map[string]interface{}{
 		"type": "developer-guessed",
-		"data": devGuessed.Guess,
+	}
+}
+
+func (youGuessed YouGuessed) ToJson() MessageDTO {
+	return map[string]interface{}{
+		"type": "you-guessed",
+		"data": youGuessed.Guess,
 	}
 }
 
@@ -89,8 +97,12 @@ func NewLeave(member Member) Leave {
 	}
 }
 
-func NewDeveloperGuessed(guess int) DeveloperGuessed {
-	return DeveloperGuessed{
+func NewDeveloperGuessed() DeveloperGuessed {
+	return DeveloperGuessed{}
+}
+
+func NewYouGuessed(guess int) YouGuessed {
+	return YouGuessed{
 		Guess: guess,
 	}
 }
@@ -101,7 +113,7 @@ func NewEveryoneGuessed() EveryoneGuessed {
 
 func NewProductOwner(name, room string, connection *websocket.Conn) *ProductOwner {
 	return &ProductOwner{
-		&ClientInformation{
+		&clientInformation{
 			RoomId:     room,
 			Name:       name,
 			connection: connection,
@@ -112,7 +124,7 @@ func NewProductOwner(name, room string, connection *websocket.Conn) *ProductOwne
 func NewDeveloper(name, room string, connection *websocket.Conn) *Developer {
 	return &Developer{
 		Guess: 0,
-		clientInformation: &ClientInformation{
+		clientInformation: &clientInformation{
 			RoomId:     room,
 			Name:       name,
 			connection: connection,

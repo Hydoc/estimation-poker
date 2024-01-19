@@ -11,7 +11,7 @@ const (
 )
 
 type Developer struct {
-	clientInformation *ClientInformation
+	clientInformation *clientInformation
 	Guess             int
 }
 
@@ -44,11 +44,10 @@ func (developer *Developer) WebsocketReader(broadcastChannel chan Message) {
 
 		if developerMessage.Type == Guess {
 			guess := int(developerMessage.Data.(float64))
-			msg := NewDeveloperGuessed(guess)
 			developer.Guess = guess
-			encoded, _ := json.Marshal(msg.ToJson())
+			encoded, _ := json.Marshal(NewYouGuessed(guess).ToJson())
 			developer.Send(encoded)
-			broadcastChannel <- msg
+			broadcastChannel <- NewDeveloperGuessed()
 		}
 	}
 }

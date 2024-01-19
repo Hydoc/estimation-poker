@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import { computed, type Ref, ref } from "vue";
-import type { VForm } from "vuetify/components";
+import {computed, type Ref, ref} from "vue";
+import type {VForm} from "vuetify/components";
+import { RoundState} from "@/components/types";
+
+type Props = {
+  roundState: RoundState;
+};
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "estimate", ticket: string): void;
@@ -15,6 +22,8 @@ const ticketRules = [
 ];
 const canEstimate = computed(() => ticketToGuess.value !== "" && form.value?.isValid);
 
+const roundIsFinished = computed(() => props.roundState === RoundState.End);
+
 function doLetEstimate() {
   if (!canEstimate.value) {
     return;
@@ -25,7 +34,7 @@ function doLetEstimate() {
 
 <template>
   <v-container>
-    <v-form ref="form" :fast-fail="true" @submit.prevent="doLetEstimate">
+    <v-form ref="form" :fast-fail="true" v-if="!roundIsFinished" @submit.prevent="doLetEstimate">
       <v-row>
         <v-col>
           <v-text-field

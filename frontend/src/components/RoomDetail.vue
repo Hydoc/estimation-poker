@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Role, RoundState, type UserOverview } from "@/components/types";
+import {Role, RoundState, type UserOverview} from "@/components/types";
 import UserBox from "@/components/UserBox.vue";
 import CommandCenter from "@/components/CommandCenter.vue";
-import { ref } from "vue";
+import {computed, ref} from "vue";
 
 type Props = {
   roomId: string;
@@ -18,8 +18,11 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "estimate", ticket: string): void;
   (e: "guess", guess: number): void;
+  (e: "reveal"): void;
 }>();
 const showSnackbar = ref(false);
+const roundIsFinished = computed(() => props.roundState === RoundState.End);
+const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
 
 function copyRoomName() {
   showSnackbar.value = true;
@@ -53,7 +56,22 @@ function copyRoomName() {
 
     <v-row class="mt-15" v-if="ticketToGuess !== ''">
       <v-col cols="12">
-        <p>Aktuelles Ticket zum schätzen: {{ props.ticketToGuess }}</p>
+        <v-card :title="`Aktuelles Ticket zum schätzen: ${props.ticketToGuess}`">
+          <v-list>
+            <v-list-item v-for="developer in props.usersInRoom.developerList" :key="developer.name">
+              <v-list-item-title>
+                {{ developer.name }}
+                <v-icon color="green" v-if="developer.guess !== 0">mdi-check-circle</v-icon>
+                <v-icon v-else>mdi-help-circle</v-icon>
+              </v-list-item-title>
+            </v-list-item>
+          </v-list>
+
+          <v-card-actions v-if="roundIsFinished && userIsProductOwner">
+            <v-spacer />
+            <v-btn color="primary" @click="emit('reveal')">Auflösen</v-btn>
+          </v-card-actions>
+        </v-card>
       </v-col>
     </v-row>
 
@@ -63,6 +81,7 @@ function copyRoomName() {
           :user-role="props.userRole"
           :round-state="props.roundState"
           :guess="props.guess"
+          :ticket-to-guess="props.ticketToGuess"
           @estimate="emit('estimate', $event)"
           @guess="emit('guess', $event)"
         />

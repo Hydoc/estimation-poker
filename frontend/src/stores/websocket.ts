@@ -1,12 +1,13 @@
-import type { Ref } from "vue";
-import { computed, ref } from "vue";
-import { defineStore } from "pinia";
-import type { UserOverview } from "@/components/types";
-import { Role, RoundState } from "@/components/types";
+import type {Ref} from "vue";
+import {computed, ref} from "vue";
+import {defineStore} from "pinia";
+import type {UserOverview} from "@/components/types";
+import {Role, RoundState} from "@/components/types";
 
 type WebsocketStore = {
   connect(name: string, role: string, roomId: string): void;
   disconnect(): void;
+  resetRound(): void;
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
   send(message: SendableWebsocketMessage): void;
   username: Ref<string>;
@@ -19,13 +20,15 @@ type WebsocketStore = {
   guess: Ref<number>;
 };
 
+export type SendableWebsocketMessageType = "estimate" | "guess" | "reveal";
+
 type SendableWebsocketMessage = {
-  type: "estimate" | "guess";
+  type: SendableWebsocketMessageType;
   data?: any;
 };
 
 type ReceivableWebsocketMessage = {
-  type: "join" | "leave" | "estimate" | "developer-guessed" | "everyone-guessed";
+  type: "join" | "leave" | "estimate" | "developer-guessed" | "everyone-guessed" | "you-guessed";
   data?: any;
 };
 
@@ -70,15 +73,19 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
       switch (decoded.type) {
         case "leave":
         case "join":
+        case "developer-guessed":
           await fetchUsersInRoom();
           break;
         case "estimate":
           roundState.value = RoundState.InProgress;
           ticketToGuess.value = decoded.data;
           break;
-        case "developer-guessed":
+        case "you-guessed":
           guess.value = decoded.data;
           break;
+        case "everyone-guessed":
+          await fetchUsersInRoom();
+          roundState.value = RoundState.End;
       }
       console.log("Message flew", message);
     };
@@ -90,6 +97,12 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     }
 
     websocket.value?.send(JSON.stringify(message));
+  }
+
+  function resetRound() {
+    ticketToGuess.value = "";
+    guess.value = 0;
+    roundState.value = RoundState.Waiting;
   }
 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
@@ -123,5 +136,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     send,
     ticketToGuess,
     guess,
+    resetRound,
   };
 });

@@ -7,7 +7,7 @@ import (
 )
 
 type ProductOwner struct {
-	clientInformation *ClientInformation
+	clientInformation *clientInformation
 }
 
 func (productOwner *ProductOwner) Send(message []byte) {
@@ -22,13 +22,13 @@ func (productOwner *ProductOwner) WebsocketReader(broadcastChannel chan Message)
 		messageType, incomingMessage, err := productOwner.clientInformation.connection.ReadMessage()
 		if err != nil {
 			log.Println("read:", err)
-			productOwner.clientInformation.connection.Close()
 			broadcastChannel <- NewLeave(productOwner)
+			productOwner.clientInformation.connection.Close()
 			break
 		}
 		if messageType == websocket.CloseMessage {
-			productOwner.clientInformation.connection.Close()
 			broadcastChannel <- NewLeave(productOwner)
+			productOwner.clientInformation.connection.Close()
 			break
 		}
 		var productOwnerMessage IncomingMessage
@@ -37,6 +37,7 @@ func (productOwner *ProductOwner) WebsocketReader(broadcastChannel chan Message)
 			log.Printf("productowner receive: could not unmarshal message %s", incomingMessage)
 		}
 
+		log.Println(productOwnerMessage, string(incomingMessage))
 		broadcastChannel <- productOwnerMessage
 	}
 }

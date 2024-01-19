@@ -157,6 +157,7 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 }
 
 func (app *Application) handleBroadcastMessage(broadcastMessage member.Message, roomId string) {
+	log.Println(broadcastMessage.ToJson())
 	switch broadcastMessage.(type) {
 	case member.Leave:
 		memberToRemove := broadcastMessage.(member.Leave).Payload()
@@ -170,6 +171,7 @@ func (app *Application) handleBroadcastMessage(broadcastMessage member.Message, 
 		}
 		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
 	default:
+		log.Println("asd", broadcastMessage)
 		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
 		return
 	}
