@@ -168,6 +168,7 @@ describe("ProductOwnerCommandCenter", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.doLetEstimate();
       expect(wrapper.emitted("estimate")).to.be.undefined;
     });

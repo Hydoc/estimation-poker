@@ -1,0 +1,162 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { mount } from "@vue/test-utils";
+import DeveloperCommandCenter from "../../src/components/DeveloperCommandCenter.vue";
+import { createVuetify } from "vuetify";
+import * as components from "vuetify/components";
+import * as directives from "vuetify/directives";
+import { VBtn, VCard, VCardSubtitle, VCardTitle, VItem, VItemGroup } from "vuetify/components";
+
+let vuetify: ReturnType<typeof createVuetify>;
+
+beforeEach(() => {
+  vuetify = createVuetify({
+    components,
+    directives,
+  });
+});
+describe("DeveloperCommandCenter", () => {
+  describe("rendering", () => {
+    it("should render", () => {
+      const wrapper = mount(DeveloperCommandCenter, {
+        props: {
+          didGuess: false,
+          hasTicketToGuess: true,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      expect(wrapper.findComponent(VItemGroup).exists()).to.be.true;
+      expect(wrapper.findComponent(VItemGroup).props("selectedClass")).equal("bg-indigo-darken-2");
+      expect(wrapper.findAllComponents(VItem)).length(5);
+      expect(wrapper.findAllComponents(VItem).at(0).props("value")).equal(1);
+      expect(wrapper.findAllComponents(VItem).at(1).props("value")).equal(2);
+      expect(wrapper.findAllComponents(VItem).at(2).props("value")).equal(3);
+      expect(wrapper.findAllComponents(VItem).at(3).props("value")).equal(4);
+      expect(wrapper.findAllComponents(VItem).at(4).props("value")).equal(5);
+
+      expect(wrapper.findAllComponents(VCard)).length(5);
+      wrapper.findAllComponents(VCard).forEach((it) => {
+        expect(it.classes()).contains("text-center");
+        expect(it.props("variant")).equal("outlined");
+        expect(it.props("height")).equal("300");
+        expect(it.props("link")).to.be.true;
+      });
+
+      expect(wrapper.findAllComponents(VCard).at(0).findComponent(VCardTitle).text()).equal("1");
+      expect(wrapper.findAllComponents(VCard).at(0).findComponent(VCardSubtitle).text()).equal(
+        "Bis zu 4 Std.",
+      );
+
+      expect(wrapper.findAllComponents(VCard).at(1).findComponent(VCardTitle).text()).equal("2");
+      expect(wrapper.findAllComponents(VCard).at(1).findComponent(VCardSubtitle).text()).equal(
+        "Bis zu 8 Std.",
+      );
+
+      expect(wrapper.findAllComponents(VCard).at(2).findComponent(VCardTitle).text()).equal("3");
+      expect(wrapper.findAllComponents(VCard).at(2).findComponent(VCardSubtitle).text()).equal(
+        "Bis zu 3 Tagen",
+      );
+
+      expect(wrapper.findAllComponents(VCard).at(3).findComponent(VCardTitle).text()).equal("4");
+      expect(wrapper.findAllComponents(VCard).at(3).findComponent(VCardSubtitle).text()).equal(
+        "Bis zu 5 Tagen",
+      );
+
+      expect(wrapper.findAllComponents(VCard).at(4).findComponent(VCardTitle).text()).equal("5");
+      expect(wrapper.findAllComponents(VCard).at(4).findComponent(VCardSubtitle).text()).equal(
+        "Mehr als 5 Tage",
+      );
+
+      expect(wrapper.findComponent(VBtn).exists()).to.be.true;
+      expect(wrapper.findComponent(VBtn).props("width")).equal("100%");
+      expect(wrapper.findComponent(VBtn).props("prependIcon")).equal("mdi-send");
+      expect(wrapper.findComponent(VBtn).props("appendIcon")).equal("mdi-send");
+      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
+      expect(wrapper.findComponent(VBtn).text()).equal("Ab gehts");
+      expect(wrapper.find("p").exists()).to.be.false;
+    });
+
+    it("should render without ticket to guess", () => {
+      const wrapper = mount(DeveloperCommandCenter, {
+        props: {
+          didGuess: false,
+          hasTicketToGuess: false,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      expect(wrapper.find("p").text()).equal("Warten auf Ticket...");
+    });
+
+    it("should not render when developer did guess", () => {
+      const wrapper = mount(DeveloperCommandCenter, {
+        props: {
+          didGuess: true,
+          hasTicketToGuess: true,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      expect(wrapper.find("div").text()).equal("");
+    });
+  });
+
+  describe("functionality", () => {
+    it("should enable button when everything is valid", async () => {
+      const wrapper = mount(DeveloperCommandCenter, {
+        props: {
+          didGuess: false,
+          hasTicketToGuess: true,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      await wrapper.findAllComponents(VCard).at(2).trigger("click");
+      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.false;
+    });
+
+    it("should emit guess on form submit", async () => {
+      const wrapper = mount(DeveloperCommandCenter, {
+        props: {
+          didGuess: false,
+          hasTicketToGuess: true,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      await wrapper.findAllComponents(VCard).at(2).trigger("click");
+      await wrapper.findComponent(VBtn).trigger("click");
+
+      expect(wrapper.emitted("guess")).toEqual([[3]]);
+      // @ts-ignore
+      expect(wrapper.vm.chosenCard).to.be.null;
+    });
+
+    it("should not emit guess when chosen card is null", () => {
+      const wrapper = mount(DeveloperCommandCenter, {
+        props: {
+          didGuess: false,
+          hasTicketToGuess: true,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      // @ts-ignore
+      wrapper.vm.guess();
+
+      expect(wrapper.emitted("guess")).to.be.undefined;
+    });
+  });
+});

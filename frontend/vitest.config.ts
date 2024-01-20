@@ -12,6 +12,9 @@ export default mergeConfig(
           inline: ["vuetify"],
         },
       },
+      coverage: {
+        exclude: ["src/main.ts", ".eslintrc.cjs", "env.d.ts", "**/types.ts"],
+      },
       environment: "jsdom",
       exclude: [...configDefaults.exclude, "e2e/*"],
       root: fileURLToPath(new URL("./", import.meta.url)),
