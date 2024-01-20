@@ -112,7 +112,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
 
   function send(message: SendableWebsocketMessage) {
     if (!websocket.value) {
-      throw new Error("Can not estimate ticket without a connection");
+      throw new Error("Can not send message without a connection");
     }
 
     websocket.value?.send(JSON.stringify(message));
