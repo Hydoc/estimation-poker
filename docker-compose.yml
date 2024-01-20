@@ -9,7 +9,6 @@ services:
     volumes:
       - ./backend:/app
     ports:
-      - "8090:8080"
       - "2345:2345"
     networks:
       - guess-dev
@@ -21,8 +20,17 @@ services:
     restart: always
     volumes:
       - ./frontend:/opt/frontend
+    networks:
+      - guess-dev
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2.7.6-alpine
     ports:
-      - "8089:5173"
+      - "8089:80"
+    volumes:
+      - ./.docker/Caddyfile:/etc/caddy/Caddyfile
     networks:
       - guess-dev
 

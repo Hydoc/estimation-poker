@@ -8,6 +8,7 @@ import vuetify from "vite-plugin-vuetify";
 export default defineConfig({
   server: {
     host: "0.0.0.0",
+    port: 8081,
   },
   plugins: [vue(), vuetify()],
   resolve: {

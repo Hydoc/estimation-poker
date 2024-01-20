@@ -68,7 +68,9 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     userRoomId.value = roomId;
 
     const roleUrl = role === Role.Developer ? "developer" : "product-owner";
-    websocket.value = new WebSocket(`ws://localhost:8090/room/${roomId}/${roleUrl}?name=${name}`);
+    websocket.value = new WebSocket(
+      `ws://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`,
+    );
 
     websocket.value!.onerror = () => {
       websocket.value!.close();
@@ -124,12 +126,12 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
-    const response = await fetch(`http://localhost:8090/room/${roomId}/users/exists?name=${name}`);
+    const response = await fetch(`/api/estimation/room/${roomId}/users/exists?name=${name}`);
     return (await response.json()).exists;
   }
 
   async function fetchUsersInRoom() {
-    const response = await fetch(`http://localhost:8090/room/${userRoomId.value}/users`);
+    const response = await fetch(`/api/estimation/room/${userRoomId.value}/users`);
     if (!response.ok) {
       usersInRoom.value = {
         productOwnerList: [],

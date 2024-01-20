@@ -16,16 +16,22 @@ type Application struct {
 }
 
 func (app *Application) ConfigureRouting() {
-	// Query ?name=NAME required
-	app.router.HandleFunc("/room/{id}/product-owner", func(writer http.ResponseWriter, request *http.Request) {
+	app.router.HandleFunc("/api/estimation/room/{id}/product-owner", func(writer http.ResponseWriter, request *http.Request) {
 		app.handleWs(app.hub, writer, request)
-	})
-	app.router.HandleFunc("/room/{id}/developer", func(writer http.ResponseWriter, request *http.Request) {
+	}).Queries("name", "{name:.*}")
+	app.router.HandleFunc("/api/estimation/room/{id}/developer", func(writer http.ResponseWriter, request *http.Request) {
 		app.handleWs(app.hub, writer, request)
-	})
-	app.router.HandleFunc("/room/{id}/users/exists", app.handleUserInRoomExists)
+	}).Queries("name", "{name:.*}")
+	app.router.HandleFunc("/api/estimation/room/{id}/users/exists", app.handleUserInRoomExists).Methods(http.MethodGet).Queries("name", "{name:.*}")
+	app.router.HandleFunc("/api/estimation/room/{id}/users", app.handleFetchUsers).Methods(http.MethodGet)
+	app.router.Use(app.contentTypeJsonMiddleware)
+}
 
-	app.router.HandleFunc("/room/{id}/users", app.handleFetchUsers)
+func (app *Application) contentTypeJsonMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(writer, request)
+	})
 }
 
 func (app *Application) Listen(addr string) {
@@ -33,13 +39,6 @@ func (app *Application) Listen(addr string) {
 }
 
 func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
-	writer.Header().Set("Access-Control-Allow-Origin", "*")
-	writer.Header().Set("Content-Type", "Application/json")
-	if request.Method != http.MethodGet {
-		writer.WriteHeader(405)
-		return
-	}
-
 	roomId, ok := mux.Vars(request)["id"]
 	if !ok {
 		r := map[string]string{
@@ -74,13 +73,6 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 }
 
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
-	writer.Header().Set("Access-Control-Allow-Origin", "*")
-	writer.Header().Set("Content-Type", "Application/json")
-	if request.Method != http.MethodGet {
-		writer.WriteHeader(405)
-		return
-	}
-
 	roomId, ok := mux.Vars(request)["id"]
 	if !ok {
 		writer.WriteHeader(400)
