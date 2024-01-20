@@ -2,7 +2,6 @@
 import { computed, ref, type Ref } from "vue";
 
 type Props = {
-  roundIsInProgress: boolean;
   didGuess: boolean;
   hasTicketToGuess: boolean;
 };

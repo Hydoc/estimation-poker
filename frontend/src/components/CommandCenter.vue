@@ -9,7 +9,7 @@ type Props = {
   roundState: RoundState;
   guess: number;
   ticketToGuess: string;
-  developersInRoom: boolean;
+  hasDevelopersInRoom: boolean;
 };
 
 const props = defineProps<Props>();
@@ -19,8 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const isDeveloper = computed(() => props.userRole === Role.Developer);
-const isProductOwner = computed(() => props.userRole === Role.ProductOwner);
-const roundIsInProgress = computed(() => props.roundState === RoundState.InProgress);
+const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 const didGuess = computed(() => props.guess !== 0);
 const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
 </script>
@@ -28,15 +27,15 @@ const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
 <template>
   <developer-command-center
     v-if="isDeveloper"
-    :round-is-in-progress="roundIsInProgress"
     :did-guess="didGuess"
     :has-ticket-to-guess="hasTicketToGuess"
     @guess="emit('guess', $event)"
   />
   <product-owner-command-center
-    :round-state="roundState"
-    v-else-if="isProductOwner && !roundIsInProgress"
-    :developers-in-room="props.developersInRoom"
+    v-else
+    :round-is-waiting="roundIsWaiting"
+    :has-ticket-to-guess="hasTicketToGuess"
+    :has-developers-in-room="props.hasDevelopersInRoom"
     @estimate="emit('estimate', $event)"
   />
 </template>

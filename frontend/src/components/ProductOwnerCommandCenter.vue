@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, type Ref, ref } from "vue";
 import type { VForm } from "vuetify/components";
-import { RoundState } from "@/components/types";
 
 type Props = {
-  roundState: RoundState;
-  developersInRoom: boolean;
+  roundIsWaiting: boolean;
+  hasTicketToGuess: boolean;
+  hasDevelopersInRoom: boolean;
 };
 
 const props = defineProps<Props>();
@@ -23,8 +23,6 @@ const ticketRules = [
 ];
 const canEstimate = computed(() => ticketToGuess.value !== "" && form.value?.isValid);
 
-const roundIsFinished = computed(() => props.roundState === RoundState.End);
-
 function doLetEstimate() {
   if (!canEstimate.value) {
     return;
@@ -38,7 +36,7 @@ function doLetEstimate() {
     <v-form
       ref="form"
       :fast-fail="true"
-      v-if="!roundIsFinished && props.developersInRoom"
+      v-if="props.roundIsWaiting && props.hasDevelopersInRoom && !props.hasTicketToGuess"
       @submit.prevent="doLetEstimate"
     >
       <v-row>
@@ -58,7 +56,7 @@ function doLetEstimate() {
         </v-col>
       </v-row>
     </v-form>
-    <p v-else-if="!props.developersInRoom">Warten auf Entwickler...</p>
+    <p v-else-if="!props.hasDevelopersInRoom">Warten auf Entwickler...</p>
   </v-container>
 </template>
 
