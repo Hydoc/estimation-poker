@@ -2,7 +2,6 @@ package internal
 
 import (
 	"encoding/json"
-	"github.com/Hydoc/guess-dev/backend/internal/member"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"log"
@@ -11,15 +10,19 @@ import (
 )
 
 type Application struct {
-	memberList []member.Member
-	router     *mux.Router
-	upgrader   websocket.Upgrader
+	router   *mux.Router
+	upgrader websocket.Upgrader
+	hub      *Hub
 }
 
 func (app *Application) ConfigureRouting() {
 	// Query ?name=NAME required
-	app.router.HandleFunc("/room/{id}/product-owner", app.handleWs)
-	app.router.HandleFunc("/room/{id}/developer", app.handleWs)
+	app.router.HandleFunc("/room/{id}/product-owner", func(writer http.ResponseWriter, request *http.Request) {
+		app.handleWs(app.hub, writer, request)
+	})
+	app.router.HandleFunc("/room/{id}/developer", func(writer http.ResponseWriter, request *http.Request) {
+		app.handleWs(app.hub, writer, request)
+	})
 	app.router.HandleFunc("/room/{id}/users/exists", app.handleUserInRoomExists)
 
 	app.router.HandleFunc("/room/{id}/users", app.handleFetchUsers)
@@ -31,7 +34,7 @@ func (app *Application) Listen(addr string) {
 
 func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
-	writer.Header().Set("Content-Type", "application/json")
+	writer.Header().Set("Content-Type", "Application/json")
 	if request.Method != http.MethodGet {
 		writer.WriteHeader(405)
 		return
@@ -56,8 +59,8 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 		return
 	}
 
-	for _, mem := range app.memberList {
-		if mem.Name() == name && roomId == mem.RoomId() {
+	for client := range app.hub.clients {
+		if client.Name == name && roomId == client.RoomId {
 			writer.WriteHeader(409)
 			json.NewEncoder(writer).Encode(map[string]bool{
 				"exists": true,
@@ -72,7 +75,7 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
-	writer.Header().Set("Content-Type", "application/json")
+	writer.Header().Set("Content-Type", "Application/json")
 	if request.Method != http.MethodGet {
 		writer.WriteHeader(405)
 		return
@@ -88,25 +91,19 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 		return
 	}
 
-	var usersInRoom = map[string][]member.UserDTO{
+	var usersInRoom = map[string][]userDTO{
 		"productOwnerList": {},
 		"developerList":    {},
 	}
 
-	for _, mem := range app.memberList {
-		switch mem.(type) {
-		case *member.Developer:
-			if mem.RoomId() == roomId {
-				usersInRoom["developerList"] = append(usersInRoom["developerList"], mem.ToJson())
+	for client := range app.hub.clients {
+		if client.RoomId == roomId {
+			if client.Role == Developer {
+				usersInRoom["developerList"] = append(usersInRoom["developerList"], client.toJson())
 			}
-			break
-		case *member.ProductOwner:
-			if mem.RoomId() == roomId {
-				usersInRoom["productOwnerList"] = append(usersInRoom["productOwnerList"], mem.ToJson())
+			if client.Role == ProductOwner {
+				usersInRoom["productOwnerList"] = append(usersInRoom["productOwnerList"], client.toJson())
 			}
-			break
-		default:
-			break
 		}
 	}
 	err := json.NewEncoder(writer).Encode(usersInRoom)
@@ -116,22 +113,22 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 	}
 }
 
-func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
+func (app *Application) handleWs(hub *Hub, writer http.ResponseWriter, request *http.Request) {
 	routeParams := mux.Vars(request)
 	roomId, ok := routeParams["id"]
 	if !ok {
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(map[string]string{
+		encoded, _ := json.Marshal(map[string]string{
 			"message": "id is missing in parameters",
 		})
+		http.Error(writer, string(encoded), 400)
 		return
 	}
 	name := request.URL.Query().Get("name")
 	if len(name) == 0 {
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(map[string]string{
-			"message": "id is missing in query",
+		encoded, _ := json.Marshal(map[string]string{
+			"message": "name is missing in query",
 		})
+		http.Error(writer, string(encoded), 400)
 		return
 	}
 
@@ -141,108 +138,23 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	var newMember member.Member
+	var client *Client
 	if strings.Contains(request.URL.Path, "product-owner") {
-		newMember = member.NewProductOwner(name, roomId, connection)
+		client = newProductOwner(roomId, name, hub, connection)
 	} else {
-		newMember = member.NewDeveloper(name, roomId, connection)
+		client = newDeveloper(roomId, name, hub, connection)
 	}
+	client.hub.register <- client
+	client.hub.roomBroadcast <- newRoomBroadcast(roomId, newJoin())
 
-	app.memberList = append(app.memberList, newMember)
-	encodedMessage, err := json.Marshal(member.NewJoin().ToJson())
-	app.broadcastInRoom(roomId, encodedMessage)
-	broadcastChannel := make(chan member.Message)
-	go newMember.WebsocketReader(broadcastChannel)
-	for {
-		select {
-		case msg := <-broadcastChannel:
-			app.handleBroadcastMessage(msg, roomId)
-		}
-	}
+	go client.websocketReader()
+	go client.websocketWriter()
 }
 
-func (app *Application) handleBroadcastMessage(broadcastMessage member.Message, roomId string) {
-	log.Println(broadcastMessage.ToJson())
-	switch broadcastMessage.(type) {
-	case member.Leave:
-		memberToRemove := broadcastMessage.(member.Leave).Payload()
-		app.removeMember(memberToRemove)
-		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
-		break
-	case member.DeveloperGuessed:
-		if app.everyDeveloperInRoomGuessed(roomId) {
-			app.broadcastInRoom(roomId, app.encodeMessage(member.NewEveryoneGuessed()))
-			break
-		}
-		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
-		break
-	case member.ResetRound:
-		app.resetDeveloperInRoom(roomId)
-		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
-	default:
-		app.broadcastInRoom(roomId, app.encodeMessage(broadcastMessage))
-		break
-	}
-}
-
-func (app *Application) broadcastInRoom(roomId string, message []byte) {
-	for _, m := range app.memberList {
-		if m.RoomId() == roomId {
-			m.Send(message)
-		}
-	}
-}
-
-func (app *Application) removeMember(mem member.Member) {
-	for i, m := range app.memberList {
-		if m.Name() == mem.Name() && m.RoomId() == mem.RoomId() {
-			app.memberList = append(app.memberList[:i], app.memberList[i+1:]...)
-			break
-		}
-	}
-}
-
-func (app *Application) everyDeveloperInRoomGuessed(roomId string) bool {
-	for _, mem := range app.memberList {
-		if mem.RoomId() != roomId {
-			continue
-		}
-		switch mem.(type) {
-		case *member.Developer:
-			if mem.(*member.Developer).Guess == 0 {
-				return false
-			}
-		}
-	}
-
-	return true
-}
-
-func (app *Application) resetDeveloperInRoom(roomId string) {
-	for _, mem := range app.memberList {
-		if mem.RoomId() != roomId {
-			continue
-		}
-		switch mem.(type) {
-		case *member.Developer:
-			mem.(*member.Developer).Reset()
-		}
-	}
-}
-
-func (app *Application) encodeMessage(message member.Message) []byte {
-	encoded, err := json.Marshal(message.ToJson())
-	if err != nil {
-		log.Fatal("failed encoding message:", err)
-		return nil
-	}
-	return encoded
-}
-
-func NewApplication(memberList []member.Member, router *mux.Router, upgrader websocket.Upgrader) *Application {
+func NewApplication(router *mux.Router, upgrader websocket.Upgrader, hub *Hub) *Application {
 	return &Application{
-		memberList: memberList,
-		router:     router,
-		upgrader:   upgrader,
+		router:   router,
+		upgrader: upgrader,
+		hub:      hub,
 	}
 }
