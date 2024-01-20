@@ -28,8 +28,8 @@ const emit = defineEmits<{
 
       <v-card-actions v-if="props.roundIsFinished && props.userIsProductOwner">
         <v-spacer />
-        <v-btn v-if="!showAllGuesses" color="primary" @click="emit('reveal')">Auflösen</v-btn>
-        <v-btn v-if="showAllGuesses" color="blue-darken-4" @click="emit('new-round')"
+        <v-btn v-if="!props.showAllGuesses" color="primary" @click="emit('reveal')">Auflösen</v-btn>
+        <v-btn v-if="props.showAllGuesses" color="blue-darken-4" @click="emit('new-round')"
           >Neue Runde</v-btn
         >
       </v-card-actions>
