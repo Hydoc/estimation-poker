@@ -7,15 +7,12 @@ import vuetify from "vite-plugin-vuetify";
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
-    host: "0.0.0.0"
+    host: "0.0.0.0",
   },
-  plugins: [
-    vue(),
-    vuetify(),
-  ],
+  plugins: [vue(), vuetify()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL("./src", import.meta.url))
-    }
-  }
-})
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+});

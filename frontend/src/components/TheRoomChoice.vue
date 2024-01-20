@@ -20,7 +20,7 @@ async function connect() {
     return;
   }
   websocketStore.connect(name.value, role.value, roomId.value);
-  router.push("/room");
+  await router.push("/room");
 }
 
 const isButtonEnabled = computed(
