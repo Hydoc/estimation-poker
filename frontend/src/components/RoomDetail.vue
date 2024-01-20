@@ -78,6 +78,7 @@ function copyRoomName() {
           :round-state="props.roundState"
           :guess="props.guess"
           :ticket-to-guess="props.ticketToGuess"
+          :developers-in-room="props.usersInRoom.developerList.length > 0"
           @estimate="emit('estimate', $event)"
           @guess="emit('guess', $event)"
         />

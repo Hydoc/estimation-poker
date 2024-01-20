@@ -5,6 +5,7 @@ import { RoundState } from "@/components/types";
 
 type Props = {
   roundState: RoundState;
+  developersInRoom: boolean;
 };
 
 const props = defineProps<Props>();
@@ -34,7 +35,12 @@ function doLetEstimate() {
 
 <template>
   <v-container>
-    <v-form ref="form" :fast-fail="true" v-if="!roundIsFinished" @submit.prevent="doLetEstimate">
+    <v-form
+      ref="form"
+      :fast-fail="true"
+      v-if="!roundIsFinished && props.developersInRoom"
+      @submit.prevent="doLetEstimate"
+    >
       <v-row>
         <v-col>
           <v-text-field
@@ -52,6 +58,7 @@ function doLetEstimate() {
         </v-col>
       </v-row>
     </v-form>
+    <p v-else-if="!props.developersInRoom">Warten auf Entwickler...</p>
   </v-container>
 </template>
 
