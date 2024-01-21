@@ -2,7 +2,6 @@ package internal
 
 import (
 	"bytes"
-	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -14,17 +13,6 @@ import (
 )
 
 var upgrader = &websocket.Upgrader{}
-
-type dummyMsg struct{}
-
-func (msg dummyMsg) ToJson() messageDTO {
-	enc, _ := json.Marshal(struct {
-		hello string
-	}{hello: "bla"})
-	return map[string]interface{}{
-		"bla": enc,
-	}
-}
 
 func TestClient_NewProductOwner(t *testing.T) {
 	expectedName := "Test Person"

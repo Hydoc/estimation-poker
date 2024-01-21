@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/Hydoc/guess-dev/backend/internal"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -17,6 +18,6 @@ func main() {
 	hub := internal.NewHub()
 	go hub.Run()
 	app := internal.NewApplication(mux.NewRouter(), upgrader, hub)
-	app.ConfigureRouting()
-	app.Listen(":8080")
+	router := app.ConfigureRouting()
+	log.Println(http.ListenAndServe(":8080", router))
 }

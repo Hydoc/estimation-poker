@@ -15,7 +15,7 @@ type Application struct {
 	hub      *Hub
 }
 
-func (app *Application) ConfigureRouting() {
+func (app *Application) ConfigureRouting() *mux.Router {
 	app.router.HandleFunc("/api/estimation/room/{id}/product-owner", func(writer http.ResponseWriter, request *http.Request) {
 		app.handleWs(app.hub, writer, request)
 	}).Queries("name", "{name:.*}")
@@ -26,6 +26,7 @@ func (app *Application) ConfigureRouting() {
 	app.router.HandleFunc("/api/estimation/room/{id}/users", app.handleFetchUsers).Methods(http.MethodGet)
 	app.router.HandleFunc("/api/estimation/room/{id}/state", app.handleRoundInRoomInProgress).Methods(http.MethodGet)
 	app.router.Use(app.contentTypeJsonMiddleware)
+	return app.router
 }
 
 func (app *Application) contentTypeJsonMiddleware(next http.Handler) http.Handler {
@@ -33,10 +34,6 @@ func (app *Application) contentTypeJsonMiddleware(next http.Handler) http.Handle
 		writer.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(writer, request)
 	})
-}
-
-func (app *Application) Listen(addr string) {
-	log.Fatal(http.ListenAndServe(addr, app.router))
 }
 
 func (app *Application) handleRoundInRoomInProgress(writer http.ResponseWriter, request *http.Request) {
@@ -90,11 +87,7 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 			}
 		}
 	}
-	err := json.NewEncoder(writer).Encode(usersInRoom)
-	if err != nil {
-		log.Println("error while encoding usersInRoom:", err)
-		return
-	}
+	json.NewEncoder(writer).Encode(usersInRoom)
 }
 
 func (app *Application) handleWs(hub *Hub, writer http.ResponseWriter, request *http.Request) {
@@ -102,10 +95,10 @@ func (app *Application) handleWs(hub *Hub, writer http.ResponseWriter, request *
 
 	name := request.URL.Query().Get("name")
 	if len(name) == 0 {
-		encoded, _ := json.Marshal(map[string]string{
+		writer.WriteHeader(400)
+		json.NewEncoder(writer).Encode(map[string]string{
 			"message": "name is missing in query",
 		})
-		http.Error(writer, string(encoded), 400)
 		return
 	}
 
