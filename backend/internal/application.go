@@ -98,15 +98,8 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 }
 
 func (app *Application) handleWs(hub *Hub, writer http.ResponseWriter, request *http.Request) {
-	routeParams := mux.Vars(request)
-	roomId, ok := routeParams["id"]
-	if !ok {
-		encoded, _ := json.Marshal(map[string]string{
-			"message": "id is missing in parameters",
-		})
-		http.Error(writer, string(encoded), 400)
-		return
-	}
+	roomId := mux.Vars(request)["id"]
+
 	name := request.URL.Query().Get("name")
 	if len(name) == 0 {
 		encoded, _ := json.Marshal(map[string]string{
