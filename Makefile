@@ -4,6 +4,9 @@ up:
 down:
 	docker compose down --remove-orphans
 
+check-backend-test:
+	docker compose exec backend go test ./...
+
 check-frontend-test:
 	docker compose exec frontend pnpm test
 
