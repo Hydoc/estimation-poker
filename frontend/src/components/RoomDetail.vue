@@ -22,10 +22,12 @@ const emit = defineEmits<{
   (e: "guess", guess: number): void;
   (e: "reveal"): void;
   (e: "new-round"): void;
+  (e: "leave"): void;
 }>();
 const showSnackbar = ref(false);
 const roundIsFinished = computed(() => props.roundState === RoundState.End);
 const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
+const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 
 function copyRoomName() {
   showSnackbar.value = true;
@@ -34,10 +36,23 @@ function copyRoomName() {
 </script>
 
 <template>
-  <h1>
-    Raum: {{ props.roomId }}
-    <v-icon title="Raum kopieren" size="x-small" @click="copyRoomName">mdi-content-copy</v-icon>
-  </h1>
+  <v-container>
+    <v-row>
+      <v-col>
+        <h1>
+          Raum: {{ props.roomId }}
+          <v-icon title="Raum kopieren" size="x-small" @click="copyRoomName"
+            >mdi-content-copy</v-icon
+          >
+        </h1>
+      </v-col>
+      <v-col v-if="roundIsWaiting" class="text-right">
+        <v-btn append-icon="mdi-location-exit" color="deep-purple-darken-1" @click="emit('leave')"
+          >Raum verlassen</v-btn
+        >
+      </v-col>
+    </v-row>
+  </v-container>
 
   <v-container width="200">
     <v-row>

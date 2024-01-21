@@ -130,5 +130,18 @@ describe("RoomView", () => {
         data: null,
       });
     });
+
+    it("should disconnect and push to home when on leave", () => {
+      const wrapper = shallowMount(RoomView, {
+        global: {
+          plugins: [pinia],
+        },
+      });
+
+      wrapper.findComponent(RoomDetail).vm.$emit("leave");
+
+      expect(websocketStore.disconnect).toHaveBeenCalledOnce();
+      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/");
+    });
   });
 });

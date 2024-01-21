@@ -21,6 +21,11 @@ const showAllGuesses = computed(() => websocketStore.showAllGuesses);
 function sendMessage(type: SendableWebsocketMessageType, data: string | number | null) {
   websocketStore.send({ type, data });
 }
+
+function leaveRoom() {
+  websocketStore.disconnect();
+  router.push("/");
+}
 </script>
 
 <template>
@@ -37,6 +42,7 @@ function sendMessage(type: SendableWebsocketMessageType, data: string | number |
     @guess="sendMessage('guess', $event)"
     @reveal="sendMessage('reveal', null)"
     @new-round="sendMessage('new-round', null)"
+    @leave="leaveRoom"
   />
 </template>
 
