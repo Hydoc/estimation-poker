@@ -10,6 +10,7 @@ type WebsocketStore = {
   resetRound(): void;
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
   send(message: SendableWebsocketMessage): void;
+  isRoundInRoomInProgress(roomId: string): Promise<boolean>;
   username: Ref<string>;
   isConnected: Ref<boolean>;
   usersInRoom: Ref<UserOverview>;
@@ -127,7 +128,12 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
     const response = await fetch(`/api/estimation/room/${roomId}/users/exists?name=${name}`);
-    return (await response.json()).exists;
+    return ((await response.json()) as { exists: boolean }).exists;
+  }
+
+  async function isRoundInRoomInProgress(roomId: string): Promise<boolean> {
+    const response = await fetch(`/api/estimation/room/${roomId}/state`);
+    return ((await response.json()) as { inProgress: boolean }).inProgress;
   }
 
   async function fetchUsersInRoom() {
@@ -148,6 +154,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     disconnect,
     isConnected,
     usersInRoom,
+    isRoundInRoomInProgress,
     roomId: userRoomId,
     username,
     userExistsInRoom,

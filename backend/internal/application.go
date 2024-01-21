@@ -24,6 +24,7 @@ func (app *Application) ConfigureRouting() {
 	}).Queries("name", "{name:.*}")
 	app.router.HandleFunc("/api/estimation/room/{id}/users/exists", app.handleUserInRoomExists).Methods(http.MethodGet).Queries("name", "{name:.*}")
 	app.router.HandleFunc("/api/estimation/room/{id}/users", app.handleFetchUsers).Methods(http.MethodGet)
+	app.router.HandleFunc("/api/estimation/room/{id}/state", app.handleRoundInRoomInProgress).Methods(http.MethodGet)
 	app.router.Use(app.contentTypeJsonMiddleware)
 }
 
@@ -38,16 +39,15 @@ func (app *Application) Listen(addr string) {
 	log.Fatal(http.ListenAndServe(addr, app.router))
 }
 
+func (app *Application) handleRoundInRoomInProgress(writer http.ResponseWriter, request *http.Request) {
+	roomId := mux.Vars(request)["id"]
+	json.NewEncoder(writer).Encode(map[string]bool{
+		"inProgress": app.hub.IsRoundInRoomInProgress(roomId),
+	})
+}
+
 func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
-	roomId, ok := mux.Vars(request)["id"]
-	if !ok {
-		r := map[string]string{
-			"message": "id is missing in parameters",
-		}
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(r)
-		return
-	}
+	roomId := mux.Vars(request)["id"]
 
 	name := request.URL.Query().Get("name")
 	if len(name) == 0 {
@@ -73,15 +73,7 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 }
 
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
-	roomId, ok := mux.Vars(request)["id"]
-	if !ok {
-		writer.WriteHeader(400)
-		r := map[string]string{
-			"message": "id is missing in parameters",
-		}
-		json.NewEncoder(writer).Encode(r)
-		return
-	}
+	roomId := mux.Vars(request)["id"]
 
 	var usersInRoom = map[string][]userDTO{
 		"productOwnerList": {},

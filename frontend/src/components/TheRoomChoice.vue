@@ -11,9 +11,28 @@ const name = ref("");
 const role: Ref<Role> = ref(Role.Empty);
 const websocketStore = useWebsocketStore();
 const showUserAlreadyExists = ref(false);
+const showRoundIsInProgress = ref(false);
+const errorMessage = computed(() => {
+  if (showUserAlreadyExists.value) {
+    return "Ein Benutzer mit diesem Namen existiert in dem Raum bereits.";
+  }
+
+  if (showRoundIsInProgress.value) {
+    return "Die Runde in diesem Raum hat bereits begonnen.";
+  }
+
+  return "";
+});
 
 async function connect() {
   showUserAlreadyExists.value = false;
+  showRoundIsInProgress.value = false;
+  const roundInRoomInProgress = await websocketStore.isRoundInRoomInProgress(roomId.value);
+  if (roundInRoomInProgress) {
+    showRoundIsInProgress.value = true;
+    return;
+  }
+
   const userAlreadyExistsInRoom = await websocketStore.userExistsInRoom(name.value, roomId.value);
   if (userAlreadyExistsInRoom) {
     showUserAlreadyExists.value = true;
@@ -51,12 +70,8 @@ const textFieldRules = computed(() => [
                   <v-radio label="Entwickler" :value="Role.Developer"></v-radio>
                 </v-radio-group>
 
-                <v-col>
-                  <v-alert
-                    v-if="showUserAlreadyExists"
-                    color="error"
-                    text="Ein Benutzer mit diesem Namen existiert in dem Raum bereits."
-                  />
+                <v-col v-if="errorMessage !== ''">
+                  <v-alert color="error" :text="errorMessage" />
                 </v-col>
 
                 <v-col class="text-right">

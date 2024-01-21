@@ -28,6 +28,7 @@ function doLetEstimate() {
     return;
   }
   emit("estimate", ticketToGuess.value);
+  ticketToGuess.value = "";
 }
 </script>
 

@@ -52,7 +52,7 @@ func (client *Client) websocketReader() {
 		client.connection.Close()
 	}()
 	for {
-		var incMessage incomingMessage
+		var incMessage clientMessage
 		err := client.connection.ReadJSON(&incMessage)
 		if err != nil {
 			log.Println("read:", err)

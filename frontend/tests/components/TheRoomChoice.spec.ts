@@ -26,6 +26,7 @@ beforeEach(() => {
   pinia = createTestingPinia();
   websocketStore = useWebsocketStore(pinia);
   websocketStore.userExistsInRoom = vi.fn().mockResolvedValue(false);
+  websocketStore.isRoundInRoomInProgress = vi.fn().mockResolvedValue(false);
 
   (useRouter as Mock).mockReturnValue({
     push: vi.fn(),
@@ -134,6 +135,9 @@ describe("TheRoomChoice", () => {
       await wrapper.findAllComponents(VTextField).at(1).setValue("my name");
       await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
       await wrapper.findComponent(VBtn).trigger("submit");
+      await nextTick();
+      await nextTick();
+      await nextTick();
 
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
@@ -154,6 +158,9 @@ describe("TheRoomChoice", () => {
       await wrapper.findComponent(VBtn).trigger("submit");
 
       await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
 
       expect(wrapper.findComponent(VAlert).exists()).to.be.true;
       expect(wrapper.findComponent(VAlert).props("color")).equal("error");
@@ -163,6 +170,35 @@ describe("TheRoomChoice", () => {
 
       expect(useRouter().push).not.toHaveBeenCalled();
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
+      expect(websocketStore.connect).not.toHaveBeenCalled();
+    });
+
+    it("should show error when round in room is in progress", async () => {
+      websocketStore.isRoundInRoomInProgress = vi.fn().mockResolvedValue(true);
+      const wrapper = mount(TheRoomChoice, {
+        global: {
+          plugins: [vuetify, pinia],
+        },
+      });
+
+      await wrapper.findAllComponents(VTextField).at(0).setValue("test");
+      await wrapper.findAllComponents(VTextField).at(1).setValue("my name");
+      await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
+      await wrapper.findComponent(VBtn).trigger("submit");
+
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      expect(wrapper.findComponent(VAlert).exists()).to.be.true;
+      expect(wrapper.findComponent(VAlert).props("color")).equal("error");
+      expect(wrapper.findComponent(VAlert).props("text")).equal(
+        "Die Runde in diesem Raum hat bereits begonnen.",
+      );
+
+      expect(useRouter().push).not.toHaveBeenCalled();
+      expect(websocketStore.isRoundInRoomInProgress).toHaveBeenNthCalledWith(1, "test");
       expect(websocketStore.connect).not.toHaveBeenCalled();
     });
   });

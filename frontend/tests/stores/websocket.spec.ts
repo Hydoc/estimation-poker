@@ -270,6 +270,10 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const actual = await websocketStore.userExistsInRoom("Bla", "Blub");
     expect(actual).to.be.true;
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/estimation/room/Blub/users/exists?name=Bla",
+    );
   });
 
   it("should return false when user in room does not exist", async () => {
@@ -279,5 +283,29 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const actual = await websocketStore.userExistsInRoom("Bla", "Blub");
     expect(actual).to.be.false;
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/estimation/room/Blub/users/exists?name=Bla",
+    );
+  });
+
+  it("should return false when round in room not in progress", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: () => ({ inProgress: false }),
+    });
+    const websocketStore = useWebsocketStore();
+    const actual = await websocketStore.isRoundInRoomInProgress("Blub");
+    expect(actual).to.be.false;
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Blub/state");
+  });
+
+  it("should return true when round in room in progress", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: () => ({ inProgress: true }),
+    });
+    const websocketStore = useWebsocketStore();
+    const actual = await websocketStore.isRoundInRoomInProgress("Blub");
+    expect(actual).to.be.true;
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Blub/state");
   });
 });

@@ -11,7 +11,7 @@ type message interface {
 	ToJson() messageDTO
 }
 
-type incomingMessage struct {
+type clientMessage struct {
 	Type string `json:"type"`
 	Data any    `json:"data"`
 }
@@ -35,7 +35,7 @@ func (leave leave) ToJson() messageDTO {
 		"type": "leave",
 	}
 }
-func (incMessage incomingMessage) ToJson() messageDTO {
+func (incMessage clientMessage) ToJson() messageDTO {
 	return map[string]interface{}{
 		"type": incMessage.Type,
 		"data": incMessage.Data,
