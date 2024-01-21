@@ -59,12 +59,12 @@ func (client *Client) websocketReader() {
 			break
 		}
 
-		if incMessage.Type == Guess && client.Role == Developer {
+		if incMessage.Type == guess && client.Role == Developer {
 			actualGuess := int(incMessage.Data.(float64))
 			client.Guess = actualGuess
 			client.hub.roomBroadcast <- newRoomBroadcast(client.RoomId, newDeveloperGuessed())
 			client.send <- newYouGuessed(actualGuess)
-		} else if incMessage.Type == NewRound && client.Role == ProductOwner {
+		} else if incMessage.Type == newRound && client.Role == ProductOwner {
 			client.hub.roomBroadcast <- newRoomBroadcast(client.RoomId, newResetRound())
 		} else {
 			client.hub.roomBroadcast <- newRoomBroadcast(client.RoomId, incMessage)

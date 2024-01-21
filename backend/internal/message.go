@@ -1,8 +1,8 @@
 package internal
 
 const (
-	Guess    = "guess"
-	NewRound = "new-round"
+	guess    = "guess"
+	newRound = "new-round"
 )
 
 type messageDTO map[string]interface{}
