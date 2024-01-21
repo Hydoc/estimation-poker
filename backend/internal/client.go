@@ -82,6 +82,7 @@ func (client *Client) websocketWriter() {
 			err := client.connection.WriteJSON(msg.ToJson())
 			if err != nil {
 				log.Println(err)
+				return
 			}
 		}
 	}

@@ -9,10 +9,19 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
 var upgrader = &websocket.Upgrader{}
+
+type failingMessage struct{}
+
+func (msg failingMessage) ToJson() messageDTO {
+	return map[string]interface{}{
+		"b": make(chan int),
+	}
+}
 
 func TestClient_NewProductOwner(t *testing.T) {
 	expectedName := "Test Person"
@@ -316,6 +325,57 @@ func TestClient_WebsocketWriter(t *testing.T) {
 
 	if !reflect.DeepEqual(expectedMsg, got.message) {
 		t.Errorf("expected %v, got %v", expectedMsg, got)
+	}
+}
+
+func TestClient_WebsocketWriter_WhenErrorOccurred(t *testing.T) {
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+	roomBroadcastChannel := make(chan roomBroadcastMessage)
+	hub := &Hub{
+		roomBroadcast: roomBroadcastChannel,
+		register:      make(chan *Client),
+		unregister:    make(chan *Client),
+		clients:       make(map[*Client]bool),
+		rooms:         make(map[string]bool),
+	}
+	server := httptest.NewServer(http.HandlerFunc(echo))
+	defer server.Close()
+
+	url := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	connection, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var wg sync.WaitGroup
+	clientChannel := make(chan message)
+	client := &Client{
+		connection: connection,
+		Role:       Developer,
+		send:       clientChannel,
+		Name:       "Test",
+		hub:        hub,
+		RoomId:     "1",
+	}
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		client.websocketWriter()
+	}()
+
+	clientChannel <- failingMessage{}
+
+	wantLog := "unsupported type: chan int"
+
+	wg.Wait()
+
+	if !strings.Contains(logBuffer.String(), wantLog) {
+		t.Errorf("expected to log %v, got %#v", wantLog, logBuffer.String())
 	}
 }
 
