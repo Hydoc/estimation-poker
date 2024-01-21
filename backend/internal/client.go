@@ -78,10 +78,7 @@ func (client *Client) websocketWriter() {
 	}()
 	for {
 		select {
-		case msg, ok := <-client.send:
-			if !ok {
-				return
-			}
+		case msg := <-client.send:
 			err := client.connection.WriteJSON(msg.ToJson())
 			if err != nil {
 				log.Println(err)
