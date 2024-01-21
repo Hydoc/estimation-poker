@@ -19,5 +19,5 @@ func main() {
 	go hub.Run()
 	app := internal.NewApplication(mux.NewRouter(), upgrader, hub)
 	router := app.ConfigureRouting()
-	log.Println(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
