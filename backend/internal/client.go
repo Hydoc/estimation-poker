@@ -47,7 +47,7 @@ func newDeveloper(roomId, name string, hub *Hub, connection *websocket.Conn) *Cl
 
 func (client *Client) websocketReader() {
 	defer func() {
-		client.hub.Unregister <- client
+		client.hub.unregister <- client
 		client.hub.roomBroadcast <- newRoomBroadcast(client.RoomId, newLeave())
 		client.connection.Close()
 	}()

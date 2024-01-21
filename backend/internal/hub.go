@@ -8,7 +8,7 @@ type roomBroadcastMessage struct {
 type Hub struct {
 	roomBroadcast chan roomBroadcastMessage
 	register      chan *Client
-	Unregister    chan *Client
+	unregister    chan *Client
 	clients       map[*Client]bool
 	rooms         map[string]bool
 }
@@ -17,7 +17,7 @@ func NewHub() *Hub {
 	return &Hub{
 		roomBroadcast: make(chan roomBroadcastMessage),
 		register:      make(chan *Client),
-		Unregister:    make(chan *Client),
+		unregister:    make(chan *Client),
 		clients:       make(map[*Client]bool),
 		rooms:         make(map[string]bool),
 	}
@@ -52,7 +52,7 @@ func (hub *Hub) Run() {
 		select {
 		case client := <-hub.register:
 			hub.clients[client] = true
-		case client := <-hub.Unregister:
+		case client := <-hub.unregister:
 			if _, ok := hub.clients[client]; ok {
 				delete(hub.clients, client)
 			}
