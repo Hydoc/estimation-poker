@@ -19,7 +19,8 @@ jobs:
         go-version: '1.21'
     - name: Install dependencies
       run: |
-        go install github.com/Hydoc/guess-dev/backend@latest
+        cd backend
+        go get .
 
     - name: Build
       run: go build -v backend/...
