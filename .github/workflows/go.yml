@@ -20,13 +20,17 @@ jobs:
     - name: Install dependencies
       run: |
         cd backend
-        go get .
+        go mod download
 
     - name: Build
-      run: go build -v backend/...
+      run: |
+        cd backend
+        go build -v ./...
 
     - name: Test
-      run: go test -v backend/...
+      run: |
+        cd backend
+        go test -v ./...
     - name: Upload Go test results
       uses: actions/upload-artifact@v4
       with:
