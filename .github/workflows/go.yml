@@ -30,7 +30,7 @@ jobs:
     - name: Test
       run: |
         cd backend
-        go test -v -json ./... > TestResults-${{ matrix.go-version }}.json
+        go test -json ./... > TestResults-${{ matrix.go-version }}.json
     - name: Upload Go test results
       uses: actions/upload-artifact@v4
       with:
