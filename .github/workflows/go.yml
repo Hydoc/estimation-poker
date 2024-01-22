@@ -31,4 +31,9 @@ jobs:
     - name: Test
       run: |
         cd backend
-        go test -v ./...
+        go test -race -cover -coverprofile=coverage -covermode=atomic -v ./...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+         files: ./backend/coverage
