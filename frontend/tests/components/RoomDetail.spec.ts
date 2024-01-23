@@ -145,7 +145,6 @@ describe("RoomDetail", () => {
 
   describe("functionality", () => {
     it("should copy room to clipboard when clicking mdi-content-copy and access is granted", async () => {
-      const originalNavigator = global.navigator;
       Object.defineProperty(global.navigator, "clipboard", {
         writable: true,
         value: {
