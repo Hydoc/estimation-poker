@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    restart: unless-stopped
+    build:
+      context: backend
+      target: prod
+    volumes:
+      - ./backend:/app
+    networks:
+      - guess-dev
+
+  frontend:
+    build:
+      context: frontend
+      target: prod
+    restart: always
+    volumes:
+      - ./frontend:/opt/frontend
+    networks:
+      - guess-dev
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2.7.6-alpine
+    ports:
+      - "8089:80"
+    volumes:
+      - ./.docker/prod.Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - guess-dev
+
+networks:
+  guess-dev:

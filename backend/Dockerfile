@@ -8,7 +8,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 
-FROM base as live
+FROM base as prod
 
 CMD ["/server"]
 
