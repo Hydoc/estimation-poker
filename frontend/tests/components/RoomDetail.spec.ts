@@ -9,6 +9,7 @@ import { VBtn, VIcon, VSnackbar } from "vuetify/components";
 import UserBox from "../../src/components/UserBox.vue";
 import RoundOverview from "../../src/components/RoundOverview.vue";
 import CommandCenter from "../../src/components/CommandCenter.vue";
+import { nextTick } from "vue";
 
 let vuetify: ReturnType<typeof createVuetify>;
 
@@ -143,10 +144,18 @@ describe("RoomDetail", () => {
   });
 
   describe("functionality", () => {
-    it("should copy room to clipboard when clicking mdi-content-copy", async () => {
+    it("should copy room to clipboard when clicking mdi-content-copy and access is granted", async () => {
+      const originalNavigator = global.navigator;
       Object.defineProperty(global.navigator, "clipboard", {
+        writable: true,
         value: {
           writeText: vi.fn(),
+        },
+      });
+      Object.defineProperty(global.navigator, "permissions", {
+        writable: true,
+        value: {
+          query: vi.fn().mockResolvedValue({ state: "granted" }),
         },
       });
       const roomId = "ABC";
@@ -171,9 +180,63 @@ describe("RoomDetail", () => {
 
       await wrapper.findComponent(VIcon).trigger("click");
       expect(global.navigator.clipboard.writeText).toHaveBeenNthCalledWith(1, roomId);
+      await nextTick();
+      await nextTick();
+      // @ts-ignore
+      expect(wrapper.vm.snackbarText).equal("Raum in die Zwischenablage kopiert!");
       expect(wrapper.findComponent(VSnackbar).exists()).to.be.true;
       expect(wrapper.findComponent(VSnackbar).props("modelValue")).to.be.true;
       expect(wrapper.findComponent(VSnackbar).props("timeout")).equal(3000);
+      expect(global.navigator.permissions.query).toHaveBeenNthCalledWith(1, {
+        name: "clipboard-write",
+      });
+    });
+
+    it("should not copy room to clipboard when clicking mdi-content-copy and access is not granted", async () => {
+      Object.defineProperty(global.navigator, "clipboard", {
+        writable: true,
+        value: {
+          writeText: vi.fn(),
+        },
+      });
+      Object.defineProperty(global.navigator, "permissions", {
+        writable: true,
+        value: {
+          query: vi.fn().mockResolvedValue({ state: "denied" }),
+        },
+      });
+      const roomId = "ABC";
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId,
+          usersInRoom: {
+            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
+          },
+          currentUsername: "Test",
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "CC-1",
+          guess: 0,
+          showAllGuesses: false,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      await wrapper.findComponent(VIcon).trigger("click");
+      expect(global.navigator.clipboard.writeText).not.toHaveBeenCalled();
+      await nextTick();
+      await nextTick();
+      // @ts-ignore
+      expect(wrapper.vm.snackbarText).equal("Konnte Raum nicht in die Zwischenablage kopieren");
+      expect(wrapper.findComponent(VSnackbar).exists()).to.be.true;
+      expect(wrapper.findComponent(VSnackbar).props("modelValue")).to.be.true;
+      expect(wrapper.findComponent(VSnackbar).props("timeout")).equal(3000);
+      expect(global.navigator.permissions.query).toHaveBeenNthCalledWith(1, {
+        name: "clipboard-write",
+      });
     });
 
     it("should emit estimate when command center emits estimate", () => {

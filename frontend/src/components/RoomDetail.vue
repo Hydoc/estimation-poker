@@ -25,13 +25,21 @@ const emit = defineEmits<{
   (e: "leave"): void;
 }>();
 const showSnackbar = ref(false);
+const snackbarText = ref("");
 const roundIsFinished = computed(() => props.roundState === RoundState.End);
 const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
 const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 
-function copyRoomName() {
+async function copyRoomName() {
+  // @ts-ignore
+  const clipboardPermission = await navigator.permissions.query({ name: "clipboard-write" });
+  if (clipboardPermission.state === "granted") {
+    await navigator.clipboard.writeText(props.roomId);
+    snackbarText.value = "Raum in die Zwischenablage kopiert!";
+  } else {
+    snackbarText.value = "Konnte Raum nicht in die Zwischenablage kopieren";
+  }
   showSnackbar.value = true;
-  navigator.clipboard.writeText(props.roomId);
 }
 </script>
 
@@ -100,9 +108,7 @@ function copyRoomName() {
       </v-col>
     </v-row>
   </v-container>
-  <v-snackbar :timeout="3000" v-model="showSnackbar"
-    >Raum in die Zwischenablage kopiert!</v-snackbar
-  >
+  <v-snackbar :timeout="3000" v-model="showSnackbar">{{ snackbarText }}</v-snackbar>
 </template>
 
 <style scoped></style>
