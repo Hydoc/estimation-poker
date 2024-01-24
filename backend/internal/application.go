@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -76,15 +77,23 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 		"productOwnerList": {},
 		"developerList":    {},
 	}
+	var clients []*Client
 
 	for client := range app.hub.clients {
 		if client.RoomId == roomId {
-			if client.Role == Developer {
-				usersInRoom["developerList"] = append(usersInRoom["developerList"], client.toJson())
-			}
-			if client.Role == ProductOwner {
-				usersInRoom["productOwnerList"] = append(usersInRoom["productOwnerList"], client.toJson())
-			}
+			clients = append(clients, client)
+		}
+	}
+	sort.Slice(clients, func(i, j int) bool {
+		return clients[i].Name < clients[j].Name
+	})
+
+	for _, c := range clients {
+		switch c.Role {
+		case Developer:
+			usersInRoom["developerList"] = append(usersInRoom["developerList"], c.toJson())
+		case ProductOwner:
+			usersInRoom["productOwnerList"] = append(usersInRoom["productOwnerList"], c.toJson())
 		}
 	}
 	json.NewEncoder(writer).Encode(usersInRoom)

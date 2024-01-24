@@ -15,7 +15,7 @@ import (
 	"testing"
 )
 
-func TestApplication_HandleRoundInRoomInProgress(t *testing.T) {
+func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 	testSuites := []struct {
 		name        string
 		expectation map[string]bool
@@ -75,7 +75,7 @@ func TestApplication_HandleRoundInRoomInProgress(t *testing.T) {
 	}
 }
 
-func TestApplication_HandleUserInRoomExists(t *testing.T) {
+func TestApplication_handleUserInRoomExists(t *testing.T) {
 	client := &Client{
 		RoomId: "1",
 		Name:   "Test",
@@ -163,9 +163,12 @@ func TestApplication_HandleUserInRoomExists(t *testing.T) {
 	}
 }
 
-func TestApplication_HandleFetchUsers(t *testing.T) {
-	dev := newDeveloper("1", "Test", &Hub{}, &websocket.Conn{})
-	productOwner := newProductOwner("1", "Another one", &Hub{}, &websocket.Conn{})
+func TestApplication_handleFetchUsers(t *testing.T) {
+	dev := newDeveloper("1", "B", nil, nil)
+	otherDev := newDeveloper("1", "Another", nil, nil)
+	devWithEqualLetter := newDeveloper("1", "Also a dev", nil, nil)
+	productOwner := newProductOwner("1", "Another one", nil, nil)
+	otherProductOwner := newProductOwner("1", "Also a po", nil, nil)
 	productOwnerInDifferentRoom := &Client{Name: "Different Room", Role: ProductOwner, Guess: 0, RoomId: "different Room"}
 
 	testSuites := []struct {
@@ -179,11 +182,18 @@ func TestApplication_HandleFetchUsers(t *testing.T) {
 			roomId: "1",
 			clients: map[*Client]bool{
 				dev:                         true,
+				otherDev:                    true,
+				devWithEqualLetter:          true,
 				productOwner:                true,
+				otherProductOwner:           true,
 				productOwnerInDifferentRoom: true,
 			},
 			expectation: map[string][]userDTO{
 				"productOwnerList": {
+					{
+						"name": "Also a po",
+						"role": ProductOwner,
+					},
 					{
 						"name": "Another one",
 						"role": ProductOwner,
@@ -191,7 +201,17 @@ func TestApplication_HandleFetchUsers(t *testing.T) {
 				},
 				"developerList": {
 					{
-						"name":  "Test",
+						"name":  "Also a dev",
+						"guess": float64(0),
+						"role":  Developer,
+					},
+					{
+						"name":  "Another",
+						"guess": float64(0),
+						"role":  Developer,
+					},
+					{
+						"name":  "B",
 						"guess": float64(0),
 						"role":  Developer,
 					},
@@ -201,10 +221,43 @@ func TestApplication_HandleFetchUsers(t *testing.T) {
 		{
 			name:    "no clients",
 			roomId:  "1",
-			clients: make(map[*Client]bool),
+			clients: map[*Client]bool{},
 			expectation: map[string][]userDTO{
 				"productOwnerList": {},
 				"developerList":    {},
+			},
+		},
+		{
+			name:   "one dev client",
+			roomId: "1",
+			clients: map[*Client]bool{
+				dev: true,
+			},
+			expectation: map[string][]userDTO{
+				"productOwnerList": {},
+				"developerList": {
+					{
+						"name":  "B",
+						"guess": float64(0),
+						"role":  Developer,
+					},
+				},
+			},
+		},
+		{
+			name:   "one po client",
+			roomId: "1",
+			clients: map[*Client]bool{
+				productOwner: true,
+			},
+			expectation: map[string][]userDTO{
+				"productOwnerList": {
+					{
+						"name": "Another one",
+						"role": ProductOwner,
+					},
+				},
+				"developerList": {},
 			},
 		},
 	}
@@ -241,7 +294,7 @@ func TestApplication_HandleFetchUsers(t *testing.T) {
 	}
 }
 
-func TestApplication_HandleWs(t *testing.T) {
+func TestApplication_handleWs(t *testing.T) {
 	testSuites := []struct {
 		name           string
 		url            string
@@ -325,7 +378,7 @@ func TestApplication_HandleWs(t *testing.T) {
 	}
 }
 
-func TestApplication_HandleWs_UpgradingConnectionFailed(t *testing.T) {
+func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 	var logBuffer bytes.Buffer
 	log.SetOutput(&logBuffer)
 	defer func() {
