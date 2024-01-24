@@ -52,7 +52,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 		}
 
 		t.Run(suite.name, func(t *testing.T) {
-			upgrdr := websocket.Upgrader{}
+			upgrdr := &websocket.Upgrader{}
 			app := NewApplication(mux.NewRouter(), upgrdr, hub)
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
@@ -132,7 +132,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		}
 
 		t.Run(suite.name, func(t *testing.T) {
-			upgrdr := websocket.Upgrader{}
+			upgrdr := &websocket.Upgrader{}
 			app := NewApplication(mux.NewRouter(), upgrdr, hub)
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
@@ -271,7 +271,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				clients:       suite.clients,
 				rooms:         make(map[string]bool),
 			}
-			upgrdr := websocket.Upgrader{}
+			upgrdr := &websocket.Upgrader{}
 			app := NewApplication(mux.NewRouter(), upgrdr, hub)
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
@@ -341,7 +341,7 @@ func TestApplication_handleWs(t *testing.T) {
 				clients:       make(map[*Client]bool),
 				rooms:         make(map[string]bool),
 			}
-			upgrdr := websocket.Upgrader{}
+			upgrdr := &websocket.Upgrader{}
 			app := NewApplication(mux.NewRouter(), upgrdr, hub)
 			router := app.ConfigureRouting()
 
@@ -392,7 +392,7 @@ func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 		clients:       make(map[*Client]bool),
 		rooms:         make(map[string]bool),
 	}
-	app := NewApplication(mux.NewRouter(), websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
+	app := NewApplication(mux.NewRouter(), &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
 		return false
 	}}, hub)
 	router := app.ConfigureRouting()

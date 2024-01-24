@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	upgrader := websocket.Upgrader{
+	upgrader := &websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},

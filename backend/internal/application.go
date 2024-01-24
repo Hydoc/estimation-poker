@@ -12,7 +12,7 @@ import (
 
 type Application struct {
 	router   *mux.Router
-	upgrader websocket.Upgrader
+	upgrader *websocket.Upgrader
 	hub      *Hub
 }
 
@@ -130,7 +130,7 @@ func (app *Application) handleWs(hub *Hub, writer http.ResponseWriter, request *
 	go client.websocketWriter()
 }
 
-func NewApplication(router *mux.Router, upgrader websocket.Upgrader, hub *Hub) *Application {
+func NewApplication(router *mux.Router, upgrader *websocket.Upgrader, hub *Hub) *Application {
 	return &Application{
 		router:   router,
 		upgrader: upgrader,
