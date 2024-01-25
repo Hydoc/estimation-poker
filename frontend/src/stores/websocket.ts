@@ -9,6 +9,7 @@ type WebsocketStore = {
   disconnect(): void;
   resetRound(): void;
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
+  fetchActiveRooms(): Promise<string[]>;
   send(message: SendableWebsocketMessage): void;
   isRoundInRoomInProgress(roomId: string): Promise<boolean>;
   username: Ref<string>;
@@ -149,6 +150,10 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     usersInRoom.value = await response.json();
   }
 
+  async function fetchActiveRooms(): Promise<string[]> {
+    return (await fetch("/api/estimation/room/rooms")).json();
+  }
+
   return {
     connect,
     disconnect,
@@ -165,5 +170,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     guess,
     resetRound,
     showAllGuesses,
+    fetchActiveRooms,
   };
 });

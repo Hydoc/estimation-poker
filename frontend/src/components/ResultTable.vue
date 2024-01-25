@@ -11,7 +11,9 @@ type Props = {
 const props = defineProps<Props>();
 
 const averageGuess = computed(() => {
-  return Math.ceil(props.developerList.reduce((sum, dev) => sum + dev.guess, 0) / props.developerList.length);
+  return Math.ceil(
+    props.developerList.reduce((sum, dev) => sum + dev.guess, 0) / props.developerList.length,
+  );
 });
 </script>
 

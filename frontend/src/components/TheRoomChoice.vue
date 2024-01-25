@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, onMounted } from "vue";
 import type { Ref } from "vue";
 import { useWebsocketStore } from "@/stores/websocket";
 import { Role } from "@/components/types";
 import { useRouter } from "vue-router";
+import TheActiveRoomOverview from "@/components/TheActiveRoomOverview.vue";
+import RoomForm from "@/components/RoomForm.vue";
 
 const router = useRouter();
 const roomId = ref("");
 const name = ref("");
+const activeRooms: Ref<string[]> = ref([]);
 const role: Ref<Role> = ref(Role.Empty);
 const websocketStore = useWebsocketStore();
 const showUserAlreadyExists = ref(false);
@@ -42,13 +45,11 @@ async function connect() {
   await router.push("/room");
 }
 
-const isButtonEnabled = computed(
-  () => roomId.value !== "" && name.value !== "" && role.value !== "",
-);
+async function fetchActiveRooms() {
+  activeRooms.value = await websocketStore.fetchActiveRooms();
+}
 
-const textFieldRules = computed(() => [
-  (value: string) => !!value || "Fehler: Hier müsste eigentlich was stehen",
-]);
+onMounted(fetchActiveRooms);
 </script>
 
 <template>
@@ -59,32 +60,16 @@ const textFieldRules = computed(() => [
           <template #title> Ich brauche noch ein paar Informationen bevor es los geht </template>
           <v-card-text>
             <v-container>
-              <v-form :fast-fail="true" @submit.prevent="connect" validate-on="input">
-                <v-col>
-                  <v-text-field label="Raum ID" v-model="roomId" required :rules="textFieldRules" />
-                  <v-text-field label="Name" v-model="name" required :rules="textFieldRules" />
-                </v-col>
-
-                <v-radio-group label="Deine Rolle" v-model="role">
-                  <v-radio label="Product Owner" :value="Role.ProductOwner"></v-radio>
-                  <v-radio label="Entwickler" :value="Role.Developer"></v-radio>
-                </v-radio-group>
-
-                <v-col v-if="errorMessage !== ''">
-                  <v-alert color="error" :text="errorMessage" />
-                </v-col>
-
-                <v-col class="text-right">
-                  <v-btn
-                    type="submit"
-                    color="primary"
-                    prepend-icon="mdi-connection"
-                    class="mx-auto"
-                    :disabled="!isButtonEnabled"
-                    >Verbinden</v-btn
-                  >
-                </v-col>
-              </v-form>
+              <room-form
+                v-model:role="role"
+                v-model:name="name"
+                v-model:room-id="roomId"
+                :error-message="errorMessage"
+                @submit="connect"
+              />
+            </v-container>
+            <v-container v-if="activeRooms.length > 0">
+              <the-active-room-overview :active-rooms="activeRooms" />
             </v-container>
           </v-card-text>
         </v-card>

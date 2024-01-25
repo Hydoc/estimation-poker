@@ -51,7 +51,7 @@ describe("TheRoomChoice", () => {
       expect(wrapper.findComponent(VForm).props("fastFail")).to.be.true;
       expect(wrapper.findComponent(VForm).props("validateOn")).equal("input");
 
-      expect(wrapper.findAllComponents(VTextField).at(0).props("label")).equal("Raum ID");
+      expect(wrapper.findAllComponents(VTextField).at(0).props("label")).equal("Raum");
       expect(
         Object.keys(wrapper.findAllComponents(VTextField).at(0).find("input").attributes()),
       ).contains("required");

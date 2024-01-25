@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -26,6 +27,7 @@ func (app *Application) ConfigureRouting() *mux.Router {
 	app.router.HandleFunc("/api/estimation/room/{id}/users/exists", app.handleUserInRoomExists).Methods(http.MethodGet).Queries("name", "{name:.*}")
 	app.router.HandleFunc("/api/estimation/room/{id}/users", app.handleFetchUsers).Methods(http.MethodGet)
 	app.router.HandleFunc("/api/estimation/room/{id}/state", app.handleRoundInRoomInProgress).Methods(http.MethodGet)
+	app.router.HandleFunc("/api/estimation/room/rooms", app.handleFetchActiveRooms).Methods(http.MethodGet)
 	app.router.Use(app.contentTypeJsonMiddleware)
 	return app.router
 }
@@ -68,6 +70,16 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 	json.NewEncoder(writer).Encode(map[string]bool{
 		"exists": false,
 	})
+}
+
+func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
+	activeRooms := []string{}
+	for c := range app.hub.clients {
+		if !slices.Contains(activeRooms, c.RoomId) {
+			activeRooms = append(activeRooms, c.RoomId)
+		}
+	}
+	json.NewEncoder(writer).Encode(activeRooms)
 }
 
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
