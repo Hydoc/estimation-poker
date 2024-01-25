@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Developer } from "@/components/types";
+import { computed } from "vue";
 
 type Props = {
   developerList: Developer[];
@@ -8,6 +9,10 @@ type Props = {
 };
 
 const props = defineProps<Props>();
+
+const averageGuess = computed(() => {
+  return Math.ceil(props.developerList.reduce((sum, dev) => sum + dev.guess, 0) / props.developerList.length);
+});
 </script>
 
 <template>
@@ -29,8 +34,16 @@ const props = defineProps<Props>();
           <span v-if="props.showAllGuesses">{{ developer.guess }}</span>
         </td>
       </tr>
+      <tr v-if="props.showAllGuesses">
+        <td class="font-weight-500">Durchschnitt</td>
+        <td class="font-weight-500">{{ averageGuess }}</td>
+      </tr>
     </tbody>
   </v-table>
 </template>
 
-<style scoped></style>
+<style scoped>
+.font-weight-500 {
+  font-weight: 500;
+}
+</style>

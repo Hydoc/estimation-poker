@@ -69,7 +69,7 @@ describe("ResultTable", () => {
       ).equal("green");
     });
 
-    it("should render all guesses as text when show all guesses = true", () => {
+    it("should render all guesses and average as text when show all guesses = true", () => {
       const wrapper = mount(ResultTable, {
         props: {
           developerList: [
@@ -86,6 +86,8 @@ describe("ResultTable", () => {
 
       expect(wrapper.findAll("tbody tr").at(0).findAll("td").at(1).text()).equal("2");
       expect(wrapper.findAll("tbody tr").at(1).findAll("td").at(1).text()).equal("1");
+      expect(wrapper.findAll("tbody tr").at(2).findAll("td").at(0).text()).equal("Durchschnitt");
+      expect(wrapper.findAll("tbody tr").at(2).findAll("td").at(1).text()).equal("2");
     });
   });
 });
