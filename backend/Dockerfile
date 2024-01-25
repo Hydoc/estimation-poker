@@ -1,4 +1,4 @@
-FROM golang:1.21.6 as base
+FROM golang:1.21.6-alpine as base
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -8,7 +8,9 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 
-FROM base as prod
+FROM alpine:latest as prod
+
+COPY --from=base /server /server
 
 CMD ["/server"]
 
