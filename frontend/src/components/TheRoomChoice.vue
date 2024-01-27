@@ -15,6 +15,7 @@ const role: Ref<Role> = ref(Role.Empty);
 const websocketStore = useWebsocketStore();
 const showUserAlreadyExists = ref(false);
 const showRoundIsInProgress = ref(false);
+const roomOverviewErrorMessage = ref("");
 const errorMessage = computed(() => {
   if (showUserAlreadyExists.value) {
     return "Ein Benutzer mit diesem Namen existiert in dem Raum bereits.";
@@ -26,6 +27,23 @@ const errorMessage = computed(() => {
 
   return "";
 });
+
+async function join(roomToJoin: string, passedName: string, passedRole: Role) {
+  roomOverviewErrorMessage.value = "";
+  const roundInRoomInProgress = await websocketStore.isRoundInRoomInProgress(roomToJoin);
+  if (roundInRoomInProgress) {
+    roomOverviewErrorMessage.value = "Die Runde in diesem Raum hat bereits begonnen.";
+    return;
+  }
+
+  const userAlreadyExistsInRoom = await websocketStore.userExistsInRoom(passedName, roomToJoin);
+  if (userAlreadyExistsInRoom) {
+    roomOverviewErrorMessage.value = "Ein Benutzer mit diesem Namen existiert in dem Raum bereits.";
+    return;
+  }
+  websocketStore.connect(passedName, passedRole, roomToJoin);
+  await router.push("/room");
+}
 
 async function connect() {
   showUserAlreadyExists.value = false;
@@ -69,7 +87,11 @@ onMounted(fetchActiveRooms);
               />
             </v-container>
             <v-container v-if="activeRooms.length > 0">
-              <the-active-room-overview :active-rooms="activeRooms" />
+              <the-active-room-overview
+                :active-rooms="activeRooms"
+                :error-message="roomOverviewErrorMessage"
+                @join="join"
+              />
             </v-container>
           </v-card-text>
         </v-card>

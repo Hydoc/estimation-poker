@@ -3,24 +3,24 @@ import { Role } from "@/components/types";
 import { computed } from "vue";
 
 type Props = {
-  name: string;
-  roomId: string;
-  role: Role;
-  errorMessage: string | null;
+  errorMessage?: string | null;
+  isRoomIdDisabled?: boolean;
 };
+
+const name = defineModel("name", { required: true, default: "" });
+const roomId = defineModel("roomId", { required: true, default: "" });
+const role = defineModel("role", { required: true, default: Role.Empty });
 
 const props = withDefaults(defineProps<Props>(), {
   errorMessage: null,
+  isRoomIdDisabled: false,
 });
 const emit = defineEmits<{
-  (e: "update:name", value: string): void;
-  (e: "update:roomId", value: string): void;
-  (e: "update:role", value: Role): void;
   (e: "submit"): void;
 }>();
 
 const isButtonEnabled = computed(
-  () => props.roomId !== "" && props.name !== "" && props.role !== "",
+  () => roomId.value !== "" && name.value !== "" && role.value !== "",
 );
 
 const textFieldRules = computed(() => [
@@ -32,32 +32,22 @@ const textFieldRules = computed(() => [
   <v-form :fast-fail="true" @submit.prevent="emit('submit')" validate-on="input">
     <v-col>
       <v-text-field
+        :disabled="props.isRoomIdDisabled"
         label="Raum"
-        :model-value="props.roomId"
-        @update:modelValue="emit('update:roomId', $event)"
+        v-model="roomId"
         required
         :rules="textFieldRules"
       />
-      <v-text-field
-        label="Name"
-        :model-value="props.name"
-        @update:modelValue="emit('update:name', $event)"
-        required
-        :rules="textFieldRules"
-      />
+      <v-text-field label="Name" v-model="name" required :rules="textFieldRules" />
     </v-col>
 
-    <v-radio-group
-      label="Deine Rolle"
-      :model-value="props.role"
-      @update:modelValue="emit('update:role', $event)"
-    >
+    <v-radio-group label="Deine Rolle" v-model="role">
       <v-radio label="Product Owner" :value="Role.ProductOwner"></v-radio>
       <v-radio label="Entwickler" :value="Role.Developer"></v-radio>
     </v-radio-group>
 
-    <v-col v-if="errorMessage !== ''">
-      <v-alert color="error" :text="errorMessage" />
+    <v-col v-if="props.errorMessage !== '' && props.errorMessage !== null">
+      <v-alert color="error" :text="props.errorMessage" />
     </v-col>
 
     <v-col class="text-right">

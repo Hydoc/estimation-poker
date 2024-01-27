@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { type Ref, ref } from "vue";
 import RoomForm from "@/components/RoomForm.vue";
+import { Role } from "@/components/types";
 
 type Props = {
   activeRooms: string[];
+  errorMessage?: string | null;
 };
 
-const props = defineProps<Props>();
+const name = ref("");
+const role: Ref<Role> = ref(Role.Empty);
+
+const props = withDefaults(defineProps<Props>(), {
+  errorMessage: null,
+});
 const emit = defineEmits<{
-  (e: "join", name: string, role: string): void;
+  (e: "join", roomId: string, name: string, role: Role): void;
 }>();
 
 const roomToJoin = ref("");
@@ -22,11 +29,17 @@ function showDialogForRoom(room: string) {
 
 <template>
   <v-sheet>
-    <v-dialog v-model="showDialog" width="auto">
-      <v-card title="Zu faul den Raum abzutippen? Na gut.">
+    <v-dialog v-model="showDialog" width="500">
+      <v-card title="Raum beitreten">
         <v-card-text>
-          {{ roomToJoin }}
-          <room-form role="" name="" room-id="" />
+          <room-form
+            :is-room-id-disabled="true"
+            v-model:role="role"
+            v-model:name="name"
+            :room-id="roomToJoin"
+            :error-message="props.errorMessage"
+            @submit="emit('join', roomToJoin, name, role)"
+          />
         </v-card-text>
       </v-card>
     </v-dialog>
@@ -43,7 +56,9 @@ function showDialogForRoom(room: string) {
         <tr v-for="room in props.activeRooms" :key="room">
           <td>{{ room }}</td>
           <td class="text-right">
-            <v-btn append-icon="mdi-location-enter" @click="showDialogForRoom(room)">Beitreten</v-btn>
+            <v-btn append-icon="mdi-location-enter" @click="showDialogForRoom(room)"
+              >Beitreten</v-btn
+            >
           </td>
         </tr>
       </tbody>
