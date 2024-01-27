@@ -79,6 +79,7 @@ func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 			activeRooms = append(activeRooms, c.RoomId)
 		}
 	}
+	slices.Sort(activeRooms)
 	json.NewEncoder(writer).Encode(activeRooms)
 }
 

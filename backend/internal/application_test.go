@@ -408,3 +408,48 @@ func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 		t.Errorf("expected to log %v, got %v", wantLog, logBuffer.String())
 	}
 }
+
+func TestApplication_handleFetchActiveRooms(t *testing.T) {
+	tests := []struct {
+		name    string
+		clients map[*Client]bool
+		want    []string
+	}{
+		{
+			name: "with multiple active rooms",
+			clients: map[*Client]bool{
+				&Client{RoomId: "Blub"}: true,
+				&Client{RoomId: "Blub"}: true,
+				&Client{RoomId: "Test"}: true,
+			},
+			want: []string{"Blub", "Test"},
+		},
+		{
+			name:    "no rooms",
+			clients: map[*Client]bool{},
+			want:    []string{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			hub := &Hub{
+				clients: test.clients,
+			}
+
+			app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, hub)
+			router := app.ConfigureRouting()
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/api/estimation/room/rooms", nil)
+
+			router.ServeHTTP(recorder, request)
+
+			var got []string
+			json.Unmarshal(recorder.Body.Bytes(), &got)
+
+			if !reflect.DeepEqual(test.want, got) {
+				t.Errorf("want %v, got %v", test.want, got)
+			}
+		})
+	}
+}
