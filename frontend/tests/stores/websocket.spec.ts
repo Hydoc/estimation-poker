@@ -308,4 +308,14 @@ describe("Websocket Store", () => {
     expect(actual).to.be.true;
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Blub/state");
   });
+
+  it("should fetch active rooms", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: () => ["Test room"],
+    });
+    const websocketStore = useWebsocketStore();
+    const actual = await websocketStore.fetchActiveRooms();
+    expect(actual).deep.equal(["Test room"]);
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/rooms");
+  });
 });

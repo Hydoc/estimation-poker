@@ -6,10 +6,12 @@ import * as directives from "vuetify/directives";
 import { useRouter } from "vue-router";
 import TheRoomChoice from "../../src/components/TheRoomChoice.vue";
 import { createTestingPinia, TestingPinia } from "@pinia/testing";
-import { VAlert, VBtn, VCard, VForm, VRadio, VRadioGroup, VTextField } from "vuetify/components";
+import { VCard } from "vuetify/components";
 import { Role } from "../../src/components/types";
 import { nextTick } from "vue";
 import { useWebsocketStore } from "../../src/stores/websocket";
+import RoomForm from "../../src/components/RoomForm.vue";
+import TheActiveRoomOverview from "../../src/components/TheActiveRoomOverview.vue";
 
 vi.mock("vue-router");
 
@@ -27,6 +29,7 @@ beforeEach(() => {
   websocketStore = useWebsocketStore(pinia);
   websocketStore.userExistsInRoom = vi.fn().mockResolvedValue(false);
   websocketStore.isRoundInRoomInProgress = vi.fn().mockResolvedValue(false);
+  websocketStore.fetchActiveRooms = vi.fn().mockResolvedValue([]);
 
   (useRouter as Mock).mockReturnValue({
     push: vi.fn(),
@@ -37,7 +40,7 @@ describe("TheRoomChoice", () => {
     it("should render", () => {
       const wrapper = mount(TheRoomChoice, {
         global: {
-          plugins: [vuetify, createTestingPinia()],
+          plugins: [vuetify, pinia],
         },
       });
 
@@ -47,94 +50,44 @@ describe("TheRoomChoice", () => {
         "Ich brauche noch ein paar Informationen bevor es los geht",
       );
 
-      expect(wrapper.findComponent(VForm).exists()).to.be.true;
-      expect(wrapper.findComponent(VForm).props("fastFail")).to.be.true;
-      expect(wrapper.findComponent(VForm).props("validateOn")).equal("input");
+      expect(wrapper.findComponent(RoomForm).exists()).to.be.true;
+      expect(wrapper.findComponent(TheActiveRoomOverview).exists()).to.be.false;
+    });
 
-      expect(wrapper.findAllComponents(VTextField).at(0).props("label")).equal("Raum ID");
-      expect(
-        Object.keys(wrapper.findAllComponents(VTextField).at(0).find("input").attributes()),
-      ).contains("required");
-      expect(wrapper.findAllComponents(VTextField).at(1).props("label")).equal("Name");
-      expect(
-        Object.keys(wrapper.findAllComponents(VTextField).at(0).find("input").attributes()),
-      ).contains("required");
+    it("should render room overview when active rooms are found", async () => {
+      websocketStore.fetchActiveRooms = vi.fn().mockResolvedValue(["Hello"]);
+      const wrapper = mount(TheRoomChoice, {
+        global: {
+          plugins: [vuetify, pinia],
+        },
+      });
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
 
-      expect(wrapper.findComponent(VRadioGroup).exists()).to.be.true;
-      expect(wrapper.findComponent(VRadioGroup).props("label")).equal("Deine Rolle");
-      expect(
-        wrapper.findComponent(VRadioGroup).findAllComponents(VRadio).at(0).props("label"),
-      ).equal("Product Owner");
-      expect(
-        wrapper.findComponent(VRadioGroup).findAllComponents(VRadio).at(0).props("value"),
-      ).equal(Role.ProductOwner);
-      expect(
-        wrapper.findComponent(VRadioGroup).findAllComponents(VRadio).at(1).props("label"),
-      ).equal("Entwickler");
-      expect(
-        wrapper.findComponent(VRadioGroup).findAllComponents(VRadio).at(1).props("value"),
-      ).equal(Role.Developer);
-
-      expect(wrapper.findComponent(VAlert).exists()).to.be.false;
-
-      expect(wrapper.findComponent(VBtn).exists()).to.be.true;
-      expect(wrapper.findComponent(VBtn).text()).equal("Verbinden");
-      expect(wrapper.findComponent(VBtn).find("button").attributes("type")).equal("submit");
-      expect(wrapper.findComponent(VBtn).props("color")).equal("primary");
-      expect(wrapper.findComponent(VBtn).props("prependIcon")).equal("mdi-connection");
-      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
+      expect(wrapper.findComponent(TheActiveRoomOverview).exists()).to.be.true;
+      expect(wrapper.findComponent(TheActiveRoomOverview).props("activeRooms")).deep.equal([
+        "Hello",
+      ]);
     });
   });
 
   describe("functionality", () => {
-    it("should enable button when everything is valid", async () => {
-      const wrapper = mount(TheRoomChoice, {
-        global: {
-          plugins: [vuetify, createTestingPinia()],
-        },
-      });
-      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
-
-      await wrapper.findAllComponents(VTextField).at(0).setValue("Blub");
-      await wrapper.findAllComponents(VTextField).at(1).setValue("My name");
-      await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
-
-      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.false;
-    });
-
-    it("should show validation messages when fields are cleared", async () => {
-      const wrapper = mount(TheRoomChoice, {
-        global: {
-          plugins: [vuetify, createTestingPinia()],
-        },
-      });
-
-      await wrapper.findAllComponents(VTextField).at(0).setValue("test");
-      await wrapper.findAllComponents(VTextField).at(0).setValue("");
-      await nextTick();
-      expect(wrapper.findAllComponents(VTextField).at(0).text()).contains(
-        "Fehler: Hier müsste eigentlich was stehen",
-      );
-
-      await wrapper.findAllComponents(VTextField).at(1).setValue("test 2");
-      await wrapper.findAllComponents(VTextField).at(1).setValue("");
-      await nextTick();
-      expect(wrapper.findAllComponents(VTextField).at(1).text()).contains(
-        "Fehler: Hier müsste eigentlich was stehen",
-      );
-    });
-
-    it("should connect when connect is clicked with everything valid", async () => {
+    it("should connect when submit was emitted", async () => {
       const wrapper = mount(TheRoomChoice, {
         global: {
           plugins: [vuetify, pinia],
         },
       });
 
-      await wrapper.findAllComponents(VTextField).at(0).setValue("test");
-      await wrapper.findAllComponents(VTextField).at(1).setValue("my name");
-      await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
-      await wrapper.findComponent(VBtn).trigger("submit");
+      wrapper.vm.role = Role.Developer;
+      wrapper.vm.name = "my name";
+      wrapper.vm.roomId = "test";
+
+      await wrapper.findComponent(RoomForm).vm.$emit("submit");
+      await nextTick();
+      await nextTick();
       await nextTick();
       await nextTick();
       await nextTick();
@@ -152,19 +105,18 @@ describe("TheRoomChoice", () => {
         },
       });
 
-      await wrapper.findAllComponents(VTextField).at(0).setValue("test");
-      await wrapper.findAllComponents(VTextField).at(1).setValue("my name");
-      await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
-      await wrapper.findComponent(VBtn).trigger("submit");
+      wrapper.vm.role = Role.Developer;
+      wrapper.vm.name = "my name";
+      wrapper.vm.roomId = "test";
+      await wrapper.findComponent(RoomForm).vm.$emit("submit");
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
 
-      await nextTick();
-      await nextTick();
-      await nextTick();
-      await nextTick();
-
-      expect(wrapper.findComponent(VAlert).exists()).to.be.true;
-      expect(wrapper.findComponent(VAlert).props("color")).equal("error");
-      expect(wrapper.findComponent(VAlert).props("text")).equal(
+      expect(wrapper.findComponent(RoomForm).props("errorMessage")).equal(
         "Ein Benutzer mit diesem Namen existiert in dem Raum bereits.",
       );
 
@@ -181,19 +133,106 @@ describe("TheRoomChoice", () => {
         },
       });
 
-      await wrapper.findAllComponents(VTextField).at(0).setValue("test");
-      await wrapper.findAllComponents(VTextField).at(1).setValue("my name");
-      await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
-      await wrapper.findComponent(VBtn).trigger("submit");
-
+      wrapper.vm.role = Role.Developer;
+      wrapper.vm.name = "my name";
+      wrapper.vm.roomId = "test";
+      await wrapper.findComponent(RoomForm).vm.$emit("submit");
       await nextTick();
       await nextTick();
       await nextTick();
       await nextTick();
 
-      expect(wrapper.findComponent(VAlert).exists()).to.be.true;
-      expect(wrapper.findComponent(VAlert).props("color")).equal("error");
-      expect(wrapper.findComponent(VAlert).props("text")).equal(
+      expect(wrapper.findComponent(RoomForm).props("errorMessage")).equal(
+        "Die Runde in diesem Raum hat bereits begonnen.",
+      );
+
+      expect(useRouter().push).not.toHaveBeenCalled();
+      expect(websocketStore.isRoundInRoomInProgress).toHaveBeenNthCalledWith(1, "test");
+      expect(websocketStore.connect).not.toHaveBeenCalled();
+    });
+
+    it("should join when room overview emits join", async () => {
+      websocketStore.fetchActiveRooms = vi.fn().mockResolvedValue(["Hello"]);
+      const wrapper = mount(TheRoomChoice, {
+        global: {
+          plugins: [vuetify, pinia],
+        },
+      });
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      await wrapper
+        .findComponent(TheActiveRoomOverview)
+        .vm.$emit("join", "test", "my name", Role.Developer);
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
+      expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
+      expect(websocketStore.connect).toHaveBeenNthCalledWith(1, "my name", "developer", "test");
+    });
+
+    it("should show error when trying to join but user in room already exists", async () => {
+      websocketStore.userExistsInRoom = vi.fn().mockResolvedValue(true);
+      websocketStore.fetchActiveRooms = vi.fn().mockResolvedValue(["Hello"]);
+      const wrapper = mount(TheRoomChoice, {
+        global: {
+          plugins: [vuetify, pinia],
+        },
+      });
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      await wrapper
+        .findComponent(TheActiveRoomOverview)
+        .vm.$emit("join", "test", "my name", Role.Developer);
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      expect(wrapper.findComponent(TheActiveRoomOverview).props("errorMessage")).equal(
+        "Ein Benutzer mit diesem Namen existiert in dem Raum bereits.",
+      );
+
+      expect(useRouter().push).not.toHaveBeenCalled();
+      expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
+      expect(websocketStore.connect).not.toHaveBeenCalled();
+    });
+
+    it("should show error when round in room is in progress while trying to join", async () => {
+      websocketStore.isRoundInRoomInProgress = vi.fn().mockResolvedValue(true);
+      websocketStore.fetchActiveRooms = vi.fn().mockResolvedValue(["Hello"]);
+      const wrapper = mount(TheRoomChoice, {
+        global: {
+          plugins: [vuetify, pinia],
+        },
+      });
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      await wrapper
+        .findComponent(TheActiveRoomOverview)
+        .vm.$emit("join", "test", "my name", Role.Developer);
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      expect(wrapper.findComponent(TheActiveRoomOverview).props("errorMessage")).equal(
         "Die Runde in diesem Raum hat bereits begonnen.",
       );
 
