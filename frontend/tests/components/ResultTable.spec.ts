@@ -74,7 +74,10 @@ describe("ResultTable", () => {
         props: {
           developerList: [
             { name: "test", guess: 2, role: Role.Developer },
-            { name: "another", guess: 1, role: Role.Developer },
+            { name: "another 1", guess: 1, role: Role.Developer },
+            { name: "another 2", guess: 1, role: Role.Developer },
+            { name: "another 3", guess: 1, role: Role.Developer },
+            { name: "another 4", guess: 2, role: Role.Developer },
           ],
           showAllGuesses: true,
           roundIsFinished: false,
@@ -86,8 +89,11 @@ describe("ResultTable", () => {
 
       expect(wrapper.findAll("tbody tr").at(0).findAll("td").at(1).text()).equal("2");
       expect(wrapper.findAll("tbody tr").at(1).findAll("td").at(1).text()).equal("1");
-      expect(wrapper.findAll("tbody tr").at(2).findAll("td").at(0).text()).equal("Durchschnitt");
-      expect(wrapper.findAll("tbody tr").at(2).findAll("td").at(1).text()).equal("2");
+      expect(wrapper.findAll("tbody tr").at(2).findAll("td").at(1).text()).equal("1");
+      expect(wrapper.findAll("tbody tr").at(3).findAll("td").at(1).text()).equal("1");
+      expect(wrapper.findAll("tbody tr").at(4).findAll("td").at(1).text()).equal("2");
+      expect(wrapper.findAll("tbody tr").at(5).findAll("td").at(0).text()).equal("Durchschnitt");
+      expect(wrapper.findAll("tbody tr").at(5).findAll("td").at(1).text()).equal("1");
     });
   });
 });
