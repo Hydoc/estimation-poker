@@ -8,5 +8,3 @@ This project idea was born during a Dev-Meeting. It is a web interface with a we
 ## Why?
 Because why not. I made it in the process of learning Go
 
-## Can I use it?
-Yes. But it's german only and the numbers we estimate are a bit different. Maybe I adjust that in the future *cough*
