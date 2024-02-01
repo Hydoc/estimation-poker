@@ -53,7 +53,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 
 		t.Run(suite.name, func(t *testing.T) {
 			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub)
+			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/state", suite.room), nil)
@@ -133,7 +133,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 
 		t.Run(suite.name, func(t *testing.T) {
 			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub)
+			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, suite.url, nil)
@@ -272,7 +272,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				rooms:         make(map[string]bool),
 			}
 			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub)
+			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/users", suite.roomId), nil)
@@ -342,7 +342,7 @@ func TestApplication_handleWs(t *testing.T) {
 				rooms:         make(map[string]bool),
 			}
 			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub)
+			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
 			router := app.ConfigureRouting()
 
 			server := httptest.NewServer(router)
@@ -394,7 +394,7 @@ func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 	}
 	app := NewApplication(mux.NewRouter(), &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
 		return false
-	}}, hub)
+	}}, hub, &GuessConfig{})
 	router := app.ConfigureRouting()
 
 	server := httptest.NewServer(router)
@@ -437,7 +437,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 				clients: test.clients,
 			}
 
-			app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, hub)
+			app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, hub, &GuessConfig{})
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/room/rooms", nil)
@@ -445,6 +445,82 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 			router.ServeHTTP(recorder, request)
 
 			var got []string
+			json.Unmarshal(recorder.Body.Bytes(), &got)
+
+			if !reflect.DeepEqual(test.want, got) {
+				t.Errorf("want %v, got %v", test.want, got)
+			}
+		})
+	}
+}
+
+func TestApplication_handlePossibleGuesses(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *GuessConfig
+		want   []map[string]interface{}
+	}{
+		{
+			name: "multiple guesses",
+			config: &GuessConfig{
+				Guesses: []guessConfigEntry{
+					{
+						Guess:       1,
+						Description: "Test 1",
+					},
+					{
+						Guess:       3,
+						Description: "Test 3",
+					},
+				},
+			},
+			want: []map[string]interface{}{
+				{
+					"guess":       float64(1),
+					"description": "Test 1",
+				},
+				{
+					"guess":       float64(3),
+					"description": "Test 3",
+				},
+			},
+		},
+		{
+			name: "one guess",
+			config: &GuessConfig{
+				Guesses: []guessConfigEntry{
+					{
+						Guess:       1,
+						Description: "Test 1",
+					},
+				},
+			},
+			want: []map[string]interface{}{
+				{
+					"guess":       float64(1),
+					"description": "Test 1",
+				},
+			},
+		},
+		{
+			name: "no guess",
+			config: &GuessConfig{
+				Guesses: make([]guessConfigEntry, 0),
+			},
+			want: make([]map[string]interface{}, 0),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, nil, test.config)
+			router := app.ConfigureRouting()
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
+
+			router.ServeHTTP(recorder, request)
+
+			var got []map[string]interface{}
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			if !reflect.DeepEqual(test.want, got) {

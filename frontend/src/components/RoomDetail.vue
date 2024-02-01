@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Role, RoundState, type UserOverview } from "@/components/types";
+import { PossibleGuess, Role, RoundState, type UserOverview } from "@/components/types";
 import UserBox from "@/components/UserBox.vue";
 import CommandCenter from "@/components/CommandCenter.vue";
 import { computed, ref } from "vue";
@@ -14,6 +14,7 @@ type Props = {
   ticketToGuess: string;
   guess: number;
   showAllGuesses: boolean;
+  possibleGuesses: PossibleGuess[];
 };
 
 const props = defineProps<Props>();
@@ -102,6 +103,7 @@ async function copyRoomName() {
           :guess="props.guess"
           :ticket-to-guess="props.ticketToGuess"
           :has-developers-in-room="props.usersInRoom.developerList.length > 0"
+          :possible-guesses="props.possibleGuesses"
           @estimate="emit('estimate', $event)"
           @guess="emit('guess', $event)"
         />

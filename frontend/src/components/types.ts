@@ -27,3 +27,8 @@ export enum RoundState {
   InProgress,
   End,
 }
+
+export type PossibleGuess = {
+  guess: number;
+  description: string;
+};

@@ -12,9 +12,10 @@ import (
 )
 
 type Application struct {
-	router   *mux.Router
-	upgrader *websocket.Upgrader
-	hub      *Hub
+	router      *mux.Router
+	upgrader    *websocket.Upgrader
+	hub         *Hub
+	guessConfig *GuessConfig
 }
 
 func (app *Application) ConfigureRouting() *mux.Router {
@@ -28,8 +29,13 @@ func (app *Application) ConfigureRouting() *mux.Router {
 	app.router.HandleFunc("/api/estimation/room/{id}/users", app.handleFetchUsers).Methods(http.MethodGet)
 	app.router.HandleFunc("/api/estimation/room/{id}/state", app.handleRoundInRoomInProgress).Methods(http.MethodGet)
 	app.router.HandleFunc("/api/estimation/room/rooms", app.handleFetchActiveRooms).Methods(http.MethodGet)
+	app.router.HandleFunc("/api/estimation/possible-guesses", app.handlePossibleGuesses).Methods(http.MethodGet)
 	app.router.Use(app.contentTypeJsonMiddleware)
 	return app.router
+}
+
+func (app *Application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
+	json.NewEncoder(writer).Encode(app.guessConfig.Guesses)
 }
 
 func (app *Application) contentTypeJsonMiddleware(next http.Handler) http.Handler {
@@ -143,10 +149,11 @@ func (app *Application) handleWs(hub *Hub, writer http.ResponseWriter, request *
 	go client.websocketWriter()
 }
 
-func NewApplication(router *mux.Router, upgrader *websocket.Upgrader, hub *Hub) *Application {
+func NewApplication(router *mux.Router, upgrader *websocket.Upgrader, hub *Hub, config *GuessConfig) *Application {
 	return &Application{
-		router:   router,
-		upgrader: upgrader,
-		hub:      hub,
+		router:      router,
+		upgrader:    upgrader,
+		hub:         hub,
+		guessConfig: config,
 	}
 }

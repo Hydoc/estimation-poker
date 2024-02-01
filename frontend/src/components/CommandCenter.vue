@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Role, RoundState } from "@/components/types";
+import { PossibleGuess, Role, RoundState } from "@/components/types";
 import DeveloperCommandCenter from "@/components/DeveloperCommandCenter.vue";
 import { computed } from "vue";
 import ProductOwnerCommandCenter from "@/components/ProductOwnerCommandCenter.vue";
@@ -10,6 +10,7 @@ type Props = {
   guess: number;
   ticketToGuess: string;
   hasDevelopersInRoom: boolean;
+  possibleGuesses: PossibleGuess[];
 };
 
 const props = defineProps<Props>();
@@ -29,6 +30,7 @@ const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
     v-if="isDeveloper"
     :did-guess="didGuess"
     :has-ticket-to-guess="hasTicketToGuess"
+    :possible-guesses="props.possibleGuesses"
     @guess="emit('guess', $event)"
   />
   <product-owner-command-center

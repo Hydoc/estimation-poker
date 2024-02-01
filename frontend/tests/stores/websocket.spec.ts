@@ -318,4 +318,37 @@ describe("Websocket Store", () => {
     expect(actual).deep.equal(["Test room"]);
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/rooms");
   });
+
+  it("should fetch possible guesses", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => [
+        { guess: 1, description: "Bis zu 4 Std." },
+        { guess: 2, description: "Bis zu 8 Std." },
+        { guess: 3, description: "Bis zu 3 Tagen" },
+        { guess: 4, description: "Bis zu 5 Tagen" },
+        { guess: 5, description: "Mehr als 5 Tage" },
+      ],
+    });
+    const websocketStore = useWebsocketStore();
+    await websocketStore.fetchPossibleGuesses();
+    expect(websocketStore.possibleGuesses).deep.equal([
+      { guess: 1, description: "Bis zu 4 Std." },
+      { guess: 2, description: "Bis zu 8 Std." },
+      { guess: 3, description: "Bis zu 3 Tagen" },
+      { guess: 4, description: "Bis zu 5 Tagen" },
+      { guess: 5, description: "Mehr als 5 Tage" },
+    ]);
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/possible-guesses");
+  });
+
+  it("should reset possible guesses when error occurred", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+    });
+    const websocketStore = useWebsocketStore();
+    await websocketStore.fetchPossibleGuesses();
+    expect(websocketStore.possibleGuesses).deep.equal([]);
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/possible-guesses");
+  });
 });

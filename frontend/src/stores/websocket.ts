@@ -1,7 +1,7 @@
 import type { Ref } from "vue";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import type { UserOverview } from "@/components/types";
+import { type PossibleGuess, type UserOverview } from "@/components/types";
 import { Role, RoundState } from "@/components/types";
 
 type WebsocketStore = {
@@ -12,6 +12,7 @@ type WebsocketStore = {
   fetchActiveRooms(): Promise<string[]>;
   send(message: SendableWebsocketMessage): void;
   isRoundInRoomInProgress(roomId: string): Promise<boolean>;
+  fetchPossibleGuesses(): Promise<void>;
   username: Ref<string>;
   isConnected: Ref<boolean>;
   usersInRoom: Ref<UserOverview>;
@@ -21,6 +22,7 @@ type WebsocketStore = {
   ticketToGuess: Ref<string>;
   guess: Ref<number>;
   showAllGuesses: Ref<boolean>;
+  possibleGuesses: Ref<PossibleGuess[]>;
 };
 
 export type SendableWebsocketMessageType = "estimate" | "guess" | "reveal" | "new-round";
@@ -56,6 +58,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const ticketToGuess = ref("");
   const guess = ref(0);
   const showAllGuesses = ref(false);
+  const possibleGuesses: Ref<PossibleGuess[]> = ref([]);
 
   const isConnected = computed(() => websocket.value !== null);
 
@@ -154,6 +157,16 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     return (await fetch("/api/estimation/room/rooms")).json();
   }
 
+  async function fetchPossibleGuesses() {
+    const response = await fetch("/api/estimation/possible-guesses");
+    if (!response.ok) {
+      possibleGuesses.value = [];
+      return;
+    }
+
+    possibleGuesses.value = await response.json();
+  }
+
   return {
     connect,
     disconnect,
@@ -161,6 +174,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     usersInRoom,
     isRoundInRoomInProgress,
     roomId: userRoomId,
+    possibleGuesses,
     username,
     userExistsInRoom,
     userRole,
@@ -171,5 +185,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     resetRound,
     showAllGuesses,
     fetchActiveRooms,
+    fetchPossibleGuesses,
   };
 });

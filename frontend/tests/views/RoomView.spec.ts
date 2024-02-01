@@ -31,6 +31,13 @@ beforeEach(() => {
     productOwnerList: [{ name: "test po", role: "product-owner" }],
     developerList: [{ name: "test dev", role: "developer", guess: 0 }],
   };
+  websocketStore.possibleGuesses = [
+    { guess: 1, description: "Bis zu 4 Std." },
+    { guess: 2, description: "Bis zu 8 Std." },
+    { guess: 3, description: "Bis zu 3 Tagen" },
+    { guess: 4, description: "Bis zu 5 Tagen" },
+    { guess: 5, description: "Mehr als 5 Tage" },
+  ];
 });
 describe("RoomView", () => {
   describe("rendering", () => {
@@ -64,6 +71,16 @@ describe("RoomView", () => {
   });
 
   describe("functionality", () => {
+    it("should fetch possible guesses on mounted", () => {
+      shallowMount(RoomView, {
+        global: {
+          plugins: [pinia],
+        },
+      });
+
+      expect(websocketStore.fetchPossibleGuesses).toHaveBeenCalledOnce();
+    });
+
     it("should push to home when user is not connected", () => {
       websocketStore.isConnected = false;
       shallowMount(RoomView, {

@@ -2,7 +2,7 @@
 import { type SendableWebsocketMessageType, useWebsocketStore } from "@/stores/websocket";
 import { useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 
 const websocketStore = useWebsocketStore();
 const router = useRouter();
@@ -17,6 +17,7 @@ const roundState = computed(() => websocketStore.roundState);
 const ticketToGuess = computed(() => websocketStore.ticketToGuess);
 const guess = computed(() => websocketStore.guess);
 const showAllGuesses = computed(() => websocketStore.showAllGuesses);
+const possibleGuesses = computed(() => websocketStore.possibleGuesses);
 
 function sendMessage(type: SendableWebsocketMessageType, data: string | number | null) {
   websocketStore.send({ type, data });
@@ -26,6 +27,8 @@ function leaveRoom() {
   websocketStore.disconnect();
   router.push("/");
 }
+
+onMounted(websocketStore.fetchPossibleGuesses);
 </script>
 
 <template>
@@ -38,6 +41,7 @@ function leaveRoom() {
     :ticket-to-guess="ticketToGuess"
     :guess="guess"
     :show-all-guesses="showAllGuesses"
+    :possible-guesses="possibleGuesses"
     @estimate="sendMessage('estimate', $event)"
     @guess="sendMessage('guess', $event)"
     @reveal="sendMessage('reveal', null)"

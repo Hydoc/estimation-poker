@@ -38,6 +38,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -102,6 +109,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -133,6 +147,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -171,6 +192,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -218,6 +246,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -253,6 +288,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -278,6 +320,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -303,6 +352,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -328,6 +384,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],
@@ -353,6 +416,13 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
         },
         global: {
           plugins: [vuetify],

@@ -10,6 +10,9 @@ services:
       - ./backend:/app
     networks:
       - guess-dev
+    environment:
+      POSSIBLE_GUESSES: 1,2,3,4,5
+      POSSIBLE_GUESSES_DESC: Bis zu 4 Std.,Bis zu 8 Std.,Bis zu 3 Tagen,Bis zu 5 Tagen,Mehr als 5 Tage
 
   frontend:
     build:
