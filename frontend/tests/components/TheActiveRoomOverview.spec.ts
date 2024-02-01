@@ -169,7 +169,9 @@ describe("TheActiveRoomOverview", () => {
         .findComponent(VBtn)
         .trigger("click");
 
-      expect(wrapper.findComponent(VDialog).findComponent(RoomForm).props("errorMessage")).equal("Test");
+      expect(wrapper.findComponent(VDialog).findComponent(RoomForm).props("errorMessage")).equal(
+        "Test",
+      );
     });
   });
 });

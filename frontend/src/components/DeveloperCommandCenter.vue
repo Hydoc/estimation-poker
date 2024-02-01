@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, type Ref } from "vue";
-import { PossibleGuess } from "@/components/types";
+import { type PossibleGuess } from "@/components/types";
 
 type Props = {
   didGuess: boolean;

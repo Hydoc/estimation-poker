@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PossibleGuess, Role, RoundState } from "@/components/types";
+import { type PossibleGuess, Role, RoundState } from "@/components/types";
 import DeveloperCommandCenter from "@/components/DeveloperCommandCenter.vue";
 import { computed } from "vue";
 import ProductOwnerCommandCenter from "@/components/ProductOwnerCommandCenter.vue";

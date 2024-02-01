@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PossibleGuess, Role, RoundState, type UserOverview } from "@/components/types";
+import { type PossibleGuess, Role, RoundState, type UserOverview } from "@/components/types";
 import UserBox from "@/components/UserBox.vue";
 import CommandCenter from "@/components/CommandCenter.vue";
 import { computed, ref } from "vue";
