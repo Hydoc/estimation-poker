@@ -61,9 +61,7 @@ func (client *Client) websocketReader() {
 }
 
 func (client *Client) websocketWriter() {
-	defer func() {
-		client.connection.Close()
-	}()
+	defer client.connection.Close()
 	for {
 		select {
 		case msg := <-client.send:
