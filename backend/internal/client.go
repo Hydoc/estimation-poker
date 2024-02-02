@@ -16,16 +16,14 @@ type Client struct {
 	connection *websocket.Conn
 	room       *Room
 	Name       string
-	RoomId     string
 	Role       string
 	Guess      int
 	send       chan message
 }
 
-func newClient(roomId, name, role string, room *Room, connection *websocket.Conn) *Client {
+func newClient(name, role string, room *Room, connection *websocket.Conn) *Client {
 	return &Client{
 		room:       room,
-		RoomId:     roomId,
 		Name:       name,
 		connection: connection,
 		Role:       role,

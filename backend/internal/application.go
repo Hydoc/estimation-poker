@@ -159,9 +159,9 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 
 	var client *Client
 	if strings.Contains(request.URL.Path, "product-owner") {
-		client = newClient(roomId, name, ProductOwner, clientRoom, connection)
+		client = newClient(name, ProductOwner, clientRoom, connection)
 	} else {
-		client = newClient(roomId, name, Developer, clientRoom, connection)
+		client = newClient(name, Developer, clientRoom, connection)
 	}
 	clientRoom.join <- client
 	clientRoom.broadcast <- newJoin()

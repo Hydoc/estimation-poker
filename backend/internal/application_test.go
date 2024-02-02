@@ -16,10 +16,10 @@ import (
 )
 
 func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
-	testSuites := []struct {
+	tests := []struct {
 		name        string
 		expectation map[string]bool
-		rooms       map[string]bool
+		rooms       map[RoomId]*Room
 		room        string
 	}{
 		{
@@ -27,7 +27,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			expectation: map[string]bool{
 				"inProgress": false,
 			},
-			rooms: map[string]bool{},
+			rooms: map[RoomId]*Room{},
 			room:  "1",
 		},
 		{
@@ -35,28 +35,24 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			expectation: map[string]bool{
 				"inProgress": true,
 			},
-			rooms: map[string]bool{
-				"1": true,
+			rooms: map[RoomId]*Room{
+				"1": {
+					InProgress: true,
+				},
 			},
 			room: "1",
 		},
 	}
 
-	for _, suite := range testSuites {
-		hub := &Hub{
-			roomBroadcast: make(chan roomBroadcastMessage),
-			register:      make(chan *Client),
-			unregister:    make(chan *Client),
-			clients:       make(map[*Client]bool),
-			rooms:         suite.rooms,
+	for _, test := range tests {
+		app := &Application{
+			rooms: test.rooms,
 		}
 
-		t.Run(suite.name, func(t *testing.T) {
-			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
+		t.Run(test.name, func(t *testing.T) {
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/state", suite.room), nil)
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/state", test.room), nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -68,8 +64,8 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 				t.Errorf("expected content type application/json, got %v", gotContentType)
 			}
 
-			if !reflect.DeepEqual(suite.expectation, got) {
-				t.Errorf("expected %v, got %v", suite.expectation, got)
+			if !reflect.DeepEqual(test.expectation, got) {
+				t.Errorf("expected %v, got %v", test.expectation, got)
 			}
 		})
 	}
@@ -77,9 +73,9 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 
 func TestApplication_handleUserInRoomExists(t *testing.T) {
 	client := &Client{
-		RoomId: "1",
-		Name:   "Test",
+		Name: "Test",
 	}
+	roomId := "1"
 	testSuites := []struct {
 		url               string
 		name              string
@@ -90,7 +86,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 	}{
 		{
 			name: "not find client when clients are empty",
-			url:  "/api/estimation/room/1/users/exists?name=Bla",
+			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=Bla", roomId),
 			expectation: map[string]interface{}{
 				"exists": false,
 			},
@@ -99,7 +95,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		},
 		{
 			name: "find client when client exists",
-			url:  fmt.Sprintf("/api/estimation/room/1/users/exists?name=%s", client.Name),
+			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=%s", roomId, client.Name),
 			expectation: map[string]interface{}{
 				"exists": true,
 			},
@@ -110,7 +106,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		},
 		{
 			name:        "error when trying to access without name",
-			url:         "/api/estimation/room/1/users/exists?name=",
+			url:         fmt.Sprintf("/api/estimation/room/%s/users/exists?name=Bla", roomId),
 			expectation: nil,
 			clients: map[*Client]bool{
 				client: true,
@@ -123,17 +119,14 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 	}
 
 	for _, suite := range testSuites {
-		hub := &Hub{
-			roomBroadcast: make(chan roomBroadcastMessage),
-			register:      make(chan *Client),
-			unregister:    make(chan *Client),
-			clients:       suite.clients,
-			rooms:         make(map[string]bool),
-		}
-
 		t.Run(suite.name, func(t *testing.T) {
-			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
+			app := &Application{
+				rooms: map[RoomId]*Room{
+					RoomId(roomId): {
+						clients: suite.clients,
+					},
+				},
+			}
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, suite.url, nil)
