@@ -35,14 +35,13 @@ func main() {
 			return true
 		},
 	}
-	hub := internal.NewHub()
-	go hub.Run()
 	config, err := internal.NewGuessConfig(possibleGuesses, possibleGuessesDescription)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	app := internal.NewApplication(mux.NewRouter(), upgrader, hub, config)
+	app := internal.NewApplication(mux.NewRouter(), upgrader, config)
+	go app.ListenForRoomDestroy()
 	router := app.ConfigureRouting()
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

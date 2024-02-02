@@ -14,17 +14,14 @@ import (
 type Application struct {
 	router      *mux.Router
 	upgrader    *websocket.Upgrader
-	hub         *Hub
 	guessConfig *GuessConfig
+	rooms       map[RoomId]*Room
+	destroyRoom chan RoomId
 }
 
 func (app *Application) ConfigureRouting() *mux.Router {
-	app.router.HandleFunc("/api/estimation/room/{id}/product-owner", func(writer http.ResponseWriter, request *http.Request) {
-		app.handleWs(app.hub, writer, request)
-	}).Queries("name", "{name:.*}")
-	app.router.HandleFunc("/api/estimation/room/{id}/developer", func(writer http.ResponseWriter, request *http.Request) {
-		app.handleWs(app.hub, writer, request)
-	}).Queries("name", "{name:.*}")
+	app.router.HandleFunc("/api/estimation/room/{id}/product-owner", app.handleWs).Queries("name", "{name:.*}")
+	app.router.HandleFunc("/api/estimation/room/{id}/developer", app.handleWs).Queries("name", "{name:.*}")
 	app.router.HandleFunc("/api/estimation/room/{id}/users/exists", app.handleUserInRoomExists).Methods(http.MethodGet).Queries("name", "{name:.*}")
 	app.router.HandleFunc("/api/estimation/room/{id}/users", app.handleFetchUsers).Methods(http.MethodGet)
 	app.router.HandleFunc("/api/estimation/room/{id}/state", app.handleRoundInRoomInProgress).Methods(http.MethodGet)
@@ -47,8 +44,14 @@ func (app *Application) contentTypeJsonMiddleware(next http.Handler) http.Handle
 
 func (app *Application) handleRoundInRoomInProgress(writer http.ResponseWriter, request *http.Request) {
 	roomId := mux.Vars(request)["id"]
+	if _, ok := app.rooms[RoomId(roomId)]; !ok {
+		json.NewEncoder(writer).Encode(map[string]bool{
+			"inProgress": false,
+		})
+		return
+	}
 	json.NewEncoder(writer).Encode(map[string]bool{
-		"inProgress": app.hub.IsRoundInRoomInProgress(roomId),
+		"inProgress": app.rooms[RoomId(roomId)].InProgress,
 	})
 }
 
@@ -64,8 +67,15 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 		return
 	}
 
-	for client := range app.hub.clients {
-		if client.Name == name && roomId == client.RoomId {
+	if _, ok := app.rooms[RoomId(roomId)]; !ok {
+		json.NewEncoder(writer).Encode(map[string]bool{
+			"exists": false,
+		})
+		return
+	}
+
+	for client := range app.rooms[RoomId(roomId)].clients {
+		if client.Name == name {
 			writer.WriteHeader(409)
 			json.NewEncoder(writer).Encode(map[string]bool{
 				"exists": true,
@@ -80,10 +90,8 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 
 func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
 	activeRooms := []string{}
-	for c := range app.hub.clients {
-		if !slices.Contains(activeRooms, c.RoomId) {
-			activeRooms = append(activeRooms, c.RoomId)
-		}
+	for _, room := range app.rooms {
+		activeRooms = append(activeRooms, string(room.id))
 	}
 	slices.Sort(activeRooms)
 	json.NewEncoder(writer).Encode(activeRooms)
@@ -98,10 +106,13 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 	}
 	var clients []*Client
 
-	for client := range app.hub.clients {
-		if client.RoomId == roomId {
-			clients = append(clients, client)
-		}
+	if _, ok := app.rooms[RoomId(roomId)]; !ok {
+		json.NewEncoder(writer).Encode(usersInRoom)
+		return
+	}
+
+	for client := range app.rooms[RoomId(roomId)].clients {
+		clients = append(clients, client)
 	}
 	sort.Slice(clients, func(i, j int) bool {
 		return clients[i].Name < clients[j].Name
@@ -118,7 +129,7 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 	json.NewEncoder(writer).Encode(usersInRoom)
 }
 
-func (app *Application) handleWs(hub *Hub, writer http.ResponseWriter, request *http.Request) {
+func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
 	roomId := mux.Vars(request)["id"]
 
 	name := request.URL.Query().Get("name")
@@ -136,24 +147,46 @@ func (app *Application) handleWs(hub *Hub, writer http.ResponseWriter, request *
 		return
 	}
 
+	var clientRoom *Room
+	if room, ok := app.rooms[RoomId(roomId)]; ok {
+		// when there is a room, it's already running in a goroutine
+		clientRoom = room
+	} else {
+		clientRoom = NewRoom(RoomId(roomId), app.destroyRoom)
+		app.rooms[clientRoom.id] = clientRoom
+		go clientRoom.Run()
+	}
+
 	var client *Client
 	if strings.Contains(request.URL.Path, "product-owner") {
-		client = newProductOwner(roomId, name, hub, connection)
+		client = newClient(roomId, name, ProductOwner, clientRoom, connection)
 	} else {
-		client = newDeveloper(roomId, name, hub, connection)
+		client = newClient(roomId, name, Developer, clientRoom, connection)
 	}
-	client.hub.register <- client
-	client.hub.roomBroadcast <- newRoomBroadcast(roomId, newJoin())
+	clientRoom.join <- client
+	clientRoom.broadcast <- newJoin()
 
 	go client.websocketReader()
 	go client.websocketWriter()
 }
 
-func NewApplication(router *mux.Router, upgrader *websocket.Upgrader, hub *Hub, config *GuessConfig) *Application {
+func (app *Application) ListenForRoomDestroy() {
+	for {
+		select {
+		case roomId := <-app.destroyRoom:
+			if _, ok := app.rooms[roomId]; ok {
+				delete(app.rooms, roomId)
+			}
+		}
+	}
+}
+
+func NewApplication(router *mux.Router, upgrader *websocket.Upgrader, config *GuessConfig) *Application {
 	return &Application{
 		router:      router,
 		upgrader:    upgrader,
-		hub:         hub,
 		guessConfig: config,
+		rooms:       make(map[RoomId]*Room),
+		destroyRoom: make(chan RoomId),
 	}
 }
