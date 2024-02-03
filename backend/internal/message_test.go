@@ -6,7 +6,7 @@ import (
 )
 
 func TestMessage_ToJson(t *testing.T) {
-	testSuites := []struct {
+	tests := []struct {
 		name        string
 		message     message
 		expectedDTO messageDTO
@@ -67,12 +67,46 @@ func TestMessage_ToJson(t *testing.T) {
 		},
 	}
 
-	for _, suite := range testSuites {
-		t.Run(suite.name, func(t *testing.T) {
-			got := suite.message.ToJson()
-			want := suite.expectedDTO
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.message.ToJson()
+			want := test.expectedDTO
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("expected %v, got %v", want, got)
+			}
+		})
+	}
+}
+
+func TestClientMessage_isEstimate(t *testing.T) {
+	tests := []struct {
+		name    string
+		message clientMessage
+		want    bool
+	}{
+		{
+			name: "is estimate",
+			want: true,
+			message: clientMessage{
+				Type: estimate,
+				Data: nil,
+			},
+		},
+		{
+			name: "is not estimate",
+			want: false,
+			message: clientMessage{
+				Type: "any other",
+				Data: nil,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.message.isEstimate()
+			if got != test.want {
+				t.Errorf("want %v, got %v", test.want, got)
 			}
 		})
 	}
