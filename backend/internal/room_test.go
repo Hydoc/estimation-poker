@@ -7,7 +7,7 @@ import (
 
 func TestNewRoom(t *testing.T) {
 	expectedRoomId := RoomId("Test")
-	room := NewRoom(expectedRoomId, make(chan<- RoomId))
+	room := newRoom(expectedRoomId, make(chan<- RoomId))
 
 	if room.id != expectedRoomId {
 		t.Errorf("want room id %v, got %v", expectedRoomId, room.id)
@@ -66,7 +66,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_RegisteringAClient(t *testing.T) {
-	room := NewRoom("Test", make(chan<- RoomId))
+	room := newRoom("Test", make(chan<- RoomId))
 	client := &Client{}
 	go room.Run()
 

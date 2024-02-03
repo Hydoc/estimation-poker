@@ -152,7 +152,7 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 		// when there is a room, it's already running in a goroutine
 		clientRoom = room
 	} else {
-		clientRoom = NewRoom(RoomId(roomId), app.destroyRoom)
+		clientRoom = newRoom(RoomId(roomId), app.destroyRoom)
 		app.rooms[clientRoom.id] = clientRoom
 		go clientRoom.Run()
 	}

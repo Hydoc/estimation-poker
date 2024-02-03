@@ -178,7 +178,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 }
 
 func TestApplication_handleFetchUsers(t *testing.T) {
-	room := NewRoom("1", make(chan<- RoomId))
+	room := newRoom("1", make(chan<- RoomId))
 	dev := newClient("B", Developer, room, nil)
 	otherDev := newClient("Another", Developer, room, nil)
 	devWithEqualLetter := newClient("Also a dev", Developer, room, nil)
@@ -428,7 +428,7 @@ func TestApplication_handleWs(t *testing.T) {
 func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
 	app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, &GuessConfig{})
 	roomId := "Test"
-	expectedRoom := NewRoom(RoomId(roomId), app.destroyRoom)
+	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom)
 	router := app.ConfigureRouting()
 
 	server := httptest.NewServer(router)

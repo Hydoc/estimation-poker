@@ -12,7 +12,7 @@ type Room struct {
 	destroy    chan<- RoomId
 }
 
-func NewRoom(name RoomId, destroy chan<- RoomId) *Room {
+func newRoom(name RoomId, destroy chan<- RoomId) *Room {
 	return &Room{
 		id:         name,
 		InProgress: false,
