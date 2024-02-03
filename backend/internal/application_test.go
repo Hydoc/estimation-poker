@@ -12,14 +12,15 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
 func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
-	testSuites := []struct {
+	tests := []struct {
 		name        string
 		expectation map[string]bool
-		rooms       map[string]bool
+		rooms       map[RoomId]*Room
 		room        string
 	}{
 		{
@@ -27,7 +28,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			expectation: map[string]bool{
 				"inProgress": false,
 			},
-			rooms: map[string]bool{},
+			rooms: map[RoomId]*Room{},
 			room:  "1",
 		},
 		{
@@ -35,28 +36,25 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			expectation: map[string]bool{
 				"inProgress": true,
 			},
-			rooms: map[string]bool{
-				"1": true,
+			rooms: map[RoomId]*Room{
+				"1": {
+					InProgress: true,
+				},
 			},
 			room: "1",
 		},
 	}
 
-	for _, suite := range testSuites {
-		hub := &Hub{
-			roomBroadcast: make(chan roomBroadcastMessage),
-			register:      make(chan *Client),
-			unregister:    make(chan *Client),
-			clients:       make(map[*Client]bool),
-			rooms:         suite.rooms,
+	for _, test := range tests {
+		app := &Application{
+			rooms:  test.rooms,
+			router: mux.NewRouter(),
 		}
 
-		t.Run(suite.name, func(t *testing.T) {
-			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
+		t.Run(test.name, func(t *testing.T) {
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/state", suite.room), nil)
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/state", test.room), nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -68,8 +66,8 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 				t.Errorf("expected content type application/json, got %v", gotContentType)
 			}
 
-			if !reflect.DeepEqual(suite.expectation, got) {
-				t.Errorf("expected %v, got %v", suite.expectation, got)
+			if !reflect.DeepEqual(test.expectation, got) {
+				t.Errorf("expected %v, got %v", test.expectation, got)
 			}
 		})
 	}
@@ -77,66 +75,82 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 
 func TestApplication_handleUserInRoomExists(t *testing.T) {
 	client := &Client{
-		RoomId: "1",
-		Name:   "Test",
+		Name: "Test",
 	}
-	testSuites := []struct {
+	roomId := "1"
+	tests := []struct {
 		url               string
 		name              string
+		rooms             map[RoomId]*Room
 		expectation       map[string]interface{}
-		clients           map[*Client]bool
 		expectedErrorBody map[string]interface{}
 		statusCode        int
 	}{
 		{
 			name: "not find client when clients are empty",
-			url:  "/api/estimation/room/1/users/exists?name=Bla",
+			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=Bla", roomId),
 			expectation: map[string]interface{}{
 				"exists": false,
 			},
-			clients:    make(map[*Client]bool),
+			rooms: map[RoomId]*Room{
+				RoomId(roomId): {
+					clients: make(map[*Client]bool),
+				},
+			},
 			statusCode: 200,
 		},
 		{
 			name: "find client when client exists",
-			url:  fmt.Sprintf("/api/estimation/room/1/users/exists?name=%s", client.Name),
+			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=%s", roomId, client.Name),
 			expectation: map[string]interface{}{
 				"exists": true,
 			},
-			clients: map[*Client]bool{
-				client: true,
+			rooms: map[RoomId]*Room{
+				RoomId(roomId): {
+					clients: map[*Client]bool{
+						client: true,
+					},
+				},
 			},
 			statusCode: 409,
 		},
 		{
 			name:        "error when trying to access without name",
-			url:         "/api/estimation/room/1/users/exists?name=",
+			url:         fmt.Sprintf("/api/estimation/room/%s/users/exists?name=", roomId),
 			expectation: nil,
-			clients: map[*Client]bool{
-				client: true,
+			rooms: map[RoomId]*Room{
+				RoomId(roomId): {
+					clients: map[*Client]bool{
+						client: true,
+					},
+				},
 			},
 			expectedErrorBody: map[string]interface{}{
 				"message": "name is missing in query",
 			},
 			statusCode: 400,
 		},
+		{
+			name: "not find client when no room with id was found",
+			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=Test", roomId),
+			expectation: map[string]interface{}{
+				"exists": false,
+			},
+			rooms:             map[RoomId]*Room{},
+			expectedErrorBody: nil,
+			statusCode:        200,
+		},
 	}
 
-	for _, suite := range testSuites {
-		hub := &Hub{
-			roomBroadcast: make(chan roomBroadcastMessage),
-			register:      make(chan *Client),
-			unregister:    make(chan *Client),
-			clients:       suite.clients,
-			rooms:         make(map[string]bool),
-		}
-
-		t.Run(suite.name, func(t *testing.T) {
-			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := &Application{
+				router: mux.NewRouter(),
+				rooms:  test.rooms,
+			}
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, suite.url, nil)
+			request := httptest.NewRequest(http.MethodGet, test.url, nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -148,45 +162,54 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 				t.Errorf("expected content type application/json, got %v", gotContentType)
 			}
 
-			if suite.expectedErrorBody != nil && !reflect.DeepEqual(suite.expectedErrorBody, got) {
-				t.Errorf("expected error body %v, got %v", suite.expectedErrorBody, got)
+			if test.expectedErrorBody != nil && !reflect.DeepEqual(test.expectedErrorBody, got) {
+				t.Errorf("expected error body %v, got %v", test.expectedErrorBody, got)
 			}
 
-			if suite.expectation != nil && !reflect.DeepEqual(suite.expectation, got) {
-				t.Errorf("expected %v, got %v", suite.expectation, got)
+			if test.expectation != nil && !reflect.DeepEqual(test.expectation, got) {
+				t.Errorf("expected %v, got %v", test.expectation, got)
 			}
 
-			if recorder.Code != suite.statusCode {
-				t.Errorf("expected status code %d, got %d", suite.statusCode, recorder.Code)
+			if recorder.Code != test.statusCode {
+				t.Errorf("expected status code %d, got %d", test.statusCode, recorder.Code)
 			}
 		})
 	}
 }
 
 func TestApplication_handleFetchUsers(t *testing.T) {
-	dev := newDeveloper("1", "B", nil, nil)
-	otherDev := newDeveloper("1", "Another", nil, nil)
-	devWithEqualLetter := newDeveloper("1", "Also a dev", nil, nil)
-	productOwner := newProductOwner("1", "Another one", nil, nil)
-	otherProductOwner := newProductOwner("1", "Also a po", nil, nil)
-	productOwnerInDifferentRoom := &Client{Name: "Different Room", Role: ProductOwner, Guess: 0, RoomId: "different Room"}
+	room := NewRoom("1", make(chan<- RoomId))
+	dev := newClient("B", Developer, room, nil)
+	otherDev := newClient("Another", Developer, room, nil)
+	devWithEqualLetter := newClient("Also a dev", Developer, room, nil)
+	productOwner := newClient("Another one", ProductOwner, room, nil)
+	otherProductOwner := newClient("Also a po", ProductOwner, room, nil)
 
-	testSuites := []struct {
+	tests := []struct {
 		name        string
-		clients     map[*Client]bool
 		roomId      string
+		rooms       map[RoomId]*Room
 		expectation map[string][]userDTO
 	}{
 		{
 			name:   "some users in the same room",
 			roomId: "1",
-			clients: map[*Client]bool{
-				dev:                         true,
-				otherDev:                    true,
-				devWithEqualLetter:          true,
-				productOwner:                true,
-				otherProductOwner:           true,
-				productOwnerInDifferentRoom: true,
+			rooms: map[RoomId]*Room{
+				RoomId("1"): {
+					id:         "1",
+					InProgress: false,
+					leave:      nil,
+					join:       nil,
+					clients: map[*Client]bool{
+						dev:                true,
+						otherDev:           true,
+						devWithEqualLetter: true,
+						productOwner:       true,
+						otherProductOwner:  true,
+					},
+					broadcast: nil,
+					destroy:   nil,
+				},
 			},
 			expectation: map[string][]userDTO{
 				"productOwnerList": {
@@ -219,9 +242,9 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 			},
 		},
 		{
-			name:    "no clients",
-			roomId:  "1",
-			clients: map[*Client]bool{},
+			name:   "no clients",
+			roomId: "1",
+			rooms:  make(map[RoomId]*Room),
 			expectation: map[string][]userDTO{
 				"productOwnerList": {},
 				"developerList":    {},
@@ -230,8 +253,12 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 		{
 			name:   "one dev client",
 			roomId: "1",
-			clients: map[*Client]bool{
-				dev: true,
+			rooms: map[RoomId]*Room{
+				RoomId("1"): {
+					clients: map[*Client]bool{
+						dev: true,
+					},
+				},
 			},
 			expectation: map[string][]userDTO{
 				"productOwnerList": {},
@@ -245,11 +272,15 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 			},
 		},
 		{
-			name:   "one po client",
-			roomId: "1",
-			clients: map[*Client]bool{
-				productOwner: true,
+			name: "one po client",
+			rooms: map[RoomId]*Room{
+				RoomId("1"): {
+					clients: map[*Client]bool{
+						productOwner: true,
+					},
+				},
 			},
+			roomId: "1",
 			expectation: map[string][]userDTO{
 				"productOwnerList": {
 					{
@@ -262,20 +293,18 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 		},
 	}
 
-	for _, suite := range testSuites {
-		t.Run(suite.name, func(t *testing.T) {
-			hub := &Hub{
-				roomBroadcast: make(chan roomBroadcastMessage),
-				register:      make(chan *Client),
-				unregister:    make(chan *Client),
-				clients:       suite.clients,
-				rooms:         make(map[string]bool),
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := &Application{
+				router:      mux.NewRouter(),
+				upgrader:    &websocket.Upgrader{},
+				guessConfig: &GuessConfig{},
+				rooms:       test.rooms,
+				destroyRoom: nil,
 			}
-			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/users", suite.roomId), nil)
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/users", test.roomId), nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -287,41 +316,65 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				t.Errorf("expected content type application/json, got %v", gotContentType)
 			}
 
-			if !reflect.DeepEqual(suite.expectation, got) {
-				t.Errorf("expected %v, got %v", suite.expectation, got)
+			if !reflect.DeepEqual(test.expectation, got) {
+				t.Errorf("expected %v, got %v", test.expectation, got)
 			}
 		})
 	}
 }
 
 func TestApplication_handleWs(t *testing.T) {
-	testSuites := []struct {
+	tests := []struct {
 		name           string
 		url            string
+		rooms          map[RoomId]*Room
 		expectedError  map[string]string
 		expectedRoomId string
 		expectedRole   string
 		expectedStatus int
 	}{
 		{
-			name:           "register as developer",
-			url:            "/api/estimation/room/1/developer?name=Test",
+			name: "register as developer",
+			url:  "/api/estimation/room/1/developer?name=Test",
+			rooms: map[RoomId]*Room{
+				RoomId("1"): {
+					id:         "1",
+					InProgress: false,
+					leave:      nil,
+					join:       make(chan *Client),
+					clients:    nil,
+					broadcast:  make(chan message),
+					destroy:    nil,
+				},
+			},
 			expectedError:  nil,
 			expectedStatus: -1,
 			expectedRoomId: "1",
 			expectedRole:   Developer,
 		},
 		{
-			name:           "register as product owner",
-			url:            "/api/estimation/room/1/product-owner?name=Test",
+			name: "register as product owner",
+			url:  "/api/estimation/room/1/product-owner?name=Test",
+			rooms: map[RoomId]*Room{
+				RoomId("1"): {
+					id:         "1",
+					InProgress: false,
+					leave:      nil,
+					join:       make(chan *Client),
+					clients:    nil,
+					broadcast:  make(chan message),
+					destroy:    nil,
+				},
+			},
 			expectedError:  nil,
 			expectedStatus: -1,
 			expectedRoomId: "1",
 			expectedRole:   ProductOwner,
 		},
 		{
-			name: "not registering due to missing name",
-			url:  "/api/estimation/room/1/product-owner?name=",
+			name:  "not registering due to missing name",
+			url:   "/api/estimation/room/1/product-owner?name=",
+			rooms: make(map[RoomId]*Room),
 			expectedError: map[string]string{
 				"message": "name is missing in query",
 			},
@@ -331,50 +384,70 @@ func TestApplication_handleWs(t *testing.T) {
 		},
 	}
 
-	for _, suite := range testSuites {
-		t.Run(suite.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			expectedMsg := newJoin()
-			hub := &Hub{
-				roomBroadcast: make(chan roomBroadcastMessage),
-				register:      make(chan *Client),
-				unregister:    make(chan *Client),
-				clients:       make(map[*Client]bool),
-				rooms:         make(map[string]bool),
+			app := &Application{
+				router:      mux.NewRouter(),
+				upgrader:    &websocket.Upgrader{},
+				guessConfig: &GuessConfig{},
+				rooms:       test.rooms,
+				destroyRoom: make(chan RoomId),
 			}
-			upgrdr := &websocket.Upgrader{}
-			app := NewApplication(mux.NewRouter(), upgrdr, hub, &GuessConfig{})
 			router := app.ConfigureRouting()
 
 			server := httptest.NewServer(router)
 			defer server.Close()
 
-			url := "ws" + strings.TrimPrefix(server.URL, "http") + suite.url
+			url := "ws" + strings.TrimPrefix(server.URL, "http") + test.url
 			_, response, _ := websocket.DefaultDialer.Dial(url, nil)
 
-			if suite.expectedError != nil {
+			if test.expectedError != nil {
 				var got map[string]string
 				json.NewDecoder(response.Body).Decode(&got)
-				if !reflect.DeepEqual(suite.expectedError, got) {
-					t.Errorf("expected response error %v, got %v", suite.expectedError, got)
+				if !reflect.DeepEqual(test.expectedError, got) {
+					t.Errorf("expected response error %v, got %v", test.expectedError, got)
 				}
 				return
 			}
 
-			registeredClient := <-hub.register
-			broadcastedMsg := <-hub.roomBroadcast
+			registeredClient := <-app.rooms[RoomId(test.expectedRoomId)].join
+			broadcastedMsg := <-app.rooms[RoomId(test.expectedRoomId)].broadcast
 
-			if registeredClient.Role != suite.expectedRole {
-				t.Errorf("expected to register client with role %s, got %v", suite.expectedRole, registeredClient.Role)
+			if registeredClient.Role != test.expectedRole {
+				t.Errorf("expected to register client with role %s, got %v", test.expectedRole, registeredClient.Role)
 			}
 
-			if !reflect.DeepEqual(expectedMsg, broadcastedMsg.message) {
-				t.Errorf("expected msg %v to broadcast, got %v", expectedMsg, broadcastedMsg.message)
-			}
-
-			if suite.expectedRoomId != broadcastedMsg.RoomId {
-				t.Errorf("expected roomId %v, got %v", suite.expectedRoomId, broadcastedMsg.RoomId)
+			if !reflect.DeepEqual(expectedMsg, broadcastedMsg) {
+				t.Errorf("expected msg %v to broadcast, got %v", expectedMsg, broadcastedMsg)
 			}
 		})
+	}
+}
+
+func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
+	app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, &GuessConfig{})
+	roomId := "Test"
+	expectedRoom := NewRoom(RoomId(roomId), app.destroyRoom)
+	router := app.ConfigureRouting()
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		url := "ws" + strings.TrimPrefix(server.URL, "http") + fmt.Sprintf("/api/estimation/room/%s/developer?name=Test", roomId)
+		websocket.DefaultDialer.Dial(url, nil)
+	}()
+
+	wg.Wait()
+
+	got := app.rooms[RoomId(roomId)]
+
+	if expectedRoom.id != got.id {
+		t.Errorf("want room with id %v, got %v", expectedRoom.id, got.id)
 	}
 }
 
@@ -385,16 +458,9 @@ func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 		log.SetOutput(os.Stderr)
 	}()
 
-	hub := &Hub{
-		roomBroadcast: make(chan roomBroadcastMessage),
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		clients:       make(map[*Client]bool),
-		rooms:         make(map[string]bool),
-	}
 	app := NewApplication(mux.NewRouter(), &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
 		return false
-	}}, hub, &GuessConfig{})
+	}}, &GuessConfig{})
 	router := app.ConfigureRouting()
 
 	server := httptest.NewServer(router)
@@ -411,33 +477,38 @@ func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 
 func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	tests := []struct {
-		name    string
-		clients map[*Client]bool
-		want    []string
+		name  string
+		rooms map[RoomId]*Room
+		want  []string
 	}{
 		{
 			name: "with multiple active rooms",
-			clients: map[*Client]bool{
-				&Client{RoomId: "Blub"}: true,
-				&Client{RoomId: "Blub"}: true,
-				&Client{RoomId: "Test"}: true,
+			rooms: map[RoomId]*Room{
+				RoomId("Blub"): {
+					id: "Blub",
+				},
+				RoomId("Test"): {
+					id: "Test",
+				},
 			},
 			want: []string{"Blub", "Test"},
 		},
 		{
-			name:    "no rooms",
-			clients: map[*Client]bool{},
-			want:    []string{},
+			name:  "no rooms",
+			rooms: make(map[RoomId]*Room),
+			want:  []string{},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			hub := &Hub{
-				clients: test.clients,
+			app := &Application{
+				router:      mux.NewRouter(),
+				upgrader:    &websocket.Upgrader{},
+				guessConfig: &GuessConfig{},
+				rooms:       test.rooms,
+				destroyRoom: nil,
 			}
-
-			app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, hub, &GuessConfig{})
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/room/rooms", nil)
@@ -513,7 +584,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, nil, test.config)
+			app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, test.config)
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
@@ -527,5 +598,41 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 				t.Errorf("want %v, got %v", test.want, got)
 			}
 		})
+	}
+}
+
+func TestApplication_ListenForRoomDestroy(t *testing.T) {
+	destroyChannel := make(chan RoomId)
+	roomToDestroy := RoomId("Test")
+	app := &Application{
+		router:      mux.NewRouter(),
+		upgrader:    &websocket.Upgrader{},
+		guessConfig: &GuessConfig{},
+		rooms: map[RoomId]*Room{
+			roomToDestroy: {
+				id:         roomToDestroy,
+				InProgress: false,
+				leave:      nil,
+				join:       nil,
+				clients:    nil,
+				broadcast:  nil,
+				destroy:    nil,
+			},
+		},
+		destroyRoom: destroyChannel,
+	}
+	go app.ListenForRoomDestroy()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.destroyRoom <- roomToDestroy
+	}()
+
+	wg.Wait()
+
+	if _, ok := app.rooms[roomToDestroy]; ok {
+		t.Error("expected app to not have room")
 	}
 }

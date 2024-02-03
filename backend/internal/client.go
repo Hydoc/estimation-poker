@@ -14,41 +14,27 @@ type userDTO map[string]interface{}
 
 type Client struct {
 	connection *websocket.Conn
-	hub        *Hub
+	room       *Room
 	Name       string
-	RoomId     string
 	Role       string
 	Guess      int
 	send       chan message
 }
 
-func newProductOwner(roomId, name string, hub *Hub, connection *websocket.Conn) *Client {
+func newClient(name, role string, room *Room, connection *websocket.Conn) *Client {
 	return &Client{
-		hub:        hub,
-		RoomId:     roomId,
+		room:       room,
 		Name:       name,
 		connection: connection,
-		Role:       ProductOwner,
-		send:       make(chan message),
-	}
-}
-
-func newDeveloper(roomId, name string, hub *Hub, connection *websocket.Conn) *Client {
-	return &Client{
-		hub:        hub,
-		RoomId:     roomId,
-		Name:       name,
-		connection: connection,
-		Role:       Developer,
-		Guess:      0,
+		Role:       role,
 		send:       make(chan message),
 	}
 }
 
 func (client *Client) websocketReader() {
 	defer func() {
-		client.hub.unregister <- client
-		client.hub.roomBroadcast <- newRoomBroadcast(client.RoomId, newLeave())
+		client.room.leave <- client
+		client.room.broadcast <- newLeave()
 		client.connection.Close()
 	}()
 	for {
@@ -62,20 +48,18 @@ func (client *Client) websocketReader() {
 		if incMessage.Type == guess && client.Role == Developer {
 			actualGuess := int(incMessage.Data.(float64))
 			client.Guess = actualGuess
-			client.hub.roomBroadcast <- newRoomBroadcast(client.RoomId, newDeveloperGuessed())
+			client.room.broadcast <- newDeveloperGuessed()
 			client.send <- newYouGuessed(actualGuess)
 		} else if incMessage.Type == newRound && client.Role == ProductOwner {
-			client.hub.roomBroadcast <- newRoomBroadcast(client.RoomId, newResetRound())
+			client.room.broadcast <- newResetRound()
 		} else {
-			client.hub.roomBroadcast <- newRoomBroadcast(client.RoomId, incMessage)
+			client.room.broadcast <- incMessage
 		}
 	}
 }
 
 func (client *Client) websocketWriter() {
-	defer func() {
-		client.connection.Close()
-	}()
+	defer client.connection.Close()
 	for {
 		select {
 		case msg := <-client.send:

@@ -3,6 +3,7 @@ package internal
 const (
 	guess    = "guess"
 	newRound = "new-round"
+	estimate = "estimate"
 )
 
 type messageDTO map[string]interface{}
@@ -40,6 +41,10 @@ func (incMessage clientMessage) ToJson() messageDTO {
 		"type": incMessage.Type,
 		"data": incMessage.Data,
 	}
+}
+
+func (incMessage clientMessage) isEstimate() bool {
+	return incMessage.Type == estimate
 }
 
 func (join join) ToJson() messageDTO {

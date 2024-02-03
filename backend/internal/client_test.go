@@ -25,16 +25,11 @@ func (msg failingMessage) ToJson() messageDTO {
 
 func TestClient_NewProductOwner(t *testing.T) {
 	expectedName := "Test Person"
-	expectedRoomId := "Test"
 	expectedRole := ProductOwner
-	client := newProductOwner(expectedRoomId, expectedName, &Hub{}, &websocket.Conn{})
+	client := newClient(expectedName, expectedRole, &Room{}, &websocket.Conn{})
 
 	if expectedName != client.Name {
 		t.Errorf("expected %v, got %v", expectedName, client.Name)
-	}
-
-	if expectedRoomId != client.RoomId {
-		t.Errorf("expected %v, got %v", expectedRoomId, client.RoomId)
 	}
 
 	if expectedRole != client.Role {
@@ -55,17 +50,12 @@ func TestClient_NewProductOwner(t *testing.T) {
 
 func TestClient_NewDeveloper(t *testing.T) {
 	expectedName := "Test Person"
-	expectedRoomId := "Test"
 	expectedRole := Developer
 	expectedGuess := 0
-	client := newDeveloper(expectedRoomId, expectedName, &Hub{}, &websocket.Conn{})
+	client := newClient(expectedName, expectedRole, &Room{}, &websocket.Conn{})
 
 	if expectedName != client.Name {
 		t.Errorf("expected name %v, got %v", expectedName, client.Name)
-	}
-
-	if expectedRoomId != client.RoomId {
-		t.Errorf("expected roomId %v, got %v", expectedRoomId, client.RoomId)
 	}
 
 	if expectedRole != client.Role {
@@ -90,7 +80,7 @@ func TestClient_NewDeveloper(t *testing.T) {
 }
 
 func TestClient_Reset(t *testing.T) {
-	client := newDeveloper("1", "Any", &Hub{}, &websocket.Conn{})
+	client := newClient("Any", Developer, &Room{}, &websocket.Conn{})
 	client.Guess = 2
 	client.reset()
 
@@ -107,13 +97,12 @@ func TestClient_WebsocketReaderUnregisteringWhenErrorOccurred(t *testing.T) {
 	}()
 
 	unregisterChannel := make(chan *Client)
-	roomBroadcastChannel := make(chan roomBroadcastMessage)
-	hub := &Hub{
-		roomBroadcast: roomBroadcastChannel,
-		register:      make(chan *Client),
-		unregister:    unregisterChannel,
-		clients:       make(map[*Client]bool),
-		rooms:         make(map[string]bool),
+	broadcastChannel := make(chan message)
+	room := &Room{
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
+		leave:     unregisterChannel,
+		clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -124,7 +113,7 @@ func TestClient_WebsocketReaderUnregisteringWhenErrorOccurred(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	client := newDeveloper("1", "Any", hub, connection)
+	client := newClient("Any", Developer, room, connection)
 	go client.websocketReader()
 
 	// throws an error when trying to ReadJSON in client
@@ -136,8 +125,8 @@ func TestClient_WebsocketReaderUnregisteringWhenErrorOccurred(t *testing.T) {
 		t.Errorf("expected client to unregister")
 	}
 
-	expectedRoomBroadcastMsg := newRoomBroadcast(client.RoomId, newLeave())
-	gotRoomBroadcastMsg := <-roomBroadcastChannel
+	expectedRoomBroadcastMsg := newLeave()
+	gotRoomBroadcastMsg := <-broadcastChannel
 
 	if !reflect.DeepEqual(expectedRoomBroadcastMsg, gotRoomBroadcastMsg) {
 		t.Errorf("want %v, got %v", expectedRoomBroadcastMsg, gotRoomBroadcastMsg)
@@ -151,13 +140,12 @@ func TestClient_WebsocketReaderUnregisteringWhenErrorOccurred(t *testing.T) {
 }
 
 func TestClient_WebsocketReaderWhenAnyMessageOccurred(t *testing.T) {
-	roomBroadcastChannel := make(chan roomBroadcastMessage)
-	hub := &Hub{
-		roomBroadcast: roomBroadcastChannel,
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		clients:       make(map[*Client]bool),
-		rooms:         make(map[string]bool),
+	broadcastChannel := make(chan message)
+	room := &Room{
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
+		leave:     make(chan *Client),
+		clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -169,7 +157,7 @@ func TestClient_WebsocketReaderWhenAnyMessageOccurred(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	client := newDeveloper("1", "Any", hub, connection)
+	client := newClient("Any", Developer, room, connection)
 	go client.websocketReader()
 	expectedMsg := clientMessage{
 		Type: "",
@@ -177,25 +165,20 @@ func TestClient_WebsocketReaderWhenAnyMessageOccurred(t *testing.T) {
 	}
 	connection.WriteJSON(expectedMsg)
 
-	got := <-roomBroadcastChannel
+	got := <-broadcastChannel
 
-	if got.RoomId != client.RoomId {
-		t.Errorf("expected room id %s, got %s", client.RoomId, got.RoomId)
-	}
-
-	if got.message != expectedMsg {
+	if got != expectedMsg {
 		t.Errorf("expected %v, got %v", expectedMsg, got)
 	}
 }
 
 func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *testing.T) {
-	roomBroadcastChannel := make(chan roomBroadcastMessage)
-	hub := &Hub{
-		roomBroadcast: roomBroadcastChannel,
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		clients:       make(map[*Client]bool),
-		rooms:         make(map[string]bool),
+	broadcastChannel := make(chan message)
+	room := &Room{
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
+		leave:     make(chan *Client),
+		clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -213,8 +196,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 		Role:       Developer,
 		send:       clientChannel,
 		Name:       "Test",
-		hub:        hub,
-		RoomId:     "1",
+		room:       room,
 	}
 	go client.websocketReader()
 
@@ -223,11 +205,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 		Data: 2,
 	})
 
-	got := <-roomBroadcastChannel
-
-	if got.RoomId != client.RoomId {
-		t.Errorf("expected room id %s, got %s", client.RoomId, got.RoomId)
-	}
+	<-broadcastChannel
 
 	expectedClientMsg := newYouGuessed(2)
 	gotClientMsg := <-clientChannel
@@ -242,13 +220,12 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 }
 
 func TestClient_WebsocketReaderWhenNewRondMessageOccurredWithClientProductOwner(t *testing.T) {
-	roomBroadcastChannel := make(chan roomBroadcastMessage)
-	hub := &Hub{
-		roomBroadcast: roomBroadcastChannel,
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		clients:       make(map[*Client]bool),
-		rooms:         make(map[string]bool),
+	broadcastChannel := make(chan message)
+	room := &Room{
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
+		leave:     make(chan *Client),
+		clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -260,34 +237,28 @@ func TestClient_WebsocketReaderWhenNewRondMessageOccurredWithClientProductOwner(
 		t.Fatalf("%v", err)
 	}
 
-	client := newProductOwner("1", "Test", hub, connection)
+	client := newClient("Test", ProductOwner, room, connection)
 	go client.websocketReader()
 
 	connection.WriteJSON(clientMessage{
 		Type: newRound,
 	})
 
-	got := <-roomBroadcastChannel
-
-	if got.RoomId != client.RoomId {
-		t.Errorf("expected room id %s, got %s", client.RoomId, got.RoomId)
-	}
-
 	expectedMsg := newResetRound()
+	got := <-broadcastChannel
 
-	if !reflect.DeepEqual(expectedMsg, got.message) {
+	if !reflect.DeepEqual(expectedMsg, got) {
 		t.Errorf("expected %v, got %v", expectedMsg, got)
 	}
 }
 
 func TestClient_WebsocketWriter(t *testing.T) {
-	roomBroadcastChannel := make(chan roomBroadcastMessage)
-	hub := &Hub{
-		roomBroadcast: roomBroadcastChannel,
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		clients:       make(map[*Client]bool),
-		rooms:         make(map[string]bool),
+	broadcastChannel := make(chan message)
+	room := &Room{
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
+		leave:     make(chan *Client),
+		clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -305,8 +276,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 		Role:       Developer,
 		send:       clientChannel,
 		Name:       "Test",
-		hub:        hub,
-		RoomId:     "1",
+		room:       room,
 	}
 	go client.websocketWriter()
 	go client.websocketReader()
@@ -317,13 +287,9 @@ func TestClient_WebsocketWriter(t *testing.T) {
 	}
 	clientChannel <- expectedMsg
 
-	got := <-roomBroadcastChannel
+	got := <-broadcastChannel
 
-	if got.RoomId != client.RoomId {
-		t.Errorf("expected room id %v, got %v", client.RoomId, got.RoomId)
-	}
-
-	if !reflect.DeepEqual(expectedMsg, got.message) {
+	if !reflect.DeepEqual(expectedMsg, got) {
 		t.Errorf("expected %v, got %v", expectedMsg, got)
 	}
 }
@@ -334,13 +300,12 @@ func TestClient_WebsocketWriter_WhenErrorOccurred(t *testing.T) {
 	defer func() {
 		log.SetOutput(os.Stderr)
 	}()
-	roomBroadcastChannel := make(chan roomBroadcastMessage)
-	hub := &Hub{
-		roomBroadcast: roomBroadcastChannel,
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		clients:       make(map[*Client]bool),
-		rooms:         make(map[string]bool),
+	broadcastChannel := make(chan message)
+	room := &Room{
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
+		leave:     make(chan *Client),
+		clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -359,8 +324,7 @@ func TestClient_WebsocketWriter_WhenErrorOccurred(t *testing.T) {
 		Role:       Developer,
 		send:       clientChannel,
 		Name:       "Test",
-		hub:        hub,
-		RoomId:     "1",
+		room:       room,
 	}
 	go func() {
 		wg.Add(1)
