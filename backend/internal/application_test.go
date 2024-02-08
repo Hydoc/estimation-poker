@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -48,7 +47,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 	for _, test := range tests {
 		app := &Application{
 			rooms:  test.rooms,
-			router: mux.NewRouter(),
+			router: http.NewServeMux(),
 		}
 
 		t.Run(test.name, func(t *testing.T) {
@@ -145,7 +144,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &Application{
-				router: mux.NewRouter(),
+				router: http.NewServeMux(),
 				rooms:  test.rooms,
 			}
 			router := app.ConfigureRouting()
@@ -296,7 +295,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &Application{
-				router:      mux.NewRouter(),
+				router:      http.NewServeMux(),
 				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
@@ -388,7 +387,7 @@ func TestApplication_handleWs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			expectedMsg := newJoin()
 			app := &Application{
-				router:      mux.NewRouter(),
+				router:      http.NewServeMux(),
 				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
@@ -426,7 +425,7 @@ func TestApplication_handleWs(t *testing.T) {
 }
 
 func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
-	app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, &GuessConfig{})
+	app := NewApplication(http.NewServeMux(), &websocket.Upgrader{}, &GuessConfig{})
 	roomId := "Test"
 	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom)
 	router := app.ConfigureRouting()
@@ -458,7 +457,7 @@ func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 		log.SetOutput(os.Stderr)
 	}()
 
-	app := NewApplication(mux.NewRouter(), &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
+	app := NewApplication(http.NewServeMux(), &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
 		return false
 	}}, &GuessConfig{})
 	router := app.ConfigureRouting()
@@ -503,7 +502,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &Application{
-				router:      mux.NewRouter(),
+				router:      http.NewServeMux(),
 				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
@@ -584,7 +583,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := NewApplication(mux.NewRouter(), &websocket.Upgrader{}, test.config)
+			app := NewApplication(http.NewServeMux(), &websocket.Upgrader{}, test.config)
 			router := app.ConfigureRouting()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
@@ -605,7 +604,7 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 	destroyChannel := make(chan RoomId)
 	roomToDestroy := RoomId("Test")
 	app := &Application{
-		router:      mux.NewRouter(),
+		router:      http.NewServeMux(),
 		upgrader:    &websocket.Upgrader{},
 		guessConfig: &GuessConfig{},
 		rooms: map[RoomId]*Room{
