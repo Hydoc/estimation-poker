@@ -74,13 +74,6 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
-	if len(name) == 0 {
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(map[string]string{
-			"message": "name is missing in query",
-		})
-		return
-	}
 
 	if _, ok := app.rooms[RoomId(roomId)]; !ok {
 		json.NewEncoder(writer).Encode(map[string]bool{
@@ -152,13 +145,6 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
-	if len(name) == 0 {
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(map[string]string{
-			"message": "name is missing in query",
-		})
-		return
-	}
 
 	connection, err := app.upgrader.Upgrade(writer, request, nil)
 	if err != nil {
