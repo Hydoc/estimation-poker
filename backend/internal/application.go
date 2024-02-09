@@ -103,10 +103,7 @@ func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 		activeRooms = append(activeRooms, string(room.id))
 	}
 	slices.Sort(activeRooms)
-	err := json.NewEncoder(writer).Encode(activeRooms)
-	if err != nil {
-		log.Println(err)
-	}
+	json.NewEncoder(writer).Encode(activeRooms)
 }
 
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
