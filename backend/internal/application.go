@@ -20,8 +20,8 @@ type Application struct {
 }
 
 func (app *Application) ConfigureRouting() *http.ServeMux {
-	app.router.HandleFunc("/api/estimation/room/{id}/product-owner", app.withRequiredQueryParam("name", app.handleWs))
-	app.router.HandleFunc("/api/estimation/room/{id}/developer", app.withRequiredQueryParam("name", app.handleWs))
+	app.router.HandleFunc("GET /api/estimation/room/{id}/product-owner", app.withRequiredQueryParam("name", app.handleWs))
+	app.router.HandleFunc("GET /api/estimation/room/{id}/developer", app.withRequiredQueryParam("name", app.handleWs))
 	app.router.HandleFunc("GET /api/estimation/room/{id}/users/exists", app.contentTypeJsonMiddleware(app.withRequiredQueryParam("name", app.handleUserInRoomExists)))
 	app.router.HandleFunc("GET /api/estimation/room/{id}/users", app.contentTypeJsonMiddleware(app.handleFetchUsers))
 	app.router.HandleFunc("GET /api/estimation/room/{id}/state", app.contentTypeJsonMiddleware(app.handleRoundInRoomInProgress))
