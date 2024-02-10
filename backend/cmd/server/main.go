@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -40,7 +39,7 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	app := internal.NewApplication(mux.NewRouter(), upgrader, config)
+	app := internal.NewApplication(http.NewServeMux(), upgrader, config)
 	go app.ListenForRoomDestroy()
 	router := app.ConfigureRouting()
 	log.Fatal(http.ListenAndServe(":8080", router))

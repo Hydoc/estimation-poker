@@ -2,7 +2,7 @@ package internal
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -12,38 +12,53 @@ import (
 )
 
 type Application struct {
-	router      *mux.Router
+	router      *http.ServeMux
 	upgrader    *websocket.Upgrader
 	guessConfig *GuessConfig
 	rooms       map[RoomId]*Room
 	destroyRoom chan RoomId
 }
 
-func (app *Application) ConfigureRouting() *mux.Router {
-	app.router.HandleFunc("/api/estimation/room/{id}/product-owner", app.handleWs).Queries("name", "{name:.*}")
-	app.router.HandleFunc("/api/estimation/room/{id}/developer", app.handleWs).Queries("name", "{name:.*}")
-	app.router.HandleFunc("/api/estimation/room/{id}/users/exists", app.handleUserInRoomExists).Methods(http.MethodGet).Queries("name", "{name:.*}")
-	app.router.HandleFunc("/api/estimation/room/{id}/users", app.handleFetchUsers).Methods(http.MethodGet)
-	app.router.HandleFunc("/api/estimation/room/{id}/state", app.handleRoundInRoomInProgress).Methods(http.MethodGet)
-	app.router.HandleFunc("/api/estimation/room/rooms", app.handleFetchActiveRooms).Methods(http.MethodGet)
-	app.router.HandleFunc("/api/estimation/possible-guesses", app.handlePossibleGuesses).Methods(http.MethodGet)
-	app.router.Use(app.contentTypeJsonMiddleware)
+func (app *Application) ConfigureRouting() *http.ServeMux {
+	app.router.HandleFunc("GET /api/estimation/room/{id}/product-owner", app.withRequiredQueryParam("name", app.handleWs))
+	app.router.HandleFunc("GET /api/estimation/room/{id}/developer", app.withRequiredQueryParam("name", app.handleWs))
+	app.router.HandleFunc("GET /api/estimation/room/{id}/users/exists", app.contentTypeJsonMiddleware(app.withRequiredQueryParam("name", app.handleUserInRoomExists)))
+	app.router.HandleFunc("GET /api/estimation/room/{id}/users", app.contentTypeJsonMiddleware(app.handleFetchUsers))
+	app.router.HandleFunc("GET /api/estimation/room/{id}/state", app.contentTypeJsonMiddleware(app.handleRoundInRoomInProgress))
+	app.router.HandleFunc("GET /api/estimation/room/rooms", app.contentTypeJsonMiddleware(app.handleFetchActiveRooms))
+	app.router.HandleFunc("GET /api/estimation/possible-guesses", app.contentTypeJsonMiddleware(app.handlePossibleGuesses))
 	return app.router
+}
+
+func (app *Application) withRequiredQueryParam(param string, next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		queryParam := request.URL.Query().Get(param)
+
+		if len(queryParam) == 0 || !request.URL.Query().Has(param) {
+			writer.WriteHeader(400)
+			json.NewEncoder(writer).Encode(map[string]string{
+				"message": fmt.Sprintf("%s is missing in query", param),
+			})
+			return
+		}
+
+		next.ServeHTTP(writer, request)
+	}
 }
 
 func (app *Application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
 	json.NewEncoder(writer).Encode(app.guessConfig.Guesses)
 }
 
-func (app *Application) contentTypeJsonMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+func (app *Application) contentTypeJsonMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(writer, request)
-	})
+	}
 }
 
 func (app *Application) handleRoundInRoomInProgress(writer http.ResponseWriter, request *http.Request) {
-	roomId := mux.Vars(request)["id"]
+	roomId := request.PathValue("id")
 	if _, ok := app.rooms[RoomId(roomId)]; !ok {
 		json.NewEncoder(writer).Encode(map[string]bool{
 			"inProgress": false,
@@ -56,16 +71,9 @@ func (app *Application) handleRoundInRoomInProgress(writer http.ResponseWriter, 
 }
 
 func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
-	roomId := mux.Vars(request)["id"]
+	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
-	if len(name) == 0 {
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(map[string]string{
-			"message": "name is missing in query",
-		})
-		return
-	}
 
 	if _, ok := app.rooms[RoomId(roomId)]; !ok {
 		json.NewEncoder(writer).Encode(map[string]bool{
@@ -91,6 +99,7 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
 	activeRooms := []string{}
 	for _, room := range app.rooms {
+		log.Println(room.id)
 		activeRooms = append(activeRooms, string(room.id))
 	}
 	slices.Sort(activeRooms)
@@ -98,7 +107,7 @@ func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 }
 
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
-	roomId := mux.Vars(request)["id"]
+	roomId := request.PathValue("id")
 
 	var usersInRoom = map[string][]userDTO{
 		"productOwnerList": {},
@@ -130,16 +139,9 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 }
 
 func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
-	roomId := mux.Vars(request)["id"]
+	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
-	if len(name) == 0 {
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(map[string]string{
-			"message": "name is missing in query",
-		})
-		return
-	}
 
 	connection, err := app.upgrader.Upgrade(writer, request, nil)
 	if err != nil {
@@ -181,7 +183,7 @@ func (app *Application) ListenForRoomDestroy() {
 	}
 }
 
-func NewApplication(router *mux.Router, upgrader *websocket.Upgrader, config *GuessConfig) *Application {
+func NewApplication(router *http.ServeMux, upgrader *websocket.Upgrader, config *GuessConfig) *Application {
 	return &Application{
 		router:      router,
 		upgrader:    upgrader,
