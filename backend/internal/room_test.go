@@ -28,11 +28,11 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 			name: "everyone guessed",
 			want: true,
 			clients: map[*Client]bool{
-				&Client{
+				{
 					Guess: 1,
 					Role:  Developer,
 				}: true,
-				&Client{
+				{
 					Role: ProductOwner,
 				}: true,
 			},
@@ -41,11 +41,11 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 			name: "not everyone guessed",
 			want: false,
 			clients: map[*Client]bool{
-				&Client{
+				{
 					Guess: 0,
 					Role:  Developer,
 				}: true,
-				&Client{
+				{
 					Role: ProductOwner,
 				}: true,
 			},
@@ -182,7 +182,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 		join:       nil,
 		clients: map[*Client]bool{
 			client: true,
-			&Client{
+			{
 				Role:  Developer,
 				Guess: 0,
 			}: true,
