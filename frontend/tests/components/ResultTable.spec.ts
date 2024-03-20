@@ -88,10 +88,12 @@ describe("ResultTable", () => {
       });
 
       expect(wrapper.findAll("tbody tr").at(0).findAll("td").at(1).text()).equal("2");
+      expect(wrapper.findAll("tbody tr").at(0).classes()).contains("bg-blue-grey-lighten-5");
       expect(wrapper.findAll("tbody tr").at(1).findAll("td").at(1).text()).equal("1");
       expect(wrapper.findAll("tbody tr").at(2).findAll("td").at(1).text()).equal("1");
       expect(wrapper.findAll("tbody tr").at(3).findAll("td").at(1).text()).equal("1");
       expect(wrapper.findAll("tbody tr").at(4).findAll("td").at(1).text()).equal("2");
+      expect(wrapper.findAll("tbody tr").at(4).classes()).contains("bg-blue-grey-lighten-5");
       expect(wrapper.findAll("tbody tr").at(5).findAll("td").at(0).text()).equal("Durchschnitt");
       expect(wrapper.findAll("tbody tr").at(5).findAll("td").at(1).text()).equal("1");
     });
