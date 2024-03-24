@@ -22,6 +22,11 @@ check-frontend-format:
 check-frontend-lint:
 	docker compose exec frontend pnpm lint
 
+# make version=X.X.X build-and-push-image
+build-and-push-image:
+	docker build -t hydoc/estimation:$(version) -f deployment.Dockerfile .
+	docker push hydoc/estimation:$(version)
+
 check-frontend: check-frontend-format check-frontend-test check-frontend-lint
 
 restart: down up
