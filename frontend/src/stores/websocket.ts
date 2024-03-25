@@ -73,9 +73,11 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     userRoomId.value = roomId;
 
     const roleUrl = role === Role.Developer ? "developer" : "product-owner";
-    websocket.value = new WebSocket(
-      `ws://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`,
-    );
+    let wsUrl = `wss://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`
+    if (window.location.protocol !== "https:") {
+      wsUrl = `ws://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`
+    }
+    websocket.value = new WebSocket(wsUrl);
 
     websocket.value!.onerror = () => {
       websocket.value!.close();
