@@ -65,6 +65,16 @@ func (room *Room) Run() {
 						client.reset()
 					}
 					client.send <- msg
+				case leave:
+					if room.InProgress {
+						room.InProgress = false
+						if client.Role == Developer {
+							client.reset()
+						}
+						client.send <- newResetRound()
+						continue
+					}
+					client.send <- msg
 				default:
 					client.send <- msg
 				}

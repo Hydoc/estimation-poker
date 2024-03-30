@@ -99,7 +99,6 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
 	activeRooms := []string{}
 	for _, room := range app.rooms {
-		log.Println(room.id)
 		activeRooms = append(activeRooms, string(room.id))
 	}
 	slices.Sort(activeRooms)
