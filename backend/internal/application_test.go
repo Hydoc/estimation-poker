@@ -37,7 +37,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			},
 			rooms: map[RoomId]*Room{
 				"1": {
-					InProgress: true,
+					inProgress: true,
 				},
 			},
 			room: "1",
@@ -177,7 +177,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 }
 
 func TestApplication_handleFetchUsers(t *testing.T) {
-	room := newRoom("1", make(chan<- RoomId))
+	room := newRoom("1", make(chan<- RoomId), "")
 	dev := newClient("B", Developer, room, nil)
 	otherDev := newClient("Another", Developer, room, nil)
 	devWithEqualLetter := newClient("Also a dev", Developer, room, nil)
@@ -196,7 +196,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 			rooms: map[RoomId]*Room{
 				RoomId("1"): {
 					id:         "1",
-					InProgress: false,
+					inProgress: false,
 					leave:      nil,
 					join:       nil,
 					clients: map[*Client]bool{
@@ -338,7 +338,7 @@ func TestApplication_handleWs(t *testing.T) {
 			rooms: map[RoomId]*Room{
 				RoomId("1"): {
 					id:         "1",
-					InProgress: false,
+					inProgress: false,
 					leave:      nil,
 					join:       make(chan *Client),
 					clients:    nil,
@@ -357,7 +357,7 @@ func TestApplication_handleWs(t *testing.T) {
 			rooms: map[RoomId]*Room{
 				RoomId("1"): {
 					id:         "1",
-					InProgress: false,
+					inProgress: false,
 					leave:      nil,
 					join:       make(chan *Client),
 					clients:    nil,
@@ -427,7 +427,7 @@ func TestApplication_handleWs(t *testing.T) {
 func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
 	app := NewApplication(http.NewServeMux(), &websocket.Upgrader{}, &GuessConfig{})
 	roomId := "Test"
-	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom)
+	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom, "")
 	router := app.ConfigureRouting()
 
 	server := httptest.NewServer(router)
@@ -610,7 +610,7 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 		rooms: map[RoomId]*Room{
 			roomToDestroy: {
 				id:         roomToDestroy,
-				InProgress: false,
+				inProgress: false,
 				leave:      nil,
 				join:       nil,
 				clients:    nil,

@@ -1,27 +1,56 @@
 package internal
 
+import (
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"log"
+)
+
 type RoomId string
 
 type Room struct {
-	id         RoomId
-	InProgress bool
-	leave      chan *Client
-	join       chan *Client
-	clients    map[*Client]bool
-	broadcast  chan message
-	destroy    chan<- RoomId
+	id            RoomId
+	inProgress    bool
+	leave         chan *Client
+	join          chan *Client
+	clients       map[*Client]bool
+	broadcast     chan message
+	destroy       chan<- RoomId
+	nameOfCreator string
+	isLocked      bool
+	key           uuid.UUID
+	password      string
 }
 
-func newRoom(name RoomId, destroy chan<- RoomId) *Room {
+func newRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 	return &Room{
-		id:         name,
-		InProgress: false,
-		leave:      make(chan *Client),
-		join:       make(chan *Client),
-		clients:    make(map[*Client]bool),
-		broadcast:  make(chan message),
-		destroy:    destroy,
+		id:            name,
+		inProgress:    false,
+		leave:         make(chan *Client),
+		join:          make(chan *Client),
+		clients:       make(map[*Client]bool),
+		broadcast:     make(chan message),
+		destroy:       destroy,
+		nameOfCreator: nameOfCreator,
+		isLocked:      false,
+		key:           uuid.New(),
+		password:      "",
 	}
+}
+
+func (room *Room) lock(username, password, key string) bool {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatalf("could not hash password %s", password)
+		return false
+	}
+	if username == room.nameOfCreator && key == room.key.String() {
+		room.isLocked = true
+		room.password = string(hashed)
+		return true
+	}
+
+	return false
 }
 
 func (room *Room) everyDevGuessed() bool {
@@ -50,7 +79,7 @@ func (room *Room) Run() {
 				switch msg.(type) {
 				case clientMessage:
 					if msg.(clientMessage).isEstimate() {
-						room.InProgress = true
+						room.inProgress = true
 					}
 					client.send <- msg
 				case developerGuessed:
@@ -60,14 +89,14 @@ func (room *Room) Run() {
 					}
 					client.send <- msg
 				case resetRound:
-					room.InProgress = false
+					room.inProgress = false
 					if client.Role == Developer {
 						client.reset()
 					}
 					client.send <- msg
 				case leave:
-					if room.InProgress {
-						room.InProgress = false
+					if room.inProgress {
+						room.inProgress = false
 						if client.Role == Developer {
 							client.reset()
 						}

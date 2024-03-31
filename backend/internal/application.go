@@ -24,7 +24,8 @@ func (app *Application) ConfigureRouting() *http.ServeMux {
 	app.router.HandleFunc("GET /api/estimation/room/{id}/developer", app.withRequiredQueryParam("name", app.handleWs))
 	app.router.HandleFunc("GET /api/estimation/room/{id}/users/exists", app.contentTypeJsonMiddleware(app.withRequiredQueryParam("name", app.handleUserInRoomExists)))
 	app.router.HandleFunc("GET /api/estimation/room/{id}/users", app.contentTypeJsonMiddleware(app.handleFetchUsers))
-	app.router.HandleFunc("GET /api/estimation/room/{id}/state", app.contentTypeJsonMiddleware(app.handleRoundInRoomInProgress))
+	app.router.HandleFunc("GET /api/estimation/room/{id}/{username}/permissions", app.contentTypeJsonMiddleware(app.handleFetchPermissions))
+	app.router.HandleFunc("GET /api/estimation/room/{id}/state", app.contentTypeJsonMiddleware(app.handleFetchRoomState))
 	app.router.HandleFunc("GET /api/estimation/room/rooms", app.contentTypeJsonMiddleware(app.handleFetchActiveRooms))
 	app.router.HandleFunc("GET /api/estimation/possible-guesses", app.contentTypeJsonMiddleware(app.handlePossibleGuesses))
 	return app.router
@@ -46,6 +47,39 @@ func (app *Application) withRequiredQueryParam(param string, next http.HandlerFu
 	}
 }
 
+func (app *Application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
+	roomId := request.PathValue("id")
+	username := request.PathValue("username")
+	actualRoom, ok := app.rooms[RoomId(roomId)]
+	if !ok {
+		writer.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(writer).Encode(map[string]string{
+			"message": "room does not exist",
+		})
+		return
+	}
+
+	if actualRoom.nameOfCreator == username {
+		json.NewEncoder(writer).Encode(map[string]map[string]map[string]any{
+			"permissions": {
+				"room": {
+					"canLock": true,
+					"key":     actualRoom.key.String(),
+				},
+			},
+		})
+		return
+	}
+
+	json.NewEncoder(writer).Encode(map[string]map[string]map[string]any{
+		"permissions": {
+			"room": {
+				"canLock": false,
+			},
+		},
+	})
+}
+
 func (app *Application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
 	json.NewEncoder(writer).Encode(app.guessConfig.Guesses)
 }
@@ -57,16 +91,19 @@ func (app *Application) contentTypeJsonMiddleware(next http.HandlerFunc) http.Ha
 	}
 }
 
-func (app *Application) handleRoundInRoomInProgress(writer http.ResponseWriter, request *http.Request) {
+func (app *Application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
 	roomId := request.PathValue("id")
-	if _, ok := app.rooms[RoomId(roomId)]; !ok {
+	actualRoom, ok := app.rooms[RoomId(roomId)]
+	if !ok {
 		json.NewEncoder(writer).Encode(map[string]bool{
 			"inProgress": false,
+			"isLocked":   false,
 		})
 		return
 	}
 	json.NewEncoder(writer).Encode(map[string]bool{
-		"inProgress": app.rooms[RoomId(roomId)].InProgress,
+		"inProgress": actualRoom.inProgress,
+		"isLocked":   actualRoom.isLocked,
 	})
 }
 
@@ -99,7 +136,9 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
 	activeRooms := []string{}
 	for _, room := range app.rooms {
-		activeRooms = append(activeRooms, string(room.id))
+		if !room.isLocked {
+			activeRooms = append(activeRooms, string(room.id))
+		}
 	}
 	slices.Sort(activeRooms)
 	json.NewEncoder(writer).Encode(activeRooms)
@@ -153,17 +192,16 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 		// when there is a room, it's already running in a goroutine
 		clientRoom = room
 	} else {
-		clientRoom = newRoom(RoomId(roomId), app.destroyRoom)
+		clientRoom = newRoom(RoomId(roomId), app.destroyRoom, name)
 		app.rooms[clientRoom.id] = clientRoom
 		go clientRoom.Run()
 	}
 
-	var client *Client
+	clientRole := Developer
 	if strings.Contains(request.URL.Path, "product-owner") {
-		client = newClient(name, ProductOwner, clientRoom, connection)
-	} else {
-		client = newClient(name, Developer, clientRoom, connection)
+		clientRole = ProductOwner
 	}
+	client := newClient(name, clientRole, clientRoom, connection)
 	clientRoom.join <- client
 	clientRoom.broadcast <- newJoin()
 

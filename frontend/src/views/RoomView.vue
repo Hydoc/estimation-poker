@@ -18,6 +18,8 @@ const ticketToGuess = computed(() => websocketStore.ticketToGuess);
 const guess = computed(() => websocketStore.guess);
 const showAllGuesses = computed(() => websocketStore.showAllGuesses);
 const possibleGuesses = computed(() => websocketStore.possibleGuesses);
+const permissions = computed(() => websocketStore.permissions);
+const roomIsLocked = computed(() => websocketStore.roomIsLocked);
 
 function sendMessage(type: SendableWebsocketMessageType, data: string | number | null) {
   websocketStore.send({ type, data });
@@ -28,7 +30,13 @@ function leaveRoom() {
   router.push("/");
 }
 
-onMounted(websocketStore.fetchPossibleGuesses);
+onMounted(async () => {
+  await Promise.all([
+    websocketStore.fetchPossibleGuesses(),
+    websocketStore.fetchPermissions(),
+    websocketStore.fetchRoomIsLocked(),
+  ]);
+});
 </script>
 
 <template>
@@ -42,11 +50,14 @@ onMounted(websocketStore.fetchPossibleGuesses);
     :guess="guess"
     :show-all-guesses="showAllGuesses"
     :possible-guesses="possibleGuesses"
+    :permissions="permissions"
+    :room-is-locked="roomIsLocked"
     @estimate="sendMessage('estimate', $event)"
     @guess="sendMessage('guess', $event)"
     @reveal="sendMessage('reveal', null)"
     @new-round="sendMessage('new-round', null)"
     @leave="leaveRoom"
+    @lockRoom="sendMessage('lock-room', $event)"
   />
 </template>
 

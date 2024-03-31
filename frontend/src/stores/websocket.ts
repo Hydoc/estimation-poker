@@ -1,7 +1,7 @@
 import type { Ref } from "vue";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { type PossibleGuess, type UserOverview } from "@/components/types";
+import { type PossibleGuess, type UserOverview, type Permissions } from "@/components/types";
 import { Role, RoundState } from "@/components/types";
 
 type WebsocketStore = {
@@ -13,6 +13,8 @@ type WebsocketStore = {
   send(message: SendableWebsocketMessage): void;
   isRoundInRoomInProgress(roomId: string): Promise<boolean>;
   fetchPossibleGuesses(): Promise<void>;
+  fetchPermissions(): Promise<Permissions>;
+  fetchRoomIsLocked(): Promise<boolean>;
   username: Ref<string>;
   isConnected: Ref<boolean>;
   usersInRoom: Ref<UserOverview>;
@@ -23,9 +25,11 @@ type WebsocketStore = {
   guess: Ref<number>;
   showAllGuesses: Ref<boolean>;
   possibleGuesses: Ref<PossibleGuess[]>;
+  permissions: Ref<Permissions>;
+  roomIsLocked: Ref<boolean>;
 };
 
-export type SendableWebsocketMessageType = "estimate" | "guess" | "reveal" | "new-round";
+export type SendableWebsocketMessageType = "estimate" | "guess" | "reveal" | "new-round" | "lock-room";
 
 type SendableWebsocketMessage = {
   type: SendableWebsocketMessageType;
@@ -41,7 +45,8 @@ type ReceivableWebsocketMessage = {
     | "everyone-guessed"
     | "you-guessed"
     | "reveal"
-    | "reset-round";
+    | "reset-round"
+    | "room-locked";
   data?: any;
 };
 
@@ -59,12 +64,15 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const guess = ref(0);
   const showAllGuesses = ref(false);
   const possibleGuesses: Ref<PossibleGuess[]> = ref([]);
+  const permissions: Ref<Permissions> = ref({ room: { canLock: false } });
+  const roomIsLocked: Ref<boolean> = ref(false);
 
   const isConnected = computed(() => websocket.value !== null);
 
   function disconnect() {
     websocket.value?.close();
     websocket.value = null;
+    permissions.value = { room: { canLock: false } };
   }
 
   function connect(name: string, role: Role, roomId: string): void {
@@ -108,6 +116,9 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           break;
         case "reveal":
           showAllGuesses.value = true;
+          break;
+        case "room-locked":
+          await fetchRoomIsLocked();
           break;
         case "reset-round":
           resetRound();
@@ -168,6 +179,31 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
 
     possibleGuesses.value = await response.json();
   }
+  
+  async function fetchPermissions(): Promise<Permissions> {
+    const response = await fetch(`/api/estimation/room/${userRoomId.value}/${username.value}/permissions`);
+    if (!response.ok) {
+      permissions.value = {
+        room: {
+          canLock: false,
+        }
+      };
+      return permissions.value;
+    }
+    permissions.value = (await response.json()).permissions;
+    return permissions.value;
+  }
+  
+  async function fetchRoomIsLocked(): Promise<boolean> {
+    const response = await fetch(`/api/estimation/room/${userRoomId.value}/state`);
+    if (!response.ok) {
+      roomIsLocked.value = false;
+      return roomIsLocked.value;
+    }
+    
+    roomIsLocked.value = ((await response.json()) as { isLocked: boolean }).isLocked;
+    return roomIsLocked.value;
+  }
 
   return {
     connect,
@@ -188,5 +224,9 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     showAllGuesses,
     fetchActiveRooms,
     fetchPossibleGuesses,
+    fetchPermissions,
+    fetchRoomIsLocked,
+    permissions,
+    roomIsLocked,
   };
 });

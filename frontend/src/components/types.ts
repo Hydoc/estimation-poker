@@ -32,3 +32,10 @@ export type PossibleGuess = {
   guess: number;
   description: string;
 };
+
+export type Permissions = {
+  room: {
+    canLock: boolean;
+    key?: string;
+  };
+};

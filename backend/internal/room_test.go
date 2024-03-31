@@ -7,13 +7,13 @@ import (
 
 func TestNewRoom(t *testing.T) {
 	expectedRoomId := RoomId("Test")
-	room := newRoom(expectedRoomId, make(chan<- RoomId))
+	room := newRoom(expectedRoomId, make(chan<- RoomId), "")
 
 	if room.id != expectedRoomId {
 		t.Errorf("want room id %v, got %v", expectedRoomId, room.id)
 	}
 
-	if room.InProgress {
+	if room.inProgress {
 		t.Error("expected room not to be in progress")
 	}
 }
@@ -66,7 +66,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_RegisteringAClient(t *testing.T) {
-	room := newRoom("Test", make(chan<- RoomId))
+	room := newRoom("Test", make(chan<- RoomId), "")
 	client := &Client{}
 	go room.Run()
 
@@ -83,7 +83,7 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 	client := &Client{}
 	room := &Room{
 		id:         roomId,
-		InProgress: false,
+		inProgress: false,
 		leave:      make(chan *Client),
 		join:       nil,
 		clients: map[*Client]bool{
@@ -113,7 +113,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 	}
 	room := &Room{
 		id:         "Test",
-		InProgress: false,
+		inProgress: false,
 		leave:      nil,
 		join:       nil,
 		clients: map[*Client]bool{
@@ -136,7 +136,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 		t.Errorf("want message %v, got %v", msg, gotClientMsg)
 	}
 
-	if !room.InProgress {
+	if !room.inProgress {
 		t.Error("expected room to be in progress")
 	}
 }
@@ -150,7 +150,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 	}
 	room := &Room{
 		id:         "Test",
-		InProgress: false,
+		inProgress: false,
 		leave:      nil,
 		join:       nil,
 		clients: map[*Client]bool{
@@ -177,7 +177,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 	}
 	room := &Room{
 		id:         "Test",
-		InProgress: false,
+		inProgress: false,
 		leave:      nil,
 		join:       nil,
 		clients: map[*Client]bool{
@@ -214,7 +214,7 @@ func TestRoom_Run_BroadcastResetRound(t *testing.T) {
 	}
 	room := &Room{
 		id:         "Test",
-		InProgress: true,
+		inProgress: true,
 		leave:      nil,
 		join:       nil,
 		clients: map[*Client]bool{
@@ -236,7 +236,7 @@ func TestRoom_Run_BroadcastResetRound(t *testing.T) {
 		t.Errorf("want msg %v, got %v", msg, gotClientMsg)
 	}
 
-	if room.InProgress {
+	if room.inProgress {
 		t.Error("expected room not to be in progress")
 	}
 
