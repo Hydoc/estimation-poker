@@ -31,7 +31,13 @@ type WebsocketStore = {
   roomIsLocked: Ref<boolean>;
 };
 
-export type SendableWebsocketMessageType = "estimate" | "guess" | "reveal" | "new-round" | "lock-room" | "open-room";
+export type SendableWebsocketMessageType =
+  | "estimate"
+  | "guess"
+  | "reveal"
+  | "new-round"
+  | "lock-room"
+  | "open-room";
 
 type SendableWebsocketMessage = {
   type: SendableWebsocketMessageType;
@@ -84,9 +90,9 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     userRoomId.value = roomId;
 
     const roleUrl = role === Role.Developer ? "developer" : "product-owner";
-    let wsUrl = `wss://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`
+    let wsUrl = `wss://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`;
     if (window.location.protocol !== "https:") {
-      wsUrl = `ws://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`
+      wsUrl = `ws://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`;
     }
     websocket.value = new WebSocket(wsUrl);
 
@@ -156,23 +162,23 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     const response = await fetch(`/api/estimation/room/${roomId}/state`);
     return ((await response.json()) as { inProgress: boolean }).inProgress;
   }
-  
+
   async function isRoomLocked(roomId: string): Promise<boolean> {
     const response = await fetch(`/api/estimation/room/${roomId}/state`);
     return ((await response.json()) as { isLocked: boolean }).isLocked;
   }
-  
+
   async function passwordMatchesRoom(roomId: string, password: string): Promise<boolean> {
     const response = await fetch(`/api/estimation/room/${roomId}/authenticate`, {
       method: "POST",
-      body: JSON.stringify({password}),
-    })
-    
+      body: JSON.stringify({ password }),
+    });
+
     if (!response.ok) {
       return false;
     }
-    
-    return (await response.json() as { ok: boolean }).ok;
+
+    return ((await response.json()) as { ok: boolean }).ok;
   }
 
   async function fetchUsersInRoom() {
@@ -201,28 +207,30 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
 
     possibleGuesses.value = await response.json();
   }
-  
+
   async function fetchPermissions(): Promise<Permissions> {
-    const response = await fetch(`/api/estimation/room/${userRoomId.value}/${username.value}/permissions`);
+    const response = await fetch(
+      `/api/estimation/room/${userRoomId.value}/${username.value}/permissions`,
+    );
     if (!response.ok) {
       permissions.value = {
         room: {
           canLock: false,
-        }
+        },
       };
       return permissions.value;
     }
     permissions.value = (await response.json()).permissions;
     return permissions.value;
   }
-  
+
   async function fetchRoomIsLocked(): Promise<boolean> {
     const response = await fetch(`/api/estimation/room/${userRoomId.value}/state`);
     if (!response.ok) {
       roomIsLocked.value = false;
       return roomIsLocked.value;
     }
-    
+
     roomIsLocked.value = ((await response.json()) as { isLocked: boolean }).isLocked;
     return roomIsLocked.value;
   }

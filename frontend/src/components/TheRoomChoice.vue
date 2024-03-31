@@ -41,7 +41,9 @@ async function connect() {
     return;
   }
 
-  const passwordMatches = isLocked ? await websocketStore.passwordMatchesRoom(roomId.value, passwordForRoom.value) : true;
+  const passwordMatches = isLocked
+    ? await websocketStore.passwordMatchesRoom(roomId.value, passwordForRoom.value)
+    : true;
   if (isLocked && !passwordMatches) {
     showPasswordDialog.value = true;
     showPasswordDoesNotMatch.value = true;
@@ -49,7 +51,7 @@ async function connect() {
   }
 
   showPasswordDialog.value = false;
-  
+
   const roundInRoomInProgress = await websocketStore.isRoundInRoomInProgress(roomId.value);
   if (roundInRoomInProgress) {
     showRoundIsInProgress.value = true;
@@ -86,7 +88,11 @@ onMounted(fetchActiveRooms);
         <v-card-title>Für diesen Raum wird ein Passwort benötigt</v-card-title>
         <v-card-text>
           <v-text-field type="password" placeholder="Passwort" v-model="passwordForRoom" />
-          <v-alert v-if="showPasswordDoesNotMatch" color="error" text="Passwort stimmt nicht überein" />
+          <v-alert
+            v-if="showPasswordDoesNotMatch"
+            color="error"
+            text="Passwort stimmt nicht überein"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>

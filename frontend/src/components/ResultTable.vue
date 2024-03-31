@@ -26,7 +26,13 @@ const averageGuess = computed(() => {
       </tr>
     </thead>
     <tbody>
-      <tr v-for="developer in props.developerList" :key="developer.name" :class="{'bg-blue-grey-lighten-5': developer.guess !== averageGuess && props.showAllGuesses}">
+      <tr
+        v-for="developer in props.developerList"
+        :key="developer.name"
+        :class="{
+          'bg-blue-grey-lighten-5': developer.guess !== averageGuess && props.showAllGuesses,
+        }"
+      >
         <td>{{ developer.name }}</td>
         <td>
           <v-icon color="green" v-if="developer.guess !== 0 && !props.showAllGuesses"
