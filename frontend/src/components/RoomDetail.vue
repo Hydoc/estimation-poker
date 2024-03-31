@@ -27,6 +27,7 @@ const emit = defineEmits<{
   (e: "new-round"): void;
   (e: "leave"): void;
   (e: "lock-room", payload: { password: string; key: string; }): void;
+  (e: "open-room", payload: { key: string; }): void;
 }>();
 const showSnackbar = ref(false);
 const snackbarText = ref("");
@@ -65,6 +66,12 @@ function lockRoom() {
     key: props.permissions.room.key || "",
   });
 }
+
+function openRoom() {
+  emit("open-room", {
+    key: props.permissions.room.key || "",
+  })
+}
 </script>
 
 <template>
@@ -97,7 +104,7 @@ function lockRoom() {
           >Raum verlassen</v-btn
         >
         <v-btn v-if="permissions.room.canLock && !roomIsLocked" append-icon="mdi-lock" color="grey-darken-2" @click="showSetRoomPasswordDialog = true">Raum schließen</v-btn>
-        <v-btn class="mr-1" v-if="permissions.room.canLock && roomIsLocked" append-icon="mdi-key" color="grey-darken-2">Raum öffnen</v-btn>
+        <v-btn class="mr-1" v-if="permissions.room.canLock && roomIsLocked" append-icon="mdi-key" color="grey-darken-2" @click="openRoom">Raum öffnen</v-btn>
         <v-btn color="indigo-darken-3" v-if="roomIsLocked && permissions.room.canLock" @click="copyPassword" append-icon="mdi-content-copy">Passwort kopieren</v-btn>
       </v-col>
     </v-row>

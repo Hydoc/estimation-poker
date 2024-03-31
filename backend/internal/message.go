@@ -5,6 +5,7 @@ const (
 	newRound = "new-round"
 	estimate = "estimate"
 	lockRoom = "lock-room"
+	openRoom = "open-room"
 )
 
 type messageDTO map[string]interface{}
@@ -27,6 +28,8 @@ type resetRound struct{}
 type developerGuessed struct{}
 
 type roomLocked struct{}
+
+type roomOpened struct{}
 
 type everyoneGuessed struct{}
 
@@ -68,6 +71,12 @@ func (rLocked roomLocked) ToJson() messageDTO {
 	}
 }
 
+func (rOpened roomOpened) ToJson() messageDTO {
+	return map[string]any{
+		"type": "room-opened",
+	}
+}
+
 func (everyOneGuessed everyoneGuessed) ToJson() messageDTO {
 	return map[string]interface{}{
 		"type": "everyone-guessed",
@@ -97,6 +106,10 @@ func newLeave() leave {
 
 func newRoomLocked() roomLocked {
 	return roomLocked{}
+}
+
+func newRoomOpened() roomOpened {
+	return roomOpened{}
 }
 
 func newDeveloperGuessed() developerGuessed {

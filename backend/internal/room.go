@@ -53,6 +53,20 @@ func (room *Room) lock(username, password, key string) bool {
 	return false
 }
 
+func (room *Room) open(username, key string) bool {
+	if username == room.nameOfCreator && key == room.key.String() {
+		room.isLocked = false
+		room.hashedPassword = make([]byte, 0)
+		return true
+	}
+	return false
+}
+
+func (room *Room) verify(password string) bool {
+	err := bcrypt.CompareHashAndPassword(room.hashedPassword, []byte(password))
+	return err == nil
+}
+
 func (room *Room) everyDevGuessed() bool {
 	for client := range room.clients {
 		if client.Role == Developer && client.Guess == 0 {

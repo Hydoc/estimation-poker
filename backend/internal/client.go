@@ -71,6 +71,19 @@ func (client *Client) websocketReader() {
 				break
 			}
 			log.Println("was not able to lock room")
+		case incMessage.Type == openRoom:
+			key, keyOk := incMessage.Data.(map[string]any)["key"]
+
+			if !keyOk {
+				log.Println("client:", client.Name, "tried to open room", client.room.id, "without a key")
+				break
+			}
+
+			if client.room.open(client.Name, key.(string)) {
+				client.room.broadcast <- newRoomOpened()
+				break
+			}
+			log.Println("was not able to open room")
 		default:
 			client.room.broadcast <- incMessage
 		}

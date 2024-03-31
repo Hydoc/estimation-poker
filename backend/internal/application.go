@@ -28,6 +28,7 @@ func (app *Application) ConfigureRouting() *http.ServeMux {
 	app.router.HandleFunc("GET /api/estimation/room/{id}/state", app.contentTypeJsonMiddleware(app.handleFetchRoomState))
 	app.router.HandleFunc("GET /api/estimation/room/rooms", app.contentTypeJsonMiddleware(app.handleFetchActiveRooms))
 	app.router.HandleFunc("GET /api/estimation/possible-guesses", app.contentTypeJsonMiddleware(app.handlePossibleGuesses))
+	app.router.HandleFunc("POST /api/estimation/room/{id}/authenticate", app.contentTypeJsonMiddleware(app.handleRoomAuthenticate))
 	return app.router
 }
 
@@ -45,6 +46,39 @@ func (app *Application) withRequiredQueryParam(param string, next http.HandlerFu
 
 		next.ServeHTTP(writer, request)
 	}
+}
+
+func (app *Application) handleRoomAuthenticate(writer http.ResponseWriter, request *http.Request) {
+	defer request.Body.Close()
+	roomId := request.PathValue("id")
+	actualRoom, ok := app.rooms[RoomId(roomId)]
+	if !ok {
+		writer.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	var input struct {
+		Password string `json:"password"`
+	}
+
+	err := json.NewDecoder(request.Body).Decode(&input)
+	if err != nil {
+		json.NewEncoder(writer).Encode(map[string]bool{
+			"ok": false,
+		})
+		return
+	}
+
+	if actualRoom.verify(input.Password) {
+		json.NewEncoder(writer).Encode(map[string]bool{
+			"ok": true,
+		})
+		return
+	}
+
+	json.NewEncoder(writer).Encode(map[string]bool{
+		"ok": false,
+	})
 }
 
 func (app *Application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {

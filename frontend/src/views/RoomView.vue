@@ -57,7 +57,8 @@ onMounted(async () => {
     @reveal="sendMessage('reveal', null)"
     @new-round="sendMessage('new-round', null)"
     @leave="leaveRoom"
-    @lockRoom="sendMessage('lock-room', $event)"
+    @lock-room="sendMessage('lock-room', $event)"
+    @open-room="sendMessage('open-room', $event)"
   />
 </template>
 
