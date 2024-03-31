@@ -38,16 +38,24 @@ const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
 const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 const roomIsLockedText = computed(() => props.roomIsLocked ? "privater" : "öffentlicher");
 
-async function copyRoomName() {
+async function writeToClipboard(text: string) {
   // @ts-ignore
   const clipboardPermission = await navigator.permissions.query({ name: "clipboard-write" });
   if (clipboardPermission.state === "granted") {
-    await navigator.clipboard.writeText(props.roomId);
-    snackbarText.value = "Raum in die Zwischenablage kopiert!";
+    await navigator.clipboard.writeText(text);
+    snackbarText.value = "Kopiert!"
   } else {
-    snackbarText.value = "Konnte Raum nicht in die Zwischenablage kopieren";
+    snackbarText.value = "Konnte nicht kopiert werden";
   }
   showSnackbar.value = true;
+}
+
+async function copyRoomName() {
+  await writeToClipboard(props.roomId);
+}
+
+async function copyPassword() {
+  await writeToClipboard(roomPassword.value);
 }
 
 function lockRoom() {
@@ -64,12 +72,12 @@ function lockRoom() {
     <v-card>
       <v-card-title>Password setzen</v-card-title>
       <v-card-text>
-        <v-text-field :type="showPassword ? 'text' : 'password'" :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'" @click:append="showPassword = !showPassword" v-model="roomPassword"></v-text-field>
+        <v-text-field placeholder="Passwort" :type="showPassword ? 'text' : 'password'" :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'" @click:append="showPassword = !showPassword" v-model="roomPassword"></v-text-field>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn @click="showSetRoomPasswordDialog = false">Abbrechen</v-btn>
-        <v-btn :disabled="roomPassword.length === 0" @click="lockRoom">Abschließen</v-btn>
+        <v-btn @click="showSetRoomPasswordDialog = false" color="red">Abbrechen</v-btn>
+        <v-btn :disabled="roomPassword.length === 0" @click="lockRoom" color="green">Abschließen</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -84,20 +92,13 @@ function lockRoom() {
           >
         </h1>
       </v-col>
-      <v-col v-if="roundIsWaiting" class="text-right">
-        <v-btn class="mr-2" append-icon="mdi-location-exit" color="deep-purple-darken-1" @click="emit('leave')"
+      <v-col v-if="roundIsWaiting" class="text-right align-self-center">
+        <v-btn class="mr-1" append-icon="mdi-location-exit" color="deep-purple-darken-1" @click="emit('leave')"
           >Raum verlassen</v-btn
         >
-        <v-btn v-if="permissions.room.canLock && !roomIsLocked" append-icon="mdi-lock" color="grey-darken-2" @click="showSetRoomPasswordDialog = true">Raum abschließen</v-btn>
-        <v-btn v-if="permissions.room.canLock && roomIsLocked" append-icon="mdi-lock-open">Raum aufschließen</v-btn>
-      </v-col>
-    </v-row>
-    <v-row v-if="roomIsLocked && permissions.room.canLock">
-      <v-col>
-        <p v-if="showPassword">Passwort: {{ roomPassword }}</p>
-      </v-col>
-      <v-col class="text-right">
-        <v-btn @click="showPassword = !showPassword">Passwort {{ showPassword ? "verbergen" : "anzeigen" }}</v-btn>
+        <v-btn v-if="permissions.room.canLock && !roomIsLocked" append-icon="mdi-lock" color="grey-darken-2" @click="showSetRoomPasswordDialog = true">Raum schließen</v-btn>
+        <v-btn class="mr-1" v-if="permissions.room.canLock && roomIsLocked" append-icon="mdi-key" color="grey-darken-2">Raum öffnen</v-btn>
+        <v-btn color="indigo-darken-3" v-if="roomIsLocked && permissions.room.canLock" @click="copyPassword" append-icon="mdi-content-copy">Passwort kopieren</v-btn>
       </v-col>
     </v-row>
   </v-container>
