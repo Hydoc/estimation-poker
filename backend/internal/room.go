@@ -9,44 +9,44 @@ import (
 type RoomId string
 
 type Room struct {
-	id            RoomId
-	inProgress    bool
-	leave         chan *Client
-	join          chan *Client
-	clients       map[*Client]bool
-	broadcast     chan message
-	destroy       chan<- RoomId
-	nameOfCreator string
-	isLocked      bool
-	key           uuid.UUID
-	password      string
+	id             RoomId
+	inProgress     bool
+	leave          chan *Client
+	join           chan *Client
+	clients        map[*Client]bool
+	broadcast      chan message
+	destroy        chan<- RoomId
+	nameOfCreator  string
+	isLocked       bool
+	key            uuid.UUID
+	hashedPassword []byte
 }
 
 func newRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 	return &Room{
-		id:            name,
-		inProgress:    false,
-		leave:         make(chan *Client),
-		join:          make(chan *Client),
-		clients:       make(map[*Client]bool),
-		broadcast:     make(chan message),
-		destroy:       destroy,
-		nameOfCreator: nameOfCreator,
-		isLocked:      false,
-		key:           uuid.New(),
-		password:      "",
+		id:             name,
+		inProgress:     false,
+		leave:          make(chan *Client),
+		join:           make(chan *Client),
+		clients:        make(map[*Client]bool),
+		broadcast:      make(chan message),
+		destroy:        destroy,
+		nameOfCreator:  nameOfCreator,
+		isLocked:       false,
+		key:            uuid.New(),
+		hashedPassword: make([]byte, 0),
 	}
 }
 
 func (room *Room) lock(username, password, key string) bool {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatalf("could not hash password %s", password)
+		log.Fatalf("could not hash hashedPassword %s", password)
 		return false
 	}
 	if username == room.nameOfCreator && key == room.key.String() {
 		room.isLocked = true
-		room.password = string(hashed)
+		room.hashedPassword = hashed
 		return true
 	}
 
