@@ -132,7 +132,7 @@ func TestClient_WebsocketReaderUnregisteringWhenErrorOccurred(t *testing.T) {
 		t.Errorf("want %v, got %v", expectedRoomBroadcastMsg, gotRoomBroadcastMsg)
 	}
 
-	wantedLog := "read: invalid character 'h' looking for beginning of value"
+	wantedLog := "error reading incoming client message: invalid character 'h' looking for beginning of value"
 
 	if !strings.Contains(logBuffer.String(), wantedLog) {
 		t.Errorf("expected to log %v", wantedLog)

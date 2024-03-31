@@ -26,6 +26,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			name: "not in progress when rooms are empty",
 			expectation: map[string]bool{
 				"inProgress": false,
+				"isLocked":   false,
 			},
 			rooms: map[RoomId]*Room{},
 			room:  "1",
@@ -34,6 +35,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			name: "in progress when room is set",
 			expectation: map[string]bool{
 				"inProgress": true,
+				"isLocked":   false,
 			},
 			rooms: map[RoomId]*Room{
 				"1": {
