@@ -147,31 +147,5 @@ describe("TheActiveRoomOverview", () => {
 
       expect(wrapper.emitted("join")).deep.equal([["Hello", "Test", "developer"]]);
     });
-
-    it("should pass error message to room form", async () => {
-      const wrapper = mount(TheActiveRoomOverview, {
-        props: {
-          activeRooms: ["Hello", "world"],
-          errorMessage: "Test",
-        },
-        global: {
-          plugins: [vuetify],
-        },
-      });
-
-      await wrapper
-        .findComponent(VTable)
-        .find("tbody")
-        .findAll("tr")
-        .at(0)
-        .findAll("td")
-        .at(1)
-        .findComponent(VBtn)
-        .trigger("click");
-
-      expect(wrapper.findComponent(VDialog).findComponent(RoomForm).props("errorMessage")).equal(
-        "Test",
-      );
-    });
   });
 });

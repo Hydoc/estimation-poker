@@ -5,15 +5,12 @@ import { Role } from "@/components/types";
 
 type Props = {
   activeRooms: string[];
-  errorMessage?: string | null;
 };
 
 const name = ref("");
 const role: Ref<Role> = ref(Role.Empty);
 
-const props = withDefaults(defineProps<Props>(), {
-  errorMessage: null,
-});
+const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "join", roomId: string, name: string, role: Role): void;
 }>();
@@ -37,7 +34,6 @@ function showDialogForRoom(room: string) {
             v-model:role="role"
             v-model:name="name"
             :room-id="roomToJoin"
-            :error-message="props.errorMessage"
             @submit="emit('join', roomToJoin, name, role)"
           />
         </v-card-text>
