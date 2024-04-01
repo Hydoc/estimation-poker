@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from "pinia";
 
 const websocketSendSpy = vi.fn();
 const websocketCloseSpy = vi.fn();
+const addEventListenerSpy = vi.fn();
 let websocketUrl;
 let websocketOnMessage;
 let websocketOnError;
@@ -16,6 +17,7 @@ global.WebSocket = class {
   }
   close = websocketCloseSpy;
   send = websocketSendSpy;
+  addEventListener = addEventListenerSpy;
   set onmessage(handler) {
     websocketOnMessage = handler;
   }
@@ -36,9 +38,9 @@ beforeEach(() => {
   websocketUrl = "";
 });
 describe("Websocket Store", () => {
-  it("should connect", () => {
+  it("should connect", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     expect(websocketUrl).equal(
       "ws://localhost:3000/api/estimation/room/Test/product-owner?name=ABC",
     );
@@ -55,15 +57,15 @@ describe("Websocket Store", () => {
     });
   });
 
-  it("should connect as developer", () => {
+  it("should connect as developer", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.Developer, "Test");
+    await websocketStore.connect("ABC", Role.Developer, "Test");
     expect(websocketUrl).equal("ws://localhost:3000/api/estimation/room/Test/developer?name=ABC");
   });
 
   it("should send a message", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     websocketStore.send({
       type: "estimate",
       data: "WR-123",
@@ -98,7 +100,7 @@ describe("Websocket Store", () => {
     });
 
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "join" }),
     });
@@ -118,7 +120,7 @@ describe("Websocket Store", () => {
     });
 
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "leave" }),
     });
@@ -138,7 +140,7 @@ describe("Websocket Store", () => {
     });
 
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "developer-guessed" }),
     });
@@ -149,7 +151,7 @@ describe("Websocket Store", () => {
 
   it("should update round state and ticket to guess when estimate appears", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "estimate", data: "WR-1" }),
     });
@@ -160,7 +162,7 @@ describe("Websocket Store", () => {
 
   it("should update guess when you-guessed message appeared", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "you-guessed", data: 1 }),
     });
@@ -178,7 +180,7 @@ describe("Websocket Store", () => {
       json: () => usersInRoom,
     });
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "everyone-guessed" }),
     });
@@ -188,7 +190,7 @@ describe("Websocket Store", () => {
 
   it("should set show all guesses to true when reveal message appeared", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "reveal" }),
     });
@@ -201,7 +203,7 @@ describe("Websocket Store", () => {
       json: () => ({ isLocked: true }),
     });
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "room-locked" }),
     });
@@ -216,7 +218,7 @@ describe("Websocket Store", () => {
       json: () => ({ isLocked: false }),
     });
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "room-opened" }),
     });
@@ -235,7 +237,7 @@ describe("Websocket Store", () => {
       json: () => usersInRoom,
     });
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     websocketStore.ticketToGuess = "BLA-1";
     websocketStore.guess = 9;
     websocketStore.roundState = RoundState.End;
@@ -251,23 +253,23 @@ describe("Websocket Store", () => {
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/users");
   });
 
-  it("should close when error occured", () => {
+  it("should close when error occured", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     websocketOnError();
     expect(websocketCloseSpy).toHaveBeenCalledOnce();
   });
 
-  it("should close when server closes the connection", () => {
+  it("should close when server closes the connection", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     websocketOnClose();
     expect(websocketCloseSpy).toHaveBeenCalledOnce();
   });
 
-  it("should close when calling disconnect", () => {
+  it("should close when calling disconnect", async () => {
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     websocketStore.disconnect();
     expect(websocketCloseSpy).toHaveBeenCalledOnce();
   });
@@ -282,7 +284,7 @@ describe("Websocket Store", () => {
     });
     const websocketStore = useWebsocketStore();
     websocketStore.usersInRoom = usersInRoom;
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
       data: JSON.stringify({ type: "leave" }),
     });
@@ -416,7 +418,7 @@ describe("Websocket Store", () => {
     });
 
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketStore.fetchPermissions();
 
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/ABC/permissions");
@@ -434,7 +436,7 @@ describe("Websocket Store", () => {
     });
 
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketStore.fetchPermissions();
 
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/ABC/permissions");
@@ -454,7 +456,7 @@ describe("Websocket Store", () => {
     });
 
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     const actual = await websocketStore.fetchRoomIsLocked();
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
     expect(actual).to.be.true;
@@ -466,7 +468,7 @@ describe("Websocket Store", () => {
     });
 
     const websocketStore = useWebsocketStore();
-    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     const actual = await websocketStore.fetchRoomIsLocked();
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
     expect(actual).to.be.false;

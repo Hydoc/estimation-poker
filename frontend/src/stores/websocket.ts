@@ -5,7 +5,7 @@ import { type PossibleGuess, type UserOverview, type Permissions } from "@/compo
 import { Role, RoundState } from "@/components/types";
 
 type WebsocketStore = {
-  connect(name: string, role: string, roomId: string): void;
+  connect(name: string, role: string, roomId: string): Promise<void>;
   disconnect(): void;
   resetRound(): void;
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
@@ -84,7 +84,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     permissions.value = { room: { canLock: false } };
   }
 
-  function connect(name: string, role: Role, roomId: string): void {
+  async function connect(name: string, role: Role, roomId: string): Promise<void> {
     username.value = name;
     userRole.value = role;
     userRoomId.value = roomId;
@@ -95,6 +95,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
       wsUrl = `ws://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`;
     }
     websocket.value = new WebSocket(wsUrl);
+    await waitForOpenConnection(websocket.value);
 
     websocket.value!.onerror = () => {
       websocket.value!.close();
@@ -136,6 +137,18 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           break;
       }
     };
+  }
+
+  function waitForOpenConnection(socket: WebSocket): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (socket.readyState !== socket.OPEN) {
+        socket.addEventListener("open", () => {
+          resolve(true);
+        });
+      } else {
+        resolve(true);
+      }
+    });
   }
 
   function send(message: SendableWebsocketMessage) {
