@@ -96,6 +96,8 @@ describe("TheRoomChoice", () => {
       await nextTick();
       await nextTick();
       await nextTick();
+      await nextTick();
+      await nextTick();
 
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
@@ -177,6 +179,9 @@ describe("TheRoomChoice", () => {
       await wrapper
         .findComponent(TheActiveRoomOverview)
         .vm.$emit("join", "test", "my name", Role.Developer);
+      await nextTick();
+      await nextTick();
+      await nextTick();
       await nextTick();
       await nextTick();
       await nextTick();
@@ -314,6 +319,11 @@ describe("TheRoomChoice", () => {
       wrapper.vm.roomId = "test";
       wrapper.vm.passwordForRoom = "top secret";
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
       await nextTick();
       await nextTick();
       await nextTick();

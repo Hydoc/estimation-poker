@@ -62,7 +62,7 @@ async function connect() {
     showUserAlreadyExists.value = true;
     return;
   }
-  websocketStore.connect(name.value, role.value, roomId.value);
+  await websocketStore.connect(name.value, role.value, roomId.value);
   await router.push("/room");
 }
 
