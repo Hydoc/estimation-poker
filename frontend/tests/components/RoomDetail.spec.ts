@@ -5,7 +5,16 @@ import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 import { Role, RoundState } from "../../src/components/types";
-import { VBtn, VIcon, VSnackbar } from "vuetify/components";
+import {
+  VBtn,
+  VIcon,
+  VSnackbar,
+  VDialog,
+  VCard,
+  VCardTitle,
+  VTextField,
+  VCardActions,
+} from "vuetify/components";
 import UserBox from "../../src/components/UserBox.vue";
 import RoundOverview from "../../src/components/RoundOverview.vue";
 import CommandCenter from "../../src/components/CommandCenter.vue";
@@ -38,6 +47,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -51,7 +66,7 @@ describe("RoomDetail", () => {
         },
       });
 
-      expect(wrapper.find("h1").text()).equal("Raum: ABC");
+      expect(wrapper.find("h1").text()).equal("öffentlicher Raum: ABC");
       expect(wrapper.find("h1").findComponent(VIcon).exists()).to.be.true;
       expect(wrapper.find("h1").findComponent(VIcon).find("i").attributes("title")).equal(
         "Raum kopieren",
@@ -92,6 +107,157 @@ describe("RoomDetail", () => {
       expect(wrapper.findComponent(VSnackbar).props("modelValue")).to.be.false;
     });
 
+    it("should render when room is locked", () => {
+      const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
+      const currentUsername = "Test";
+      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId: "ABC",
+          usersInRoom: {
+            developerList,
+            productOwnerList,
+          },
+          currentUsername: currentUsername,
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: true,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+      expect(wrapper.find("h1").text()).equal("privater Raum: ABC");
+    });
+
+    it("should render additional buttons when room is not locked and current user has permissions to lock", () => {
+      const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
+      const currentUsername = "Test";
+      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId: "ABC",
+          usersInRoom: {
+            developerList,
+            productOwnerList,
+          },
+          currentUsername: currentUsername,
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: true,
+              key: "abc",
+            },
+          },
+          roomIsLocked: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn)).length(2);
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn).at(0).text()).equal(
+        "Raum verlassen",
+      );
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).text()).equal(
+        "Raum schließen",
+      );
+      expect(
+        wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).props("appendIcon"),
+      ).equal("mdi-lock");
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).props("color")).equal(
+        "grey-darken-2",
+      );
+    });
+
+    it("should render additional buttons when room is locked and current user has permissions to lock", () => {
+      const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
+      const currentUsername = "Test";
+      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId: "ABC",
+          usersInRoom: {
+            developerList,
+            productOwnerList,
+          },
+          currentUsername: currentUsername,
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: true,
+              key: "abc",
+            },
+          },
+          roomIsLocked: true,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn)).length(3);
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn).at(0).text()).equal(
+        "Raum verlassen",
+      );
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).text()).equal(
+        "Raum öffnen",
+      );
+      expect(
+        wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).props("appendIcon"),
+      ).equal("mdi-key");
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).props("color")).equal(
+        "grey-darken-2",
+      );
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn).at(2).text()).equal(
+        "Passwort kopieren",
+      );
+      expect(
+        wrapper.find(".align-self-center").findAllComponents(VBtn).at(2).props("appendIcon"),
+      ).equal("mdi-content-copy");
+      expect(wrapper.find(".align-self-center").findAllComponents(VBtn).at(2).props("color")).equal(
+        "indigo-darken-3",
+      );
+    });
+
     it("should render RoundOverview when ticketToGuess != ''", () => {
       const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
       const currentUsername = "Test";
@@ -109,6 +275,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -147,6 +319,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -192,6 +370,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -210,7 +394,7 @@ describe("RoomDetail", () => {
       await nextTick();
       await nextTick();
       // @ts-ignore
-      expect(wrapper.vm.snackbarText).equal("Raum in die Zwischenablage kopiert!");
+      expect(wrapper.vm.snackbarText).equal("Kopiert!");
       expect(wrapper.findComponent(VSnackbar).exists()).to.be.true;
       expect(wrapper.findComponent(VSnackbar).props("modelValue")).to.be.true;
       expect(wrapper.findComponent(VSnackbar).props("timeout")).equal(3000);
@@ -246,6 +430,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -264,7 +454,7 @@ describe("RoomDetail", () => {
       await nextTick();
       await nextTick();
       // @ts-ignore
-      expect(wrapper.vm.snackbarText).equal("Konnte Raum nicht in die Zwischenablage kopieren");
+      expect(wrapper.vm.snackbarText).equal("Konnte nicht kopiert werden");
       expect(wrapper.findComponent(VSnackbar).exists()).to.be.true;
       expect(wrapper.findComponent(VSnackbar).props("modelValue")).to.be.true;
       expect(wrapper.findComponent(VSnackbar).props("timeout")).equal(3000);
@@ -288,6 +478,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -320,6 +516,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -352,6 +554,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -384,6 +592,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -416,6 +630,12 @@ describe("RoomDetail", () => {
           ticketToGuess: "CC-1",
           guess: 0,
           showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -431,6 +651,406 @@ describe("RoomDetail", () => {
 
       await wrapper.findComponent(VBtn).trigger("click");
       expect(wrapper.emitted("leave")).deep.equal([[]]);
+    });
+
+    it("should open dialog for setting password when 'Raum schließen' is clicked", async () => {
+      const roomId = "ABC";
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId,
+          usersInRoom: {
+            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
+          },
+          currentUsername: "Test",
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "CC-1",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: true,
+              key: "abc",
+            },
+          },
+          roomIsLocked: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      await wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).trigger("click");
+
+      expect(wrapper.findComponent(VDialog).exists()).to.be.true;
+      expect(wrapper.findComponent(VDialog).findComponent(VCard).exists()).to.be.true;
+      expect(wrapper.findComponent(VDialog).findComponent(VCard).findComponent(VCardTitle).exists())
+        .to.be.true;
+      expect(
+        wrapper.findComponent(VDialog).findComponent(VCard).findComponent(VCardTitle).text(),
+      ).equal("Passwort setzen");
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VTextField)
+          .props("placeholder"),
+      ).equal("Passwort");
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VTextField)
+          .props("appendIcon"),
+      ).equal("mdi-eye-off");
+      expect(
+        wrapper.findComponent(VDialog).findComponent(VCard).findComponent(VTextField).props("type"),
+      ).equal("password");
+
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VCardActions)
+          .findAllComponents(VBtn),
+      ).length(2);
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VCardActions)
+          .findAllComponents(VBtn)
+          .at(0)
+          .text(),
+      ).equal("Abbrechen");
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VCardActions)
+          .findAllComponents(VBtn)
+          .at(0)
+          .props("color"),
+      ).equal("red");
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VCardActions)
+          .findAllComponents(VBtn)
+          .at(1)
+          .text(),
+      ).equal("Abschließen");
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VCardActions)
+          .findAllComponents(VBtn)
+          .at(1)
+          .props("color"),
+      ).equal("green");
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VCardActions)
+          .findAllComponents(VBtn)
+          .at(1)
+          .props("disabled"),
+      ).to.be.true;
+    });
+
+    it("should toggle password field in dialog when eye icon is clicked", async () => {
+      const roomId = "ABC";
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId,
+          usersInRoom: {
+            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
+          },
+          currentUsername: "Test",
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "CC-1",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: true,
+              key: "abc",
+            },
+          },
+          roomIsLocked: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      await wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).trigger("click");
+
+      wrapper.vm.showPassword = true;
+      await nextTick();
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VTextField)
+          .props("appendIcon"),
+      ).equal("mdi-eye");
+      expect(
+        wrapper.findComponent(VDialog).findComponent(VCard).findComponent(VTextField).props("type"),
+      ).equal("text");
+    });
+
+    it("should lock room when password was set", async () => {
+      const roomId = "ABC";
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId,
+          usersInRoom: {
+            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
+          },
+          currentUsername: "Test",
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "CC-1",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: true,
+              key: "abc",
+            },
+          },
+          roomIsLocked: false,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      await wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).trigger("click");
+      await wrapper
+        .findComponent(VDialog)
+        .findComponent(VCard)
+        .findComponent(VTextField)
+        .setValue("top secret");
+
+      expect(
+        wrapper
+          .findComponent(VDialog)
+          .findComponent(VCard)
+          .findComponent(VCardActions)
+          .findAllComponents(VBtn)
+          .at(1)
+          .props("disabled"),
+      ).to.be.false;
+
+      await wrapper
+        .findComponent(VDialog)
+        .findComponent(VCard)
+        .findComponent(VCardActions)
+        .findAllComponents(VBtn)
+        .at(1)
+        .trigger("click");
+
+      expect(wrapper.emitted("lock-room")).deep.equal([[{ key: "abc", password: "top secret" }]]);
+    });
+
+    it("should copy password when room is locked and user has permissions", async () => {
+      Object.defineProperty(global.navigator, "clipboard", {
+        writable: true,
+        value: {
+          writeText: vi.fn(),
+        },
+      });
+      Object.defineProperty(global.navigator, "permissions", {
+        writable: true,
+        value: {
+          query: vi.fn().mockResolvedValue({ state: "granted" }),
+        },
+      });
+
+      const roomId = "ABC";
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId,
+          usersInRoom: {
+            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
+          },
+          currentUsername: "Test",
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "CC-1",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: true,
+              key: "abc",
+            },
+          },
+          roomIsLocked: true,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      wrapper.vm.roomPassword = "top secret";
+      await wrapper.find(".align-self-center").findAllComponents(VBtn).at(2).trigger("click");
+      await nextTick();
+      expect(wrapper.vm.snackbarText).equal("Kopiert!");
+      expect(global.navigator.clipboard.writeText).toHaveBeenNthCalledWith(1, "top secret");
+    });
+
+    it("should emit open-room when user with permission wants to open room", async () => {
+      const roomId = "ABC";
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId,
+          usersInRoom: {
+            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
+          },
+          currentUsername: "Test",
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "CC-1",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: true,
+              key: "abc",
+            },
+          },
+          roomIsLocked: true,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+      await wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).trigger("click");
+      expect(wrapper.emitted("open-room")).deep.equal([[{ key: "abc" }]]);
+    });
+
+    it("should use empty string as key when trying to open room without permission", () => {
+      const roomId = "ABC";
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId,
+          usersInRoom: {
+            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
+          },
+          currentUsername: "Test",
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "CC-1",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: true,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      wrapper.vm.openRoom();
+      expect(wrapper.emitted("open-room")).deep.equal([[{ key: "" }]]);
+    });
+
+    it("should use empty string as key when trying to lock room without permission", () => {
+      const roomId = "ABC";
+      const wrapper = mount(RoomDetail, {
+        props: {
+          roomId,
+          usersInRoom: {
+            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
+          },
+          currentUsername: "Test",
+          userRole: Role.Developer,
+          roundState: RoundState.Waiting,
+          ticketToGuess: "CC-1",
+          guess: 0,
+          showAllGuesses: false,
+          permissions: {
+            room: {
+              canLock: false,
+            },
+          },
+          roomIsLocked: true,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      wrapper.vm.roomPassword = "top secret";
+      wrapper.vm.lockRoom();
+      expect(wrapper.emitted("lock-room")).deep.equal([[{ key: "", password: "top secret" }]]);
     });
   });
 });

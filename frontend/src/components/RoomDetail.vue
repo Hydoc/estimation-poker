@@ -83,7 +83,7 @@ function openRoom() {
 <template>
   <v-dialog max-width="500" v-model="showSetRoomPasswordDialog">
     <v-card>
-      <v-card-title>Password setzen</v-card-title>
+      <v-card-title>Passwort setzen</v-card-title>
       <v-card-text>
         <v-text-field
           placeholder="Passwort"

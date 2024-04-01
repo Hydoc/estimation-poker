@@ -6,7 +6,7 @@ import * as directives from "vuetify/directives";
 import { useRouter } from "vue-router";
 import TheRoomChoice from "../../src/components/TheRoomChoice.vue";
 import { createTestingPinia, TestingPinia } from "@pinia/testing";
-import { VCard } from "vuetify/components";
+import { VCard, VDialog, VAlert } from "vuetify/components";
 import { Role } from "../../src/components/types";
 import { nextTick } from "vue";
 import { useWebsocketStore } from "../../src/stores/websocket";
@@ -30,6 +30,8 @@ beforeEach(() => {
   websocketStore.userExistsInRoom = vi.fn().mockResolvedValue(false);
   websocketStore.isRoundInRoomInProgress = vi.fn().mockResolvedValue(false);
   websocketStore.fetchActiveRooms = vi.fn().mockResolvedValue([]);
+  websocketStore.isRoomLocked = vi.fn().mockResolvedValue(false);
+  websocketStore.passwordMatchesRoom = vi.fn().mockResolvedValue(false);
 
   (useRouter as Mock).mockReturnValue({
     push: vi.fn(),
@@ -91,6 +93,9 @@ describe("TheRoomChoice", () => {
       await nextTick();
       await nextTick();
       await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
 
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
@@ -109,6 +114,9 @@ describe("TheRoomChoice", () => {
       wrapper.vm.name = "my name";
       wrapper.vm.roomId = "test";
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
+      await nextTick();
+      await nextTick();
+      await nextTick();
       await nextTick();
       await nextTick();
       await nextTick();
@@ -137,6 +145,9 @@ describe("TheRoomChoice", () => {
       wrapper.vm.name = "my name";
       wrapper.vm.roomId = "test";
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
+      await nextTick();
+      await nextTick();
+      await nextTick();
       await nextTick();
       await nextTick();
       await nextTick();
@@ -171,6 +182,9 @@ describe("TheRoomChoice", () => {
       await nextTick();
       await nextTick();
       await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
 
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
@@ -199,10 +213,9 @@ describe("TheRoomChoice", () => {
       await nextTick();
       await nextTick();
       await nextTick();
-
-      expect(wrapper.findComponent(TheActiveRoomOverview).props("errorMessage")).equal(
-        "Ein Benutzer mit diesem Namen existiert in dem Raum bereits.",
-      );
+      await nextTick();
+      await nextTick();
+      await nextTick();
 
       expect(useRouter().push).not.toHaveBeenCalled();
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
@@ -231,14 +244,93 @@ describe("TheRoomChoice", () => {
       await nextTick();
       await nextTick();
       await nextTick();
-
-      expect(wrapper.findComponent(TheActiveRoomOverview).props("errorMessage")).equal(
-        "Die Runde in diesem Raum hat bereits begonnen.",
-      );
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
 
       expect(useRouter().push).not.toHaveBeenCalled();
       expect(websocketStore.isRoundInRoomInProgress).toHaveBeenNthCalledWith(1, "test");
       expect(websocketStore.connect).not.toHaveBeenCalled();
+    });
+
+    it("should show password dialog when room is locked", async () => {
+      websocketStore.isRoomLocked = vi.fn().mockResolvedValue(true);
+      const wrapper = mount(TheRoomChoice, {
+        global: {
+          plugins: [vuetify, pinia],
+        },
+      });
+
+      wrapper.vm.role = Role.Developer;
+      wrapper.vm.name = "my name";
+      wrapper.vm.roomId = "test";
+      await wrapper.findComponent(RoomForm).vm.$emit("submit");
+
+      expect(wrapper.findComponent(VDialog).exists()).to.be.true;
+    });
+
+    it("should show password does not match message when room is locked and password is wrong", async () => {
+      websocketStore.isRoomLocked = vi.fn().mockResolvedValue(true);
+      websocketStore.passwordMatchesRoom = vi.fn().mockResolvedValue(false);
+      const wrapper = mount(TheRoomChoice, {
+        global: {
+          plugins: [vuetify, pinia],
+        },
+      });
+
+      wrapper.vm.role = Role.Developer;
+      wrapper.vm.name = "my name";
+      wrapper.vm.roomId = "test";
+      wrapper.vm.passwordForRoom = "top secret";
+      await wrapper.findComponent(RoomForm).vm.$emit("submit");
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      expect(wrapper.findComponent(VDialog).exists()).to.be.true;
+      expect(wrapper.findComponent(VDialog).findComponent(VAlert).exists()).to.be.true;
+      expect(wrapper.findComponent(VDialog).findComponent(VAlert).props("text")).equal(
+        "Passwort stimmt nicht überein",
+      );
+      expect(wrapper.findComponent(VDialog).findComponent(VAlert).props("color")).equal("error");
+    });
+
+    it("should connect when room is locked and password matches", async () => {
+      websocketStore.isRoomLocked = vi.fn().mockResolvedValue(true);
+      websocketStore.passwordMatchesRoom = vi.fn().mockResolvedValue(true);
+      const wrapper = mount(TheRoomChoice, {
+        global: {
+          plugins: [vuetify, pinia],
+        },
+      });
+
+      wrapper.vm.role = Role.Developer;
+      wrapper.vm.name = "my name";
+      wrapper.vm.roomId = "test";
+      wrapper.vm.passwordForRoom = "top secret";
+      await wrapper.findComponent(RoomForm).vm.$emit("submit");
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
+      expect(websocketStore.isRoomLocked).toHaveBeenNthCalledWith(1, "test");
+      expect(websocketStore.passwordMatchesRoom).toHaveBeenNthCalledWith(1, "test", "top secret");
+      expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
+      expect(websocketStore.connect).toHaveBeenNthCalledWith(1, "my name", "developer", "test");
     });
   });
 });

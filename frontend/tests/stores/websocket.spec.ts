@@ -195,6 +195,36 @@ describe("Websocket Store", () => {
     expect(websocketStore.showAllGuesses).to.be.true;
   });
 
+  it("should fetch room is locked when room-locked message appeared", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({ isLocked: true }),
+    });
+    const websocketStore = useWebsocketStore();
+    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketOnMessage({
+      data: JSON.stringify({ type: "room-locked" }),
+    });
+
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
+    expect(websocketStore.roomIsLocked).to.be.true;
+  });
+
+  it("should fetch room is locked when room-opened message appeared", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({ isLocked: false }),
+    });
+    const websocketStore = useWebsocketStore();
+    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketOnMessage({
+      data: JSON.stringify({ type: "room-opened" }),
+    });
+
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
+    expect(websocketStore.roomIsLocked).to.be.false;
+  });
+
   it("should reset round and fetch users in room when reset-round message appeared", async () => {
     const usersInRoom = {
       developerList: [{ name: "C", role: Role.Developer, guess: 0 }],
@@ -317,6 +347,129 @@ describe("Websocket Store", () => {
     const actual = await websocketStore.fetchActiveRooms();
     expect(actual).deep.equal(["Test room"]);
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/rooms");
+  });
+
+  it("should fetch isRoomLocked", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({ isLocked: false }),
+    });
+
+    const websocketStore = useWebsocketStore();
+    const isLocked = await websocketStore.isRoomLocked("abc");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/state");
+    expect(isLocked).to.be.false;
+  });
+
+  it("should fetch passwordMatchesRoom when password matches", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({ ok: true }),
+    });
+    const websocketStore = useWebsocketStore();
+    const matches = await websocketStore.passwordMatchesRoom("abc", "top secret");
+    expect(matches).to.be.true;
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/authenticate", {
+      method: "POST",
+      body: JSON.stringify({ password: "top secret" }),
+    });
+  });
+
+  it("should fetch passwordMatchesRoom when password does not match", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({ ok: false }),
+    });
+    const websocketStore = useWebsocketStore();
+    const matches = await websocketStore.passwordMatchesRoom("abc", "top secret");
+    expect(matches).to.be.false;
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/authenticate", {
+      method: "POST",
+      body: JSON.stringify({ password: "top secret" }),
+    });
+  });
+
+  it("should fetch passwordMatchesRoom when error occurred", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+    });
+    const websocketStore = useWebsocketStore();
+    const matches = await websocketStore.passwordMatchesRoom("abc", "top secret");
+    expect(matches).to.be.false;
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/authenticate", {
+      method: "POST",
+      body: JSON.stringify({ password: "top secret" }),
+    });
+  });
+
+  it("should fetch permissions", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({
+        permissions: {
+          room: {
+            canLock: true,
+            key: "abc",
+          },
+        },
+      }),
+    });
+
+    const websocketStore = useWebsocketStore();
+    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.fetchPermissions();
+
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/ABC/permissions");
+    expect(websocketStore.permissions).deep.equal({
+      room: {
+        canLock: true,
+        key: "abc",
+      },
+    });
+  });
+
+  it("should fetch permissions when response not ok", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+    });
+
+    const websocketStore = useWebsocketStore();
+    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketStore.fetchPermissions();
+
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/ABC/permissions");
+    expect(websocketStore.permissions).deep.equal({
+      room: {
+        canLock: false,
+      },
+    });
+  });
+
+  it("should fetch roomIsLocked", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({
+        isLocked: true,
+      }),
+    });
+
+    const websocketStore = useWebsocketStore();
+    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    const actual = await websocketStore.fetchRoomIsLocked();
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
+    expect(actual).to.be.true;
+  });
+
+  it("should fetch roomIsLocked when response not ok", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+    });
+
+    const websocketStore = useWebsocketStore();
+    websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    const actual = await websocketStore.fetchRoomIsLocked();
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
+    expect(actual).to.be.false;
   });
 
   it("should fetch possible guesses", async () => {

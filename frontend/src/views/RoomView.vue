@@ -21,7 +21,10 @@ const possibleGuesses = computed(() => websocketStore.possibleGuesses);
 const permissions = computed(() => websocketStore.permissions);
 const roomIsLocked = computed(() => websocketStore.roomIsLocked);
 
-function sendMessage(type: SendableWebsocketMessageType, data: string | number | null) {
+function sendMessage(
+  type: SendableWebsocketMessageType,
+  data: string | number | null | { password?: string; key: string },
+) {
   websocketStore.send({ type, data });
 }
 

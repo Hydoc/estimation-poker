@@ -160,5 +160,35 @@ describe("RoomView", () => {
       expect(websocketStore.disconnect).toHaveBeenCalledOnce();
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/");
     });
+
+    it("should send correct message on lock-room", () => {
+      const wrapper = shallowMount(RoomView, {
+        global: {
+          plugins: [pinia],
+        },
+      });
+
+      wrapper
+        .findComponent(RoomDetail)
+        .vm.$emit("lock-room", { password: "top secret", key: "abc" });
+      expect(websocketStore.send).toHaveBeenNthCalledWith(1, {
+        type: "lock-room",
+        data: { password: "top secret", key: "abc" },
+      });
+    });
+
+    it("should send correct message on open-room", () => {
+      const wrapper = shallowMount(RoomView, {
+        global: {
+          plugins: [pinia],
+        },
+      });
+
+      wrapper.findComponent(RoomDetail).vm.$emit("open-room", { key: "abc" });
+      expect(websocketStore.send).toHaveBeenNthCalledWith(1, {
+        type: "open-room",
+        data: { key: "abc" },
+      });
+    });
   });
 });

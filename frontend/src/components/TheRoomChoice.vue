@@ -18,7 +18,6 @@ const websocketStore = useWebsocketStore();
 const showUserAlreadyExists = ref(false);
 const showRoundIsInProgress = ref(false);
 const showPasswordDoesNotMatch = ref(false);
-const roomOverviewErrorMessage = ref("");
 const errorMessage = computed(() => {
   if (showUserAlreadyExists.value) {
     return "Ein Benutzer mit diesem Namen existiert in dem Raum bereits.";
@@ -116,11 +115,7 @@ onMounted(fetchActiveRooms);
               />
             </v-container>
             <v-container v-if="activeRooms.length > 0">
-              <the-active-room-overview
-                :active-rooms="activeRooms"
-                :error-message="roomOverviewErrorMessage"
-                @join="setFieldsAndConnect"
-              />
+              <the-active-room-overview :active-rooms="activeRooms" @join="setFieldsAndConnect" />
             </v-container>
           </v-card-text>
         </v-card>
