@@ -39,8 +39,8 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	app := internal.NewApplication(http.NewServeMux(), upgrader, config)
+	app := internal.NewApplication(upgrader, config)
 	go app.ListenForRoomDestroy()
-	router := app.ConfigureRouting()
+	router := app.Routes()
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

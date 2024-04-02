@@ -12,35 +12,20 @@ import (
 )
 
 type Application struct {
-	router      *http.ServeMux
 	upgrader    *websocket.Upgrader
 	guessConfig *GuessConfig
 	rooms       map[RoomId]*Room
 	destroyRoom chan RoomId
 }
 
-func (app *Application) ConfigureRouting() *http.ServeMux {
-	app.router.HandleFunc("GET /api/estimation/room/{id}/product-owner", app.withRequiredQueryParam("name", app.handleWs))
-	app.router.HandleFunc("GET /api/estimation/room/{id}/developer", app.withRequiredQueryParam("name", app.handleWs))
-	app.router.HandleFunc("GET /api/estimation/room/{id}/users/exists", app.contentTypeJsonMiddleware(app.withRequiredQueryParam("name", app.handleUserInRoomExists)))
-	app.router.HandleFunc("GET /api/estimation/room/{id}/users", app.contentTypeJsonMiddleware(app.handleFetchUsers))
-	app.router.HandleFunc("GET /api/estimation/room/{id}/{username}/permissions", app.contentTypeJsonMiddleware(app.handleFetchPermissions))
-	app.router.HandleFunc("GET /api/estimation/room/{id}/state", app.contentTypeJsonMiddleware(app.handleFetchRoomState))
-	app.router.HandleFunc("GET /api/estimation/room/rooms", app.contentTypeJsonMiddleware(app.handleFetchActiveRooms))
-	app.router.HandleFunc("GET /api/estimation/possible-guesses", app.contentTypeJsonMiddleware(app.handlePossibleGuesses))
-	app.router.HandleFunc("POST /api/estimation/room/{id}/authenticate", app.contentTypeJsonMiddleware(app.handleRoomAuthenticate))
-	return app.router
-}
+type envelope map[string]any
 
 func (app *Application) withRequiredQueryParam(param string, next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		queryParam := request.URL.Query().Get(param)
 
 		if len(queryParam) == 0 || !request.URL.Query().Has(param) {
-			writer.WriteHeader(400)
-			json.NewEncoder(writer).Encode(map[string]string{
-				"message": fmt.Sprintf("%s is missing in query", param),
-			})
+			app.writeJson(writer, http.StatusBadRequest, envelope{"message": fmt.Sprintf("%s is missing in query", param)}, nil)
 			return
 		}
 
@@ -63,22 +48,16 @@ func (app *Application) handleRoomAuthenticate(writer http.ResponseWriter, reque
 
 	err := json.NewDecoder(request.Body).Decode(&input)
 	if err != nil {
-		json.NewEncoder(writer).Encode(map[string]bool{
-			"ok": false,
-		})
+		app.writeJson(writer, http.StatusOK, envelope{"ok": false}, nil)
 		return
 	}
 
 	if actualRoom.verify(input.Password) {
-		json.NewEncoder(writer).Encode(map[string]bool{
-			"ok": true,
-		})
+		app.writeJson(writer, http.StatusOK, envelope{"ok": true}, nil)
 		return
 	}
 
-	json.NewEncoder(writer).Encode(map[string]bool{
-		"ok": false,
-	})
+	app.writeJson(writer, http.StatusOK, envelope{"ok": false}, nil)
 }
 
 func (app *Application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
@@ -86,59 +65,49 @@ func (app *Application) handleFetchPermissions(writer http.ResponseWriter, reque
 	username := request.PathValue("username")
 	actualRoom, ok := app.rooms[RoomId(roomId)]
 	if !ok {
-		writer.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(writer).Encode(map[string]string{
-			"message": "room does not exist",
-		})
+		app.writeJson(writer, http.StatusNotFound, envelope{"message": "room does not exist"}, nil)
 		return
 	}
 
 	if actualRoom.nameOfCreator == username {
-		json.NewEncoder(writer).Encode(map[string]map[string]map[string]any{
+		app.writeJson(writer, http.StatusOK, map[string]map[string]map[string]any{
 			"permissions": {
 				"room": {
 					"canLock": true,
 					"key":     actualRoom.key.String(),
 				},
 			},
-		})
+		}, nil)
 		return
 	}
 
-	json.NewEncoder(writer).Encode(map[string]map[string]map[string]any{
+	app.writeJson(writer, http.StatusOK, map[string]map[string]map[string]any{
 		"permissions": {
 			"room": {
 				"canLock": false,
 			},
 		},
-	})
+	}, nil)
 }
 
 func (app *Application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
-	json.NewEncoder(writer).Encode(app.guessConfig.Guesses)
-}
-
-func (app *Application) contentTypeJsonMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		next.ServeHTTP(writer, request)
-	}
+	app.writeJson(writer, http.StatusOK, app.guessConfig.Guesses, nil)
 }
 
 func (app *Application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
 	roomId := request.PathValue("id")
 	actualRoom, ok := app.rooms[RoomId(roomId)]
 	if !ok {
-		json.NewEncoder(writer).Encode(map[string]bool{
+		app.writeJson(writer, http.StatusOK, envelope{
 			"inProgress": false,
 			"isLocked":   false,
-		})
+		}, nil)
 		return
 	}
-	json.NewEncoder(writer).Encode(map[string]bool{
+	app.writeJson(writer, http.StatusOK, envelope{
 		"inProgress": actualRoom.inProgress,
 		"isLocked":   actualRoom.isLocked,
-	})
+	}, nil)
 }
 
 func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
@@ -147,24 +116,17 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 	name := request.URL.Query().Get("name")
 
 	if _, ok := app.rooms[RoomId(roomId)]; !ok {
-		json.NewEncoder(writer).Encode(map[string]bool{
-			"exists": false,
-		})
+		app.writeJson(writer, http.StatusOK, envelope{"exists": false}, nil)
 		return
 	}
 
 	for client := range app.rooms[RoomId(roomId)].clients {
 		if client.Name == name {
-			writer.WriteHeader(409)
-			json.NewEncoder(writer).Encode(map[string]bool{
-				"exists": true,
-			})
+			app.writeJson(writer, http.StatusConflict, envelope{"exists": true}, nil)
 			return
 		}
 	}
-	json.NewEncoder(writer).Encode(map[string]bool{
-		"exists": false,
-	})
+	app.writeJson(writer, http.StatusOK, envelope{"exists": false}, nil)
 }
 
 func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
@@ -175,7 +137,7 @@ func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 		}
 	}
 	slices.Sort(activeRooms)
-	json.NewEncoder(writer).Encode(activeRooms)
+	app.writeJson(writer, http.StatusOK, activeRooms, nil)
 }
 
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
@@ -188,7 +150,7 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 	var clients []*Client
 
 	if _, ok := app.rooms[RoomId(roomId)]; !ok {
-		json.NewEncoder(writer).Encode(usersInRoom)
+		app.writeJson(writer, http.StatusOK, usersInRoom, nil)
 		return
 	}
 
@@ -207,7 +169,7 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 			usersInRoom["productOwnerList"] = append(usersInRoom["productOwnerList"], c.toJson())
 		}
 	}
-	json.NewEncoder(writer).Encode(usersInRoom)
+	app.writeJson(writer, http.StatusOK, usersInRoom, nil)
 }
 
 func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
@@ -254,9 +216,8 @@ func (app *Application) ListenForRoomDestroy() {
 	}
 }
 
-func NewApplication(router *http.ServeMux, upgrader *websocket.Upgrader, config *GuessConfig) *Application {
+func NewApplication(upgrader *websocket.Upgrader, config *GuessConfig) *Application {
 	return &Application{
-		router:      router,
 		upgrader:    upgrader,
 		guessConfig: config,
 		rooms:       make(map[RoomId]*Room),

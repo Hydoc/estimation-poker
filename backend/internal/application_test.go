@@ -48,12 +48,11 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 
 	for _, test := range tests {
 		app := &Application{
-			rooms:  test.rooms,
-			router: http.NewServeMux(),
+			rooms: test.rooms,
 		}
 
 		t.Run(test.name, func(t *testing.T) {
-			router := app.ConfigureRouting()
+			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/state", test.room), nil)
 
@@ -146,10 +145,9 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &Application{
-				router: http.NewServeMux(),
-				rooms:  test.rooms,
+				rooms: test.rooms,
 			}
-			router := app.ConfigureRouting()
+			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, test.url, nil)
 
@@ -297,13 +295,12 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &Application{
-				router:      http.NewServeMux(),
 				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
 			}
-			router := app.ConfigureRouting()
+			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/users", test.roomId), nil)
 
@@ -389,13 +386,12 @@ func TestApplication_handleWs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			expectedMsg := newJoin()
 			app := &Application{
-				router:      http.NewServeMux(),
 				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: make(chan RoomId),
 			}
-			router := app.ConfigureRouting()
+			router := app.Routes()
 
 			server := httptest.NewServer(router)
 			defer server.Close()
@@ -427,10 +423,10 @@ func TestApplication_handleWs(t *testing.T) {
 }
 
 func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
-	app := NewApplication(http.NewServeMux(), &websocket.Upgrader{}, &GuessConfig{})
+	app := NewApplication(&websocket.Upgrader{}, &GuessConfig{})
 	roomId := "Test"
 	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom, "")
-	router := app.ConfigureRouting()
+	router := app.Routes()
 
 	server := httptest.NewServer(router)
 	defer server.Close()
@@ -459,10 +455,10 @@ func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 		log.SetOutput(os.Stderr)
 	}()
 
-	app := NewApplication(http.NewServeMux(), &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
+	app := NewApplication(&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
 		return false
 	}}, &GuessConfig{})
-	router := app.ConfigureRouting()
+	router := app.Routes()
 
 	server := httptest.NewServer(router)
 	defer server.Close()
@@ -504,13 +500,12 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &Application{
-				router:      http.NewServeMux(),
 				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
 			}
-			router := app.ConfigureRouting()
+			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/room/rooms", nil)
 
@@ -585,8 +580,8 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := NewApplication(http.NewServeMux(), &websocket.Upgrader{}, test.config)
-			router := app.ConfigureRouting()
+			app := NewApplication(&websocket.Upgrader{}, test.config)
+			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
 
@@ -606,7 +601,6 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 	destroyChannel := make(chan RoomId)
 	roomToDestroy := RoomId("Test")
 	app := &Application{
-		router:      http.NewServeMux(),
 		upgrader:    &websocket.Upgrader{},
 		guessConfig: &GuessConfig{},
 		rooms: map[RoomId]*Room{
