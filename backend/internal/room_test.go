@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/google/uuid"
 	"reflect"
 	"testing"
 )
@@ -242,5 +243,36 @@ func TestRoom_Run_BroadcastResetRound(t *testing.T) {
 
 	if developerToReset.Guess > 0 {
 		t.Error("expected developer to be resetted")
+	}
+}
+
+func TestRoom_lock(t *testing.T) {
+	key := uuid.New()
+	room := &Room{
+		id:             "Test",
+		inProgress:     true,
+		leave:          nil,
+		join:           nil,
+		clients:        make(map[*Client]bool),
+		broadcast:      make(chan message),
+		destroy:        nil,
+		isLocked:       false,
+		nameOfCreator:  "Bla",
+		key:            key,
+		hashedPassword: make([]byte, 0),
+	}
+
+	got := room.lock("Bla", "top secret", key.String())
+
+	if got != true {
+		t.Errorf("got %v, want true", got)
+	}
+
+	if !room.isLocked {
+		t.Errorf("wanted room to be locked")
+	}
+
+	if len(room.hashedPassword) == 0 {
+		t.Errorf("wanted room to have hashed password")
 	}
 }

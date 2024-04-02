@@ -55,6 +55,20 @@ func TestMessage_ToJson(t *testing.T) {
 			},
 		},
 		{
+			name:    "room locked",
+			message: newRoomLocked(),
+			expectedDTO: messageDTO{
+				"type": "room-locked",
+			},
+		},
+		{
+			name:    "room opened",
+			message: newRoomOpened(),
+			expectedDTO: messageDTO{
+				"type": "room-opened",
+			},
+		},
+		{
 			name: "any client message",
 			message: clientMessage{
 				Type: "test",
