@@ -11,6 +11,7 @@ type Props = {
 const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "guess", guess: number): void;
+  (e: "skip"): void;
 }>();
 
 const chosenCard: Ref<number | null | undefined> = ref(null);
@@ -23,6 +24,10 @@ function guess() {
 
   emit("guess", chosenCard.value!);
   chosenCard.value = null;
+}
+
+function skip() {
+  emit("skip");
 }
 </script>
 

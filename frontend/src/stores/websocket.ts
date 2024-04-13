@@ -50,7 +50,7 @@ type ReceivableWebsocketMessage = {
     | "leave"
     | "estimate"
     | "developer-guessed"
-    | "everyone-guessed"
+    | "everyone-done"
     | "you-guessed"
     | "reveal"
     | "reset-round"
@@ -120,7 +120,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
         case "you-guessed":
           guess.value = decoded.data;
           break;
-        case "everyone-guessed":
+        case "everyone-done":
           await fetchUsersInRoom();
           roundState.value = RoundState.End;
           break;

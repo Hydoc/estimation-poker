@@ -18,6 +18,7 @@ type Client struct {
 	Name       string
 	Role       string
 	Guess      int
+	DoSkip     bool
 	send       chan message
 }
 
@@ -46,6 +47,9 @@ func (client *Client) websocketReader() {
 		}
 
 		switch {
+		case incMessage.Type == skipRound && client.Role == Developer:
+			client.DoSkip = true
+			client.room.broadcast <- newSkip()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
 			client.Guess = actualGuess
@@ -106,6 +110,7 @@ func (client *Client) websocketWriter() {
 
 func (client *Client) reset() {
 	client.Guess = 0
+	client.DoSkip = false
 }
 
 func (client *Client) toJson() userDTO {

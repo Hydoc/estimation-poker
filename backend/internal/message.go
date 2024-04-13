@@ -1,11 +1,12 @@
 package internal
 
 const (
-	guess    = "guess"
-	newRound = "new-round"
-	estimate = "estimate"
-	lockRoom = "lock-room"
-	openRoom = "open-room"
+	guess     = "guess"
+	newRound  = "new-round"
+	estimate  = "estimate"
+	lockRoom  = "lock-room"
+	openRoom  = "open-room"
+	skipRound = "skip-round"
 )
 
 type messageDTO map[string]interface{}
@@ -19,6 +20,8 @@ type clientMessage struct {
 	Data any    `json:"data"`
 }
 
+type skip struct{}
+
 type join struct{}
 
 type leave struct{}
@@ -31,7 +34,7 @@ type roomLocked struct{}
 
 type roomOpened struct{}
 
-type everyoneGuessed struct{}
+type everyoneIsDone struct{}
 
 type youGuessed struct {
 	guess int
@@ -65,6 +68,12 @@ func (devGuessed developerGuessed) ToJson() messageDTO {
 	}
 }
 
+func (s skip) ToJson() messageDTO {
+	return map[string]interface{}{
+		"type": "developer-skipped",
+	}
+}
+
 func (rLocked roomLocked) ToJson() messageDTO {
 	return map[string]any{
 		"type": "room-locked",
@@ -77,9 +86,9 @@ func (rOpened roomOpened) ToJson() messageDTO {
 	}
 }
 
-func (everyOneGuessed everyoneGuessed) ToJson() messageDTO {
+func (everyOneGuessed everyoneIsDone) ToJson() messageDTO {
 	return map[string]interface{}{
-		"type": "everyone-guessed",
+		"type": "everyone-done",
 	}
 }
 
@@ -116,12 +125,16 @@ func newDeveloperGuessed() developerGuessed {
 	return developerGuessed{}
 }
 
-func newEveryoneGuessed() everyoneGuessed {
-	return everyoneGuessed{}
+func newEveryoneIsDone() everyoneIsDone {
+	return everyoneIsDone{}
 }
 
 func newResetRound() resetRound {
 	return resetRound{}
+}
+
+func newSkip() skip {
+	return skip{}
 }
 
 func newYouGuessed(guess int) youGuessed {

@@ -58,7 +58,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 			room := &Room{
 				clients: test.clients,
 			}
-			got := room.everyDevGuessed()
+			got := room.everyDevIsDone()
 			if got != test.want {
 				t.Errorf("want %v, got %v", test.want, got)
 			}
@@ -165,8 +165,8 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 
 	gotClientMsg := <-clientSendChannel
 
-	if !reflect.DeepEqual(gotClientMsg, newEveryoneGuessed()) {
-		t.Errorf("want msg %v, got %v", newEveryoneGuessed(), gotClientMsg)
+	if !reflect.DeepEqual(gotClientMsg, newEveryoneIsDone()) {
+		t.Errorf("want msg %v, got %v", newEveryoneIsDone(), gotClientMsg)
 	}
 }
 

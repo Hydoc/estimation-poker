@@ -67,9 +67,9 @@ func (room *Room) verify(password string) bool {
 	return err == nil
 }
 
-func (room *Room) everyDevGuessed() bool {
+func (room *Room) everyDevIsDone() bool {
 	for client := range room.clients {
-		if client.Role == Developer && client.Guess == 0 {
+		if client.Role == Developer && (client.Guess == 0 || !client.DoSkip) {
 			return false
 		}
 	}
@@ -96,9 +96,9 @@ func (room *Room) Run() {
 						room.inProgress = true
 					}
 					client.send <- msg
-				case developerGuessed:
-					if room.everyDevGuessed() {
-						client.send <- newEveryoneGuessed()
+				case developerGuessed, skip:
+					if room.everyDevIsDone() {
+						client.send <- newEveryoneIsDone()
 						continue
 					}
 					client.send <- msg

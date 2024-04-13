@@ -41,7 +41,7 @@ func TestMessage_ToJson(t *testing.T) {
 		},
 		{
 			name:    "everyone guessed",
-			message: newEveryoneGuessed(),
+			message: newEveryoneIsDone(),
 			expectedDTO: messageDTO{
 				"type": "everyone-guessed",
 			},
