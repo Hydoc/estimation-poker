@@ -32,6 +32,7 @@ const emit = defineEmits<{
   (e: "reveal"): void;
   (e: "new-round"): void;
   (e: "leave"): void;
+  (e: "skip"): void;
   (e: "lock-room", payload: { password: string; key: string }): void;
   (e: "open-room", payload: { key: string }): void;
 }>();
@@ -189,6 +190,7 @@ function openRoom() {
           :has-developers-in-room="props.usersInRoom.developerList.length > 0"
           :possible-guesses="props.possibleGuesses"
           @estimate="emit('estimate', $event)"
+          @skip="emit('skip')"
           @guess="emit('guess', $event)"
         />
       </v-col>

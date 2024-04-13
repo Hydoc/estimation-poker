@@ -40,6 +40,9 @@ function skip() {
     >
       <v-container>
         <v-row>
+          <v-btn @click="skip">Aussetzen</v-btn>
+        </v-row>
+        <v-row>
           <v-col v-for="possibleGuess in props.possibleGuesses" :key="possibleGuess.guess">
             <v-item :value="possibleGuess.guess" v-slot="{ selectedClass, toggle }">
               <v-card

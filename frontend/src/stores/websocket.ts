@@ -37,6 +37,7 @@ export type SendableWebsocketMessageType =
   | "reveal"
   | "new-round"
   | "lock-room"
+  | "skip"
   | "open-room";
 
 type SendableWebsocketMessage = {
@@ -55,6 +56,7 @@ type ReceivableWebsocketMessage = {
     | "reveal"
     | "reset-round"
     | "room-locked"
+    | "developer-skipped"
     | "room-opened";
   data?: any;
 };
@@ -110,6 +112,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
       switch (decoded.type) {
         case "leave":
         case "join":
+        case "developer-skipped":
         case "developer-guessed":
           await fetchUsersInRoom();
           break;

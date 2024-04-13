@@ -17,6 +17,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "estimate", ticket: string): void;
   (e: "guess", guess: number): void;
+  (e: "skip"): void;
 }>();
 
 const isDeveloper = computed(() => props.userRole === Role.Developer);
@@ -32,6 +33,7 @@ const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
     :has-ticket-to-guess="hasTicketToGuess"
     :possible-guesses="props.possibleGuesses"
     @guess="emit('guess', $event)"
+    @skip="emit('skip')"
   />
   <product-owner-command-center
     v-else

@@ -69,7 +69,7 @@ func (room *Room) verify(password string) bool {
 
 func (room *Room) everyDevIsDone() bool {
 	for client := range room.clients {
-		if client.Role == Developer && (client.Guess == 0 || !client.DoSkip) {
+		if client.Role == Developer && (client.Guess == 0 && !client.DoSkip) {
 			return false
 		}
 	}

@@ -6,7 +6,7 @@ const (
 	estimate  = "estimate"
 	lockRoom  = "lock-room"
 	openRoom  = "open-room"
-	skipRound = "skip-round"
+	skipRound = "skip"
 )
 
 type messageDTO map[string]interface{}
@@ -133,7 +133,7 @@ func newResetRound() resetRound {
 	return resetRound{}
 }
 
-func newSkip() skip {
+func newSkipRound() skip {
 	return skip{}
 }
 

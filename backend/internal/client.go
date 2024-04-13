@@ -10,7 +10,7 @@ const (
 	Developer    = "developer"
 )
 
-type userDTO map[string]interface{}
+type userDTO map[string]any
 
 type Client struct {
 	connection *websocket.Conn
@@ -49,7 +49,7 @@ func (client *Client) websocketReader() {
 		switch {
 		case incMessage.Type == skipRound && client.Role == Developer:
 			client.DoSkip = true
-			client.room.broadcast <- newSkip()
+			client.room.broadcast <- newSkipRound()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
 			client.Guess = actualGuess
@@ -116,9 +116,10 @@ func (client *Client) reset() {
 func (client *Client) toJson() userDTO {
 	if client.Role == Developer {
 		return map[string]interface{}{
-			"name":  client.Name,
-			"role":  client.Role,
-			"guess": client.Guess,
+			"name":   client.Name,
+			"role":   client.Role,
+			"guess":  client.Guess,
+			"doSkip": client.DoSkip,
 		}
 	}
 	return map[string]interface{}{
