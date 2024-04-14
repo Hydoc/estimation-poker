@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useWebsocketStore } from "../../src/stores/websocket";
 import { Role, RoundState } from "../../src/components/types";
 import { createPinia, setActivePinia } from "pinia";
+import { nextTick } from "vue";
 
 const websocketSendSpy = vi.fn();
 const websocketCloseSpy = vi.fn();
@@ -51,6 +52,7 @@ describe("Websocket Store", () => {
     expect(websocketStore.isConnected).to.be.true;
     expect(websocketStore.ticketToGuess).equal("");
     expect(websocketStore.guess).equal(0);
+    expect(websocketStore.didSkip).false;
     expect(websocketStore.usersInRoom).deep.equal({
       developerList: [],
       productOwnerList: [],
@@ -170,6 +172,16 @@ describe("Websocket Store", () => {
     expect(websocketStore.guess).equal(1);
   });
 
+  it("should update didSkip when you-skipped message appeared", async () => {
+    const websocketStore = useWebsocketStore();
+    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
+    await websocketOnMessage({
+      data: JSON.stringify({ type: "you-skipped" }),
+    });
+
+    expect(websocketStore.didSkip).true;
+  });
+  
   it("should fetch users in room and end round when everyone-guessed message appeared", async () => {
     const usersInRoom = {
       developerList: [{ name: "C", role: Role.Developer, guess: 0 }],
@@ -182,7 +194,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
-      data: JSON.stringify({ type: "everyone-guessed" }),
+      data: JSON.stringify({ type: "everyone-done" }),
     });
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/users");
     expect(websocketStore.roundState).equal(RoundState.End);

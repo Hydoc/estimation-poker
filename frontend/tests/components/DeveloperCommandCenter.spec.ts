@@ -20,6 +20,7 @@ describe("DeveloperCommandCenter", () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
           didGuess: false,
+          didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
@@ -76,12 +77,12 @@ describe("DeveloperCommandCenter", () => {
         "Mehr als 5 Tage",
       );
 
-      expect(wrapper.findComponent(VBtn).exists()).to.be.true;
-      expect(wrapper.findComponent(VBtn).props("width")).equal("100%");
-      expect(wrapper.findComponent(VBtn).props("prependIcon")).equal("mdi-send");
-      expect(wrapper.findComponent(VBtn).props("appendIcon")).equal("mdi-send");
-      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
-      expect(wrapper.findComponent(VBtn).text()).equal("Ab gehts");
+      expect(wrapper.findAllComponents(VBtn)).length(2);
+      expect(wrapper.findAllComponents(VBtn).at(1).props("width")).equal("100%");
+      expect(wrapper.findAllComponents(VBtn).at(1).props("prependIcon")).equal("mdi-send");
+      expect(wrapper.findAllComponents(VBtn).at(1).props("appendIcon")).equal("mdi-send");
+      expect(wrapper.findAllComponents(VBtn).at(1).props("disabled")).to.be.true;
+      expect(wrapper.findAllComponents(VBtn).at(1).text()).equal("Ab gehts");
       expect(wrapper.find("p").exists()).to.be.false;
     });
 
@@ -89,6 +90,7 @@ describe("DeveloperCommandCenter", () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
           didGuess: false,
+          didSkip: false,
           hasTicketToGuess: false,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
@@ -110,6 +112,7 @@ describe("DeveloperCommandCenter", () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
           didGuess: true,
+          didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
@@ -133,6 +136,7 @@ describe("DeveloperCommandCenter", () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
           didGuess: false,
+          didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
@@ -155,6 +159,7 @@ describe("DeveloperCommandCenter", () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
           didGuess: false,
+          didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
@@ -170,17 +175,40 @@ describe("DeveloperCommandCenter", () => {
       });
 
       await wrapper.findAllComponents(VCard).at(2).trigger("click");
-      await wrapper.findComponent(VBtn).trigger("click");
+      await wrapper.findAllComponents(VBtn).at(1).trigger("click");
 
       expect(wrapper.emitted("guess")).toEqual([[3]]);
       // @ts-ignore
       expect(wrapper.vm.chosenCard).to.be.null;
     });
 
+    it("should emit skip on skip button press", async () => {
+      const wrapper = mount(DeveloperCommandCenter, {
+        props: {
+          didGuess: false,
+          didSkip: false,
+          hasTicketToGuess: true,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+      
+      await wrapper.findComponent(VBtn).trigger("click");
+      expect(wrapper.emitted("skip")).deep.equal([[]]);
+    });
     it("should not emit guess when chosen card is null", () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
           didGuess: false,
+          didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },

@@ -46,6 +46,7 @@ describe("RoomDetail", () => {
           roundState: RoundState.Waiting,
           ticketToGuess: "",
           guess: 0,
+          didSkip: false,
           showAllGuesses: false,
           permissions: {
             room: {
@@ -122,6 +123,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -160,6 +162,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -212,6 +215,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -273,6 +277,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -317,6 +322,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.InProgress,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -368,6 +374,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -428,6 +435,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -476,6 +484,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -514,6 +523,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -552,6 +562,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -590,6 +601,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -628,6 +640,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -666,6 +679,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -782,6 +796,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -806,6 +821,7 @@ describe("RoomDetail", () => {
 
       await wrapper.find(".align-self-center").findAllComponents(VBtn).at(1).trigger("click");
 
+      // @ts-ignore
       wrapper.vm.showPassword = true;
       await nextTick();
       expect(
@@ -833,6 +849,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -909,6 +926,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -931,9 +949,11 @@ describe("RoomDetail", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.roomPassword = "top secret";
       await wrapper.find(".align-self-center").findAllComponents(VBtn).at(2).trigger("click");
       await nextTick();
+      // @ts-ignore
       expect(wrapper.vm.snackbarText).equal("Kopiert!");
       expect(global.navigator.clipboard.writeText).toHaveBeenNthCalledWith(1, "top secret");
     });
@@ -951,6 +971,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -989,6 +1010,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -1010,6 +1032,7 @@ describe("RoomDetail", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.openRoom();
       expect(wrapper.emitted("open-room")).deep.equal([[{ key: "" }]]);
     });
@@ -1027,6 +1050,7 @@ describe("RoomDetail", () => {
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
+          didSkip: false,
           guess: 0,
           showAllGuesses: false,
           permissions: {
@@ -1048,7 +1072,9 @@ describe("RoomDetail", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.roomPassword = "top secret";
+      // @ts-ignore
       wrapper.vm.lockRoom();
       expect(wrapper.emitted("lock-room")).deep.equal([[{ key: "", password: "top secret" }]]);
     });
