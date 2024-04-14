@@ -41,7 +41,9 @@ function skip() {
     >
       <v-container>
         <v-row>
-          <v-btn @click="skip">Aussetzen</v-btn>
+          <v-col class="d-flex justify-end">
+            <v-btn @click="skip" icon="mdi-coffee" title="Runde aussetzen" color="#967259"></v-btn>
+          </v-col>
         </v-row>
         <v-row>
           <v-col v-for="possibleGuess in props.possibleGuesses" :key="possibleGuess.guess">
