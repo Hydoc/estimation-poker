@@ -25,6 +25,7 @@ type WebsocketStore = {
   roundState: Ref<RoundState>;
   ticketToGuess: Ref<string>;
   guess: Ref<number>;
+  didSkip: Ref<boolean>;
   showAllGuesses: Ref<boolean>;
   possibleGuesses: Ref<PossibleGuess[]>;
   permissions: Ref<Permissions>;
@@ -53,6 +54,7 @@ type ReceivableWebsocketMessage = {
     | "developer-guessed"
     | "everyone-done"
     | "you-guessed"
+    | "you-skipped"
     | "reveal"
     | "reset-round"
     | "room-locked"
@@ -73,6 +75,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const roundState: Ref<RoundState> = ref(RoundState.Waiting);
   const ticketToGuess = ref("");
   const guess = ref(0);
+  const didSkip = ref(false);
   const showAllGuesses = ref(false);
   const possibleGuesses: Ref<PossibleGuess[]> = ref([]);
   const permissions: Ref<Permissions> = ref({ room: { canLock: false } });
@@ -123,6 +126,9 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
         case "you-guessed":
           guess.value = decoded.data;
           break;
+        case "you-skipped":
+          didSkip.value = true;
+          break;
         case "everyone-done":
           await fetchUsersInRoom();
           roundState.value = RoundState.End;
@@ -167,6 +173,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     guess.value = 0;
     roundState.value = RoundState.Waiting;
     showAllGuesses.value = false;
+    didSkip.value = false;
   }
 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
@@ -267,6 +274,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     send,
     ticketToGuess,
     guess,
+    didSkip,
     resetRound,
     showAllGuesses,
     fetchActiveRooms,

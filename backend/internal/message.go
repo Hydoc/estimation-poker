@@ -40,6 +40,8 @@ type youGuessed struct {
 	guess int
 }
 
+type youSkipped struct{}
+
 func (leave leave) ToJson() messageDTO {
 	return map[string]interface{}{
 		"type": "leave",
@@ -105,6 +107,12 @@ func (youGuessed youGuessed) ToJson() messageDTO {
 	}
 }
 
+func (youSkipped youSkipped) ToJson() messageDTO {
+	return map[string]interface{}{
+		"type": "you-skipped",
+	}
+}
+
 func newJoin() join {
 	return join{}
 }
@@ -135,6 +143,10 @@ func newResetRound() resetRound {
 
 func newSkipRound() skip {
 	return skip{}
+}
+
+func newYouSkipped() youSkipped {
+	return youSkipped{}
 }
 
 func newYouGuessed(guess int) youGuessed {

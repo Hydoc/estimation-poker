@@ -8,6 +8,7 @@ type Props = {
   userRole: Role;
   roundState: RoundState;
   guess: number;
+  didSkip: boolean;
   ticketToGuess: string;
   hasDevelopersInRoom: boolean;
   possibleGuesses: PossibleGuess[];
@@ -30,6 +31,7 @@ const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
   <developer-command-center
     v-if="isDeveloper"
     :did-guess="didGuess"
+    :did-skip="props.didSkip"
     :has-ticket-to-guess="hasTicketToGuess"
     :possible-guesses="props.possibleGuesses"
     @guess="emit('guess', $event)"

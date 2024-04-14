@@ -16,6 +16,7 @@ const userRole = computed(() => websocketStore.userRole);
 const roundState = computed(() => websocketStore.roundState);
 const ticketToGuess = computed(() => websocketStore.ticketToGuess);
 const guess = computed(() => websocketStore.guess);
+const didSkip = computed(() => websocketStore.didSkip);
 const showAllGuesses = computed(() => websocketStore.showAllGuesses);
 const possibleGuesses = computed(() => websocketStore.possibleGuesses);
 const permissions = computed(() => websocketStore.permissions);
@@ -51,6 +52,7 @@ onMounted(async () => {
     :round-state="roundState"
     :ticket-to-guess="ticketToGuess"
     :guess="guess"
+    :did-skip="didSkip"
     :show-all-guesses="showAllGuesses"
     :possible-guesses="possibleGuesses"
     :permissions="permissions"

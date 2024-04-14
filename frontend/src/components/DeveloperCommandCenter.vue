@@ -4,6 +4,7 @@ import { type PossibleGuess } from "@/components/types";
 
 type Props = {
   didGuess: boolean;
+  didSkip: boolean;
   hasTicketToGuess: boolean;
   possibleGuesses: PossibleGuess[];
 };
@@ -34,7 +35,7 @@ function skip() {
 <template>
   <v-container>
     <v-item-group
-      v-if="props.hasTicketToGuess && !props.didGuess"
+      v-if="props.hasTicketToGuess && !props.didGuess && !props.didSkip"
       v-model="chosenCard"
       selected-class="bg-indigo-darken-2"
     >
@@ -63,7 +64,7 @@ function skip() {
       </v-container>
     </v-item-group>
     <v-btn
-      v-if="props.hasTicketToGuess && !props.didGuess"
+      v-if="props.hasTicketToGuess && !props.didGuess && !props.didSkip"
       width="100%"
       prepend-icon="mdi-send"
       append-icon="mdi-send"

@@ -19,6 +19,7 @@ type Props = {
   roundState: RoundState;
   ticketToGuess: string;
   guess: number;
+  didSkip: boolean;
   showAllGuesses: boolean;
   possibleGuesses: PossibleGuess[];
   permissions: Permissions;
@@ -186,6 +187,7 @@ function openRoom() {
           :user-role="props.userRole"
           :round-state="props.roundState"
           :guess="props.guess"
+          :did-skip="props.didSkip"
           :ticket-to-guess="props.ticketToGuess"
           :has-developers-in-room="props.usersInRoom.developerList.length > 0"
           :possible-guesses="props.possibleGuesses"

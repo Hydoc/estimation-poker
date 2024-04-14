@@ -50,6 +50,7 @@ func (client *Client) websocketReader() {
 		case incMessage.Type == skipRound && client.Role == Developer:
 			client.DoSkip = true
 			client.room.broadcast <- newSkipRound()
+			client.send <- newYouSkipped()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
 			client.Guess = actualGuess
