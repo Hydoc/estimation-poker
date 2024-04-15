@@ -1,8 +1,12 @@
 package internal
 
 import (
+	"bytes"
 	"github.com/google/uuid"
+	"log"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -274,5 +278,62 @@ func TestRoom_lock(t *testing.T) {
 
 	if len(room.hashedPassword) == 0 {
 		t.Errorf("wanted room to have hashed password")
+	}
+}
+
+func TestRoom_lock_WhenLockingFails(t *testing.T) {
+	key := uuid.New()
+	room := &Room{
+		id:             "Test",
+		inProgress:     true,
+		leave:          nil,
+		join:           nil,
+		clients:        make(map[*Client]bool),
+		broadcast:      make(chan message),
+		destroy:        nil,
+		isLocked:       false,
+		nameOfCreator:  "Bla",
+		key:            key,
+		hashedPassword: make([]byte, 0),
+	}
+
+	got := room.lock("ABC", "top secret", key.String())
+
+	if got != false {
+		t.Errorf("got %v, want false", got)
+	}
+}
+
+func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	key := uuid.New()
+	room := &Room{
+		id:             "Test",
+		inProgress:     true,
+		leave:          nil,
+		join:           nil,
+		clients:        make(map[*Client]bool),
+		broadcast:      make(chan message),
+		destroy:        nil,
+		isLocked:       false,
+		nameOfCreator:  "Bla",
+		key:            key,
+		hashedPassword: make([]byte, 0),
+	}
+
+	got := room.lock("ABC", strings.Repeat("bla", 90), key.String())
+	wantedLog := "could not hash password"
+
+	if got != false {
+		t.Errorf("got %v, want false", got)
+	}
+
+	if !strings.Contains(logBuffer.String(), wantedLog) {
+		t.Errorf("expected to log %s", wantedLog)
 	}
 }

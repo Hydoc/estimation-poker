@@ -41,7 +41,7 @@ func newRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 func (room *Room) lock(username, password, key string) bool {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatalf("could not hash password %s", password)
+		log.Printf("could not hash password %s\n", password)
 		return false
 	}
 	if username == room.nameOfCreator && key == room.key.String() {

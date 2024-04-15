@@ -40,10 +40,10 @@ func TestMessage_ToJson(t *testing.T) {
 			},
 		},
 		{
-			name:    "everyone guessed",
+			name:    "everyone is done",
 			message: newEveryoneIsDone(),
 			expectedDTO: messageDTO{
-				"type": "everyone-guessed",
+				"type": "everyone-done",
 			},
 		},
 		{
@@ -77,6 +77,20 @@ func TestMessage_ToJson(t *testing.T) {
 			expectedDTO: messageDTO{
 				"type": "test",
 				"data": "any",
+			},
+		},
+		{
+			name:    "skip-round",
+			message: newSkipRound(),
+			expectedDTO: messageDTO{
+				"type": "developer-skipped",
+			},
+		},
+		{
+			name:    "you-skipped",
+			message: newYouSkipped(),
+			expectedDTO: messageDTO{
+				"type": "you-skipped",
 			},
 		},
 	}

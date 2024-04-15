@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 )
@@ -63,11 +64,11 @@ func (client *Client) websocketReader() {
 			key, keyOk := incMessage.Data.(map[string]any)["key"]
 
 			if !keyOk {
-				log.Println("client:", client.Name, "tried to lock room", client.room.id, "without a key")
+				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a key", client.Name, client.room.id))
 				break
 			}
 			if !pwOk {
-				log.Println("client:", client.Name, "tried to lock room", client.room.id, "without a password")
+				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a password", client.Name, client.room.id))
 				break
 			}
 
