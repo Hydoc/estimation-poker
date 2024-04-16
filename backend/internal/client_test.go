@@ -2,7 +2,9 @@ package internal
 
 import (
 	"bytes"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -52,6 +54,7 @@ func TestClient_NewDeveloper(t *testing.T) {
 	expectedName := "Test Person"
 	expectedRole := Developer
 	expectedGuess := 0
+	expectedDoSkip := false
 	client := newClient(expectedName, expectedRole, &Room{}, &websocket.Conn{})
 
 	if expectedName != client.Name {
@@ -66,10 +69,15 @@ func TestClient_NewDeveloper(t *testing.T) {
 		t.Errorf("expected guess %v, got %v", expectedGuess, client.Guess)
 	}
 
+	if expectedDoSkip == true {
+		t.Errorf("expected do skip to be false, got %v", client.DoSkip)
+	}
+
 	expectedJsonRepresentation := userDTO{
-		"name":  expectedName,
-		"role":  expectedRole,
-		"guess": expectedGuess,
+		"name":   expectedName,
+		"role":   expectedRole,
+		"guess":  expectedGuess,
+		"doSkip": expectedDoSkip,
 	}
 
 	got := client.toJson()
@@ -245,6 +253,146 @@ func TestClient_WebsocketReaderWhenNewRondMessageOccurredWithClientProductOwner(
 	})
 
 	expectedMsg := newResetRound()
+	got := <-broadcastChannel
+
+	if !reflect.DeepEqual(expectedMsg, got) {
+		t.Errorf("expected %v, got %v", expectedMsg, got)
+	}
+}
+
+func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(t *testing.T) {
+	broadcastChannel := make(chan message)
+	room := &Room{
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
+		leave:     make(chan *Client),
+		clients:   make(map[*Client]bool),
+	}
+	server := httptest.NewServer(http.HandlerFunc(echo))
+	defer server.Close()
+
+	url := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	connection, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	clientChannel := make(chan message)
+	client := &Client{
+		connection: connection,
+		room:       room,
+		Name:       "Test",
+		Role:       Developer,
+		send:       clientChannel,
+	}
+	go client.websocketReader()
+
+	connection.WriteJSON(clientMessage{
+		Type: skipRound,
+	})
+
+	expectedMsg := newSkipRound()
+	expectedClientMsg := newYouSkipped()
+	got := <-broadcastChannel
+	gotClientMessage := <-clientChannel
+
+	if !reflect.DeepEqual(expectedMsg, got) {
+		t.Errorf("expected %v, got %v", expectedMsg, got)
+	}
+	if !reflect.DeepEqual(expectedClientMsg, gotClientMessage) {
+		t.Errorf("expected %v, got %v", expectedClientMsg, gotClientMessage)
+	}
+}
+
+func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *testing.T) {
+	broadcastChannel := make(chan message)
+	id := uuid.New()
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
+	room := &Room{
+		broadcast:      broadcastChannel,
+		join:           make(chan *Client),
+		leave:          make(chan *Client),
+		clients:        make(map[*Client]bool),
+		nameOfCreator:  "Test",
+		key:            id,
+		hashedPassword: hashedPassword,
+	}
+	server := httptest.NewServer(http.HandlerFunc(echo))
+	defer server.Close()
+
+	url := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	connection, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	client := &Client{
+		connection: connection,
+		room:       room,
+		Name:       "Test",
+		Role:       Developer,
+		send:       nil,
+	}
+	go client.websocketReader()
+
+	connection.WriteJSON(clientMessage{
+		Type: lockRoom,
+		Data: map[string]any{
+			"password": "my cool pw",
+			"key":      id.String(),
+		},
+	})
+
+	expectedMsg := newRoomLocked()
+	got := <-broadcastChannel
+
+	if !reflect.DeepEqual(expectedMsg, got) {
+		t.Errorf("expected %v, got %v", expectedMsg, got)
+	}
+}
+
+func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
+	broadcastChannel := make(chan message)
+	id := uuid.New()
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
+	room := &Room{
+		broadcast:      broadcastChannel,
+		join:           make(chan *Client),
+		leave:          make(chan *Client),
+		clients:        make(map[*Client]bool),
+		nameOfCreator:  "Test",
+		key:            id,
+		hashedPassword: hashedPassword,
+	}
+	server := httptest.NewServer(http.HandlerFunc(echo))
+	defer server.Close()
+
+	url := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	connection, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	client := &Client{
+		connection: connection,
+		room:       room,
+		Name:       "Test",
+		Role:       Developer,
+		send:       nil,
+	}
+	go client.websocketReader()
+
+	connection.WriteJSON(clientMessage{
+		Type: openRoom,
+		Data: map[string]any{
+			"key": id.String(),
+		},
+	})
+
+	expectedMsg := newRoomOpened()
 	got := <-broadcastChannel
 
 	if !reflect.DeepEqual(expectedMsg, got) {

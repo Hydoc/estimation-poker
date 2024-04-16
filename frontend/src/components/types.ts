@@ -14,6 +14,7 @@ export type ProductOwner = User & {
 
 export type Developer = User & {
   guess: number;
+  doSkip: boolean;
   role: "developer";
 };
 

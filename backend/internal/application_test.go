@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -223,19 +225,22 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				},
 				"developerList": {
 					{
-						"name":  "Also a dev",
-						"guess": float64(0),
-						"role":  Developer,
+						"name":   "Also a dev",
+						"guess":  float64(0),
+						"doSkip": false,
+						"role":   Developer,
 					},
 					{
-						"name":  "Another",
-						"guess": float64(0),
-						"role":  Developer,
+						"name":   "Another",
+						"guess":  float64(0),
+						"role":   Developer,
+						"doSkip": false,
 					},
 					{
-						"name":  "B",
-						"guess": float64(0),
-						"role":  Developer,
+						"name":   "B",
+						"guess":  float64(0),
+						"doSkip": false,
+						"role":   Developer,
 					},
 				},
 			},
@@ -263,9 +268,10 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				"productOwnerList": {},
 				"developerList": {
 					{
-						"name":  "B",
-						"guess": float64(0),
-						"role":  Developer,
+						"name":   "B",
+						"doSkip": false,
+						"guess":  float64(0),
+						"role":   Developer,
 					},
 				},
 			},
@@ -629,5 +635,191 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 
 	if _, ok := app.rooms[roomToDestroy]; ok {
 		t.Error("expected app to not have room")
+	}
+}
+
+func TestApplication_handleRoomAuthenticate(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		wantCode int
+		wantBody map[string]any
+		request  string
+		body     func() *bytes.Buffer
+	}{
+		{
+			name:     "forbidden when room not found",
+			wantCode: http.StatusForbidden,
+			wantBody: nil,
+			body: func() *bytes.Buffer {
+				return nil
+			},
+			request: "/api/estimation/room/12/authenticate",
+		},
+		{
+			name:     "ok = false when body can not be decoded",
+			wantCode: http.StatusOK,
+			wantBody: envelope{"ok": false},
+			body: func() *bytes.Buffer {
+				return bytes.NewBuffer([]byte(""))
+			},
+			request: "/api/estimation/room/1/authenticate",
+		},
+		{
+			name:     "ok = true when password matches",
+			wantCode: http.StatusOK,
+			wantBody: envelope{"ok": true},
+			body: func() *bytes.Buffer {
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(map[string]string{
+					"password": "helo world",
+				})
+				if err != nil {
+					t.Error(err)
+				}
+				return &buf
+			},
+			request: "/api/estimation/room/1/authenticate",
+		},
+		{
+			name:     "ok = false when password does not match",
+			wantCode: http.StatusOK,
+			wantBody: envelope{"ok": false},
+			body: func() *bytes.Buffer {
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(map[string]string{
+					"password": "invalid",
+				})
+				if err != nil {
+					t.Error(err)
+				}
+				return &buf
+			},
+			request: "/api/estimation/room/1/authenticate",
+		},
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("helo world"), bcrypt.DefaultCost)
+	if err != nil {
+		t.Errorf("error hashing password: %v", err)
+	}
+	app := &Application{
+		upgrader:    &websocket.Upgrader{},
+		guessConfig: &GuessConfig{},
+		rooms: map[RoomId]*Room{
+			"1": {
+				id:             "1",
+				inProgress:     false,
+				leave:          nil,
+				join:           nil,
+				clients:        nil,
+				broadcast:      nil,
+				destroy:        nil,
+				hashedPassword: hashedPassword,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			router := app.Routes()
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodPost, test.request, nil)
+			body := test.body()
+
+			if body != nil {
+				request = httptest.NewRequest(http.MethodPost, test.request, body)
+			}
+
+			router.ServeHTTP(recorder, request)
+
+			var got map[string]any
+			json.Unmarshal(recorder.Body.Bytes(), &got)
+
+			gotCode := recorder.Code
+
+			if gotCode != test.wantCode {
+				t.Errorf("want %v, got %v", test.wantCode, gotCode)
+			}
+
+			if !reflect.DeepEqual(test.wantBody, got) {
+				t.Errorf("want %v, got %v", test.wantBody, got)
+			}
+		})
+	}
+}
+
+func TestApplication_handleFetchPermissions(t *testing.T) {
+	id := uuid.New()
+	tests := []struct {
+		name     string
+		wantCode int
+		wantBody map[string]map[string]map[string]any
+		request  string
+	}{
+		{
+			name:     "not found when room not found",
+			wantCode: http.StatusNotFound,
+			wantBody: nil,
+			request:  "/api/estimation/room/1244132/test/permissions",
+		},
+		{
+			name:     "correct permissions when user is creator of room",
+			wantCode: http.StatusOK,
+			wantBody: map[string]map[string]map[string]any{
+				"permissions": {
+					"room": {
+						"canLock": true,
+						"key":     id.String(),
+					},
+				},
+			},
+			request: "/api/estimation/room/1/bla/permissions",
+		},
+		{
+			name:     "correct permissions when user is not creator of room",
+			wantCode: http.StatusOK,
+			wantBody: map[string]map[string]map[string]any{
+				"permissions": {
+					"room": {
+						"canLock": false,
+					},
+				},
+			},
+			request: "/api/estimation/room/1/any-other/permissions",
+		},
+	}
+
+	app := &Application{
+		upgrader:    &websocket.Upgrader{},
+		guessConfig: &GuessConfig{},
+		rooms: map[RoomId]*Room{
+			"1": {
+				id:            "1",
+				nameOfCreator: "bla",
+				key:           id,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			router := app.Routes()
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, test.request, nil)
+
+			router.ServeHTTP(recorder, request)
+
+			var got map[string]map[string]map[string]any
+			json.Unmarshal(recorder.Body.Bytes(), &got)
+
+			gotCode := recorder.Code
+
+			if gotCode != test.wantCode {
+				t.Errorf("want %v, got %v", test.wantCode, gotCode)
+			}
+
+			if !reflect.DeepEqual(test.wantBody, got) {
+				t.Errorf("want %#v, got %#v", test.wantBody, got)
+			}
+		})
 	}
 }

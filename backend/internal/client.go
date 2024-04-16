@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 )
@@ -10,7 +11,7 @@ const (
 	Developer    = "developer"
 )
 
-type userDTO map[string]interface{}
+type userDTO map[string]any
 
 type Client struct {
 	connection *websocket.Conn
@@ -18,6 +19,7 @@ type Client struct {
 	Name       string
 	Role       string
 	Guess      int
+	DoSkip     bool
 	send       chan message
 }
 
@@ -46,6 +48,10 @@ func (client *Client) websocketReader() {
 		}
 
 		switch {
+		case incMessage.Type == skipRound && client.Role == Developer:
+			client.DoSkip = true
+			client.room.broadcast <- newSkipRound()
+			client.send <- newYouSkipped()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
 			client.Guess = actualGuess
@@ -58,11 +64,11 @@ func (client *Client) websocketReader() {
 			key, keyOk := incMessage.Data.(map[string]any)["key"]
 
 			if !keyOk {
-				log.Println("client:", client.Name, "tried to lock room", client.room.id, "without a key")
+				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a key", client.Name, client.room.id))
 				break
 			}
 			if !pwOk {
-				log.Println("client:", client.Name, "tried to lock room", client.room.id, "without a password")
+				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a password", client.Name, client.room.id))
 				break
 			}
 
@@ -106,14 +112,16 @@ func (client *Client) websocketWriter() {
 
 func (client *Client) reset() {
 	client.Guess = 0
+	client.DoSkip = false
 }
 
 func (client *Client) toJson() userDTO {
 	if client.Role == Developer {
 		return map[string]interface{}{
-			"name":  client.Name,
-			"role":  client.Role,
-			"guess": client.Guess,
+			"name":   client.Name,
+			"role":   client.Role,
+			"guess":  client.Guess,
+			"doSkip": client.DoSkip,
 		}
 	}
 	return map[string]interface{}{

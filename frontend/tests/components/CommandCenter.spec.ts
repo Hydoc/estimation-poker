@@ -21,6 +21,7 @@ describe("CommandCenter", () => {
     it("should render for developer", () => {
       const wrapper = mount(CommandCenter, {
         props: {
+          didSkip: false,
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           guess: 0,
@@ -50,6 +51,7 @@ describe("CommandCenter", () => {
       const wrapper = mount(CommandCenter, {
         props: {
           userRole: Role.ProductOwner,
+          didSkip: false,
           roundState: RoundState.Waiting,
           guess: 0,
           ticketToGuess: "",
@@ -83,6 +85,7 @@ describe("CommandCenter", () => {
       const wrapper = mount(CommandCenter, {
         props: {
           userRole: Role.Developer,
+          didSkip: false,
           roundState: RoundState.Waiting,
           guess: 0,
           ticketToGuess: "",
@@ -108,6 +111,7 @@ describe("CommandCenter", () => {
       const wrapper = mount(CommandCenter, {
         props: {
           userRole: Role.ProductOwner,
+          didSkip: false,
           roundState: RoundState.Waiting,
           guess: 0,
           ticketToGuess: "",

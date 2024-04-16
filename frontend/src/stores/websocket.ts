@@ -25,6 +25,7 @@ type WebsocketStore = {
   roundState: Ref<RoundState>;
   ticketToGuess: Ref<string>;
   guess: Ref<number>;
+  didSkip: Ref<boolean>;
   showAllGuesses: Ref<boolean>;
   possibleGuesses: Ref<PossibleGuess[]>;
   permissions: Ref<Permissions>;
@@ -37,6 +38,7 @@ export type SendableWebsocketMessageType =
   | "reveal"
   | "new-round"
   | "lock-room"
+  | "skip"
   | "open-room";
 
 type SendableWebsocketMessage = {
@@ -50,11 +52,13 @@ type ReceivableWebsocketMessage = {
     | "leave"
     | "estimate"
     | "developer-guessed"
-    | "everyone-guessed"
+    | "everyone-done"
     | "you-guessed"
+    | "you-skipped"
     | "reveal"
     | "reset-round"
     | "room-locked"
+    | "developer-skipped"
     | "room-opened";
   data?: any;
 };
@@ -71,6 +75,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const roundState: Ref<RoundState> = ref(RoundState.Waiting);
   const ticketToGuess = ref("");
   const guess = ref(0);
+  const didSkip = ref(false);
   const showAllGuesses = ref(false);
   const possibleGuesses: Ref<PossibleGuess[]> = ref([]);
   const permissions: Ref<Permissions> = ref({ room: { canLock: false } });
@@ -110,6 +115,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
       switch (decoded.type) {
         case "leave":
         case "join":
+        case "developer-skipped":
         case "developer-guessed":
           await fetchUsersInRoom();
           break;
@@ -120,7 +126,10 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
         case "you-guessed":
           guess.value = decoded.data;
           break;
-        case "everyone-guessed":
+        case "you-skipped":
+          didSkip.value = true;
+          break;
+        case "everyone-done":
           await fetchUsersInRoom();
           roundState.value = RoundState.End;
           break;
@@ -164,6 +173,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     guess.value = 0;
     roundState.value = RoundState.Waiting;
     showAllGuesses.value = false;
+    didSkip.value = false;
   }
 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
@@ -264,6 +274,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     send,
     ticketToGuess,
     guess,
+    didSkip,
     resetRound,
     showAllGuesses,
     fetchActiveRooms,

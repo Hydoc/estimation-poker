@@ -4,6 +4,7 @@ import { type PossibleGuess } from "@/components/types";
 
 type Props = {
   didGuess: boolean;
+  didSkip: boolean;
   hasTicketToGuess: boolean;
   possibleGuesses: PossibleGuess[];
 };
@@ -11,6 +12,7 @@ type Props = {
 const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "guess", guess: number): void;
+  (e: "skip"): void;
 }>();
 
 const chosenCard: Ref<number | null | undefined> = ref(null);
@@ -24,16 +26,25 @@ function guess() {
   emit("guess", chosenCard.value!);
   chosenCard.value = null;
 }
+
+function skip() {
+  emit("skip");
+}
 </script>
 
 <template>
   <v-container>
     <v-item-group
-      v-if="props.hasTicketToGuess && !props.didGuess"
+      v-if="props.hasTicketToGuess && !props.didGuess && !props.didSkip"
       v-model="chosenCard"
       selected-class="bg-indigo-darken-2"
     >
       <v-container>
+        <v-row>
+          <v-col class="d-flex justify-end">
+            <v-btn @click="skip" icon="mdi-coffee" title="Runde aussetzen" color="#967259"></v-btn>
+          </v-col>
+        </v-row>
         <v-row>
           <v-col v-for="possibleGuess in props.possibleGuesses" :key="possibleGuess.guess">
             <v-item :value="possibleGuess.guess" v-slot="{ selectedClass, toggle }">
@@ -55,7 +66,7 @@ function guess() {
       </v-container>
     </v-item-group>
     <v-btn
-      v-if="props.hasTicketToGuess && !props.didGuess"
+      v-if="props.hasTicketToGuess && !props.didGuess && !props.didSkip"
       width="100%"
       prepend-icon="mdi-send"
       append-icon="mdi-send"

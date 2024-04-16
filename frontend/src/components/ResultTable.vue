@@ -11,10 +11,20 @@ type Props = {
 const props = defineProps<Props>();
 
 const averageGuess = computed(() => {
-  return Math.round(
-    props.developerList.reduce((sum, dev) => sum + dev.guess, 0) / props.developerList.length,
+  const developerThatDoNotSkip = props.developerList.filter((dev) => !dev.doSkip);
+  const average = Math.round(
+    developerThatDoNotSkip.reduce((sum, dev) => sum + dev.guess, 0) / developerThatDoNotSkip.length,
   );
+  return Number.isNaN(average) ? 0 : average;
 });
+
+function developerDidNotGuessAverage(dev: Developer): boolean {
+  return dev.guess !== averageGuess.value && props.showAllGuesses && !dev.doSkip;
+}
+
+function developerIsDone(dev: Developer): boolean {
+  return dev.guess !== 0 || dev.doSkip;
+}
 </script>
 
 <template>
@@ -30,16 +40,22 @@ const averageGuess = computed(() => {
         v-for="developer in props.developerList"
         :key="developer.name"
         :class="{
-          'bg-blue-grey-lighten-5': developer.guess !== averageGuess && props.showAllGuesses,
+          'bg-blue-grey-lighten-5': developerDidNotGuessAverage(developer),
         }"
       >
         <td>{{ developer.name }}</td>
         <td>
-          <v-icon color="green" v-if="developer.guess !== 0 && !props.showAllGuesses"
+          <span v-if="!props.showAllGuesses">
+            <v-icon color="green" v-if="developerIsDone(developer)"
             >mdi-check-circle</v-icon
-          >
-          <v-icon v-else-if="developer.guess === 0">mdi-help-circle</v-icon>
-          <span v-if="props.showAllGuesses">{{ developer.guess }}</span>
+            >
+            <v-icon v-else>mdi-help-circle</v-icon>
+          </span>
+          
+          <span v-else>
+            <span v-if="!developer.doSkip">{{ developer.guess }}</span>
+            <span v-else><v-icon>mdi-coffee</v-icon></span>
+          </span>
         </td>
       </tr>
       <tr v-if="props.showAllGuesses">

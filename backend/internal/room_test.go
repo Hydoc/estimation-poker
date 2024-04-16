@@ -1,8 +1,12 @@
 package internal
 
 import (
+	"bytes"
 	"github.com/google/uuid"
+	"log"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -58,7 +62,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 			room := &Room{
 				clients: test.clients,
 			}
-			got := room.everyDevGuessed()
+			got := room.everyDevIsDone()
 			if got != test.want {
 				t.Errorf("want %v, got %v", test.want, got)
 			}
@@ -165,8 +169,8 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 
 	gotClientMsg := <-clientSendChannel
 
-	if !reflect.DeepEqual(gotClientMsg, newEveryoneGuessed()) {
-		t.Errorf("want msg %v, got %v", newEveryoneGuessed(), gotClientMsg)
+	if !reflect.DeepEqual(gotClientMsg, newEveryoneIsDone()) {
+		t.Errorf("want msg %v, got %v", newEveryoneIsDone(), gotClientMsg)
 	}
 }
 
@@ -246,6 +250,50 @@ func TestRoom_Run_BroadcastResetRound(t *testing.T) {
 	}
 }
 
+func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
+	clientSendChannel := make(chan message)
+	broadcastChannel := make(chan message)
+	client := &Client{
+		send: clientSendChannel,
+		Role: ProductOwner,
+	}
+	developerToReset := &Client{
+		send:  clientSendChannel,
+		Role:  Developer,
+		Guess: 2,
+	}
+	room := &Room{
+		id:         "Test",
+		inProgress: true,
+		leave:      nil,
+		join:       nil,
+		clients: map[*Client]bool{
+			client:           true,
+			developerToReset: true,
+		},
+		broadcast: broadcastChannel,
+		destroy:   nil,
+	}
+	go room.Run()
+
+	msg := leave{}
+	room.broadcast <- msg
+	gotClientMsg := <-clientSendChannel
+	<-clientSendChannel
+
+	if !reflect.DeepEqual(gotClientMsg, newResetRound()) {
+		t.Errorf("want msg %v, got %v", newResetRound(), gotClientMsg)
+	}
+
+	if room.inProgress {
+		t.Error("expected room not to be in progress")
+	}
+
+	if developerToReset.Guess > 0 {
+		t.Error("expected developer to be resetted")
+	}
+}
+
 func TestRoom_lock(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
@@ -274,5 +322,91 @@ func TestRoom_lock(t *testing.T) {
 
 	if len(room.hashedPassword) == 0 {
 		t.Errorf("wanted room to have hashed password")
+	}
+}
+
+func TestRoom_lock_WhenLockingFails(t *testing.T) {
+	key := uuid.New()
+	room := &Room{
+		id:             "Test",
+		inProgress:     true,
+		leave:          nil,
+		join:           nil,
+		clients:        make(map[*Client]bool),
+		broadcast:      make(chan message),
+		destroy:        nil,
+		isLocked:       false,
+		nameOfCreator:  "Bla",
+		key:            key,
+		hashedPassword: make([]byte, 0),
+	}
+
+	got := room.lock("ABC", "top secret", key.String())
+
+	if got != false {
+		t.Errorf("got %v, want false", got)
+	}
+}
+
+func TestRoom_open_WhenUserNotCreator(t *testing.T) {
+	id := uuid.New()
+	room := &Room{
+		id:            "Test",
+		inProgress:    false,
+		nameOfCreator: "some user",
+		isLocked:      false,
+		key:           id,
+	}
+
+	if got := room.open("invalid user", id.String()); got != false {
+		t.Error("expected to be false")
+	}
+}
+
+func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
+	room := &Room{
+		id:            "Test",
+		inProgress:    false,
+		nameOfCreator: "some user",
+		isLocked:      false,
+		key:           uuid.New(),
+	}
+
+	if got := room.open("some user", "incorrect key"); got != false {
+		t.Error("expected to be false")
+	}
+}
+
+func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	key := uuid.New()
+	room := &Room{
+		id:             "Test",
+		inProgress:     true,
+		leave:          nil,
+		join:           nil,
+		clients:        make(map[*Client]bool),
+		broadcast:      make(chan message),
+		destroy:        nil,
+		isLocked:       false,
+		nameOfCreator:  "Bla",
+		key:            key,
+		hashedPassword: make([]byte, 0),
+	}
+
+	got := room.lock("ABC", strings.Repeat("bla", 90), key.String())
+	wantedLog := "could not hash password"
+
+	if got != false {
+		t.Errorf("got %v, want false", got)
+	}
+
+	if !strings.Contains(logBuffer.String(), wantedLog) {
+		t.Errorf("expected to log %s", wantedLog)
 	}
 }

@@ -65,7 +65,7 @@ func (app *Application) handleFetchPermissions(writer http.ResponseWriter, reque
 	username := request.PathValue("username")
 	actualRoom, ok := app.rooms[RoomId(roomId)]
 	if !ok {
-		app.writeJson(writer, http.StatusNotFound, envelope{"message": "room does not exist"}, nil)
+		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 

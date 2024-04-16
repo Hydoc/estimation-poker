@@ -41,7 +41,7 @@ func newRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 func (room *Room) lock(username, password, key string) bool {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatalf("could not hash password %s", password)
+		log.Printf("could not hash password %s\n", password)
 		return false
 	}
 	if username == room.nameOfCreator && key == room.key.String() {
@@ -67,13 +67,21 @@ func (room *Room) verify(password string) bool {
 	return err == nil
 }
 
-func (room *Room) everyDevGuessed() bool {
+func (room *Room) everyDevIsDone() bool {
 	for client := range room.clients {
-		if client.Role == Developer && client.Guess == 0 {
+		if client.Role == Developer && (client.Guess == 0 && !client.DoSkip) {
 			return false
 		}
 	}
 	return true
+}
+
+func (room *Room) resetRound(client *Client) {
+	room.inProgress = false
+	if client.Role == Developer {
+		client.reset()
+	}
+	client.send <- newResetRound()
 }
 
 func (room *Room) Run() {
@@ -96,25 +104,19 @@ func (room *Room) Run() {
 						room.inProgress = true
 					}
 					client.send <- msg
-				case developerGuessed:
-					if room.everyDevGuessed() {
-						client.send <- newEveryoneGuessed()
+				case developerGuessed, skip:
+					if room.everyDevIsDone() {
+						client.send <- newEveryoneIsDone()
 						continue
 					}
 					client.send <- msg
 				case resetRound:
-					room.inProgress = false
-					if client.Role == Developer {
-						client.reset()
-					}
-					client.send <- msg
+					room.resetRound(client)
 				case leave:
 					if room.inProgress {
-						room.inProgress = false
-						if client.Role == Developer {
-							client.reset()
+						for c := range room.clients {
+							room.resetRound(c)
 						}
-						client.send <- newResetRound()
 						continue
 					}
 					client.send <- msg
