@@ -76,6 +76,14 @@ func (room *Room) everyDevIsDone() bool {
 	return true
 }
 
+func (room *Room) resetRound(client *Client) {
+	room.inProgress = false
+	if client.Role == Developer {
+		client.reset()
+	}
+	client.send <- newResetRound()
+}
+
 func (room *Room) Run() {
 	for {
 		select {
@@ -103,18 +111,12 @@ func (room *Room) Run() {
 					}
 					client.send <- msg
 				case resetRound:
-					room.inProgress = false
-					if client.Role == Developer {
-						client.reset()
-					}
-					client.send <- msg
+					room.resetRound(client)
 				case leave:
 					if room.inProgress {
-						room.inProgress = false
-						if client.Role == Developer {
-							client.reset()
+						for c := range room.clients {
+							room.resetRound(c)
 						}
-						client.send <- newResetRound()
 						continue
 					}
 					client.send <- msg

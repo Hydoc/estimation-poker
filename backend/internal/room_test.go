@@ -250,6 +250,50 @@ func TestRoom_Run_BroadcastResetRound(t *testing.T) {
 	}
 }
 
+func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
+	clientSendChannel := make(chan message)
+	broadcastChannel := make(chan message)
+	client := &Client{
+		send: clientSendChannel,
+		Role: ProductOwner,
+	}
+	developerToReset := &Client{
+		send:  clientSendChannel,
+		Role:  Developer,
+		Guess: 2,
+	}
+	room := &Room{
+		id:         "Test",
+		inProgress: true,
+		leave:      nil,
+		join:       nil,
+		clients: map[*Client]bool{
+			client:           true,
+			developerToReset: true,
+		},
+		broadcast: broadcastChannel,
+		destroy:   nil,
+	}
+	go room.Run()
+
+	msg := leave{}
+	room.broadcast <- msg
+	gotClientMsg := <-clientSendChannel
+	<-clientSendChannel
+
+	if !reflect.DeepEqual(gotClientMsg, newResetRound()) {
+		t.Errorf("want msg %v, got %v", newResetRound(), gotClientMsg)
+	}
+
+	if room.inProgress {
+		t.Error("expected room not to be in progress")
+	}
+
+	if developerToReset.Guess > 0 {
+		t.Error("expected developer to be resetted")
+	}
+}
+
 func TestRoom_lock(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
@@ -301,6 +345,35 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 
 	if got != false {
 		t.Errorf("got %v, want false", got)
+	}
+}
+
+func TestRoom_open_WhenUserNotCreator(t *testing.T) {
+	id := uuid.New()
+	room := &Room{
+		id:            "Test",
+		inProgress:    false,
+		nameOfCreator: "some user",
+		isLocked:      false,
+		key:           id,
+	}
+
+	if got := room.open("invalid user", id.String()); got != false {
+		t.Error("expected to be false")
+	}
+}
+
+func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
+	room := &Room{
+		id:            "Test",
+		inProgress:    false,
+		nameOfCreator: "some user",
+		isLocked:      false,
+		key:           uuid.New(),
+	}
+
+	if got := room.open("some user", "incorrect key"); got != false {
+		t.Error("expected to be false")
 	}
 }
 
