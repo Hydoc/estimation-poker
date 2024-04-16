@@ -35,55 +35,22 @@ describe("DeveloperCommandCenter", () => {
         },
       });
 
-      expect(wrapper.findComponent(VItemGroup).exists()).to.be.true;
-      expect(wrapper.findComponent(VItemGroup).props("selectedClass")).equal("bg-indigo-darken-2");
-      expect(wrapper.findAllComponents(VItem)).length(5);
-      expect(wrapper.findAllComponents(VItem).at(0).props("value")).equal(1);
-      expect(wrapper.findAllComponents(VItem).at(1).props("value")).equal(2);
-      expect(wrapper.findAllComponents(VItem).at(2).props("value")).equal(3);
-      expect(wrapper.findAllComponents(VItem).at(3).props("value")).equal(4);
-      expect(wrapper.findAllComponents(VItem).at(4).props("value")).equal(5);
+      expect(wrapper.findAll(".card")).length(5);
+      expect(wrapper.findAll(".card").at(0).find("h2").text()).equal("1");
+      expect(wrapper.findAll(".card").at(0).find("span").text()).equal("Bis zu 4 Std.");
 
-      expect(wrapper.findAllComponents(VCard)).length(5);
-      wrapper.findAllComponents(VCard).forEach((it) => {
-        expect(it.classes()).contains("text-center");
-        expect(it.props("variant")).equal("outlined");
-        expect(it.props("height")).equal("300");
-        expect(it.props("link")).to.be.true;
-      });
 
-      expect(wrapper.findAllComponents(VCard).at(0).findComponent(VCardTitle).text()).equal("1");
-      expect(wrapper.findAllComponents(VCard).at(0).findComponent(VCardSubtitle).text()).equal(
-        "Bis zu 4 Std.",
-      );
+      expect(wrapper.findAll(".card").at(1).find("h2").text()).equal("2");
+      expect(wrapper.findAll(".card").at(1).find("span").text()).equal("Bis zu 8 Std.");
 
-      expect(wrapper.findAllComponents(VCard).at(1).findComponent(VCardTitle).text()).equal("2");
-      expect(wrapper.findAllComponents(VCard).at(1).findComponent(VCardSubtitle).text()).equal(
-        "Bis zu 8 Std.",
-      );
+      expect(wrapper.findAll(".card").at(2).find("h2").text()).equal("3");
+      expect(wrapper.findAll(".card").at(2).find("span").text()).equal("Bis zu 3 Tagen");
 
-      expect(wrapper.findAllComponents(VCard).at(2).findComponent(VCardTitle).text()).equal("3");
-      expect(wrapper.findAllComponents(VCard).at(2).findComponent(VCardSubtitle).text()).equal(
-        "Bis zu 3 Tagen",
-      );
+      expect(wrapper.findAll(".card").at(3).find("h2").text()).equal("4");
+      expect(wrapper.findAll(".card").at(3).find("span").text()).equal("Bis zu 5 Tagen");
 
-      expect(wrapper.findAllComponents(VCard).at(3).findComponent(VCardTitle).text()).equal("4");
-      expect(wrapper.findAllComponents(VCard).at(3).findComponent(VCardSubtitle).text()).equal(
-        "Bis zu 5 Tagen",
-      );
-
-      expect(wrapper.findAllComponents(VCard).at(4).findComponent(VCardTitle).text()).equal("5");
-      expect(wrapper.findAllComponents(VCard).at(4).findComponent(VCardSubtitle).text()).equal(
-        "Mehr als 5 Tage",
-      );
-
-      expect(wrapper.findAllComponents(VBtn)).length(2);
-      expect(wrapper.findAllComponents(VBtn).at(1).props("width")).equal("100%");
-      expect(wrapper.findAllComponents(VBtn).at(1).props("prependIcon")).equal("mdi-send");
-      expect(wrapper.findAllComponents(VBtn).at(1).props("appendIcon")).equal("mdi-send");
-      expect(wrapper.findAllComponents(VBtn).at(1).props("disabled")).to.be.true;
-      expect(wrapper.findAllComponents(VBtn).at(1).text()).equal("Ab gehts");
-      expect(wrapper.find("p").exists()).to.be.false;
+      expect(wrapper.findAll(".card").at(4).find("h2").text()).equal("5");
+      expect(wrapper.findAll(".card").at(4).find("span").text()).equal("Mehr als 5 Tage");
     });
 
     it("should render without ticket to guess", () => {
@@ -132,7 +99,7 @@ describe("DeveloperCommandCenter", () => {
   });
 
   describe("functionality", () => {
-    it("should enable button when everything is valid", async () => {
+    it("should emit guess on card click submit", async () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
           didGuess: false,
@@ -151,35 +118,9 @@ describe("DeveloperCommandCenter", () => {
         },
       });
 
-      await wrapper.findAllComponents(VCard).at(2).trigger("click");
-      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.false;
-    });
-
-    it("should emit guess on form submit", async () => {
-      const wrapper = mount(DeveloperCommandCenter, {
-        props: {
-          didGuess: false,
-          didSkip: false,
-          hasTicketToGuess: true,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-        global: {
-          plugins: [vuetify],
-        },
-      });
-
-      await wrapper.findAllComponents(VCard).at(2).trigger("click");
-      await wrapper.findAllComponents(VBtn).at(1).trigger("click");
+      await wrapper.findAll(".card").at(2).trigger("click");
 
       expect(wrapper.emitted("guess")).toEqual([[3]]);
-      // @ts-ignore
-      expect(wrapper.vm.chosenCard).to.be.null;
     });
 
     it("should emit skip on skip button press", async () => {
@@ -203,30 +144,6 @@ describe("DeveloperCommandCenter", () => {
       
       await wrapper.findComponent(VBtn).trigger("click");
       expect(wrapper.emitted("skip")).deep.equal([[]]);
-    });
-    it("should not emit guess when chosen card is null", () => {
-      const wrapper = mount(DeveloperCommandCenter, {
-        props: {
-          didGuess: false,
-          didSkip: false,
-          hasTicketToGuess: true,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-        global: {
-          plugins: [vuetify],
-        },
-      });
-
-      // @ts-ignore
-      wrapper.vm.guess();
-
-      expect(wrapper.emitted("guess")).to.be.undefined;
     });
   });
 });
