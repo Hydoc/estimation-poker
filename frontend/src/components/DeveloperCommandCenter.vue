@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, ref, type Ref } from "vue";
 import { type PossibleGuess } from "@/components/types";
 
 type Props = {
@@ -15,16 +14,8 @@ const emit = defineEmits<{
   (e: "skip"): void;
 }>();
 
-const chosenCard: Ref<number | null | undefined> = ref(null);
-const canGuess = computed(() => chosenCard.value !== null && chosenCard.value !== undefined);
-
-function guess() {
-  if (!canGuess.value) {
-    return;
-  }
-
-  emit("guess", chosenCard.value!);
-  chosenCard.value = null;
+function guess(value: number) {
+  emit("guess", value);
 }
 
 function skip() {
@@ -33,49 +24,42 @@ function skip() {
 </script>
 
 <template>
-  <v-container>
-    <v-item-group
-      v-if="props.hasTicketToGuess && !props.didGuess && !props.didSkip"
-      v-model="chosenCard"
-      selected-class="bg-indigo-darken-2"
-    >
-      <v-container>
-        <v-row>
-          <v-col class="d-flex justify-end">
-            <v-btn @click="skip" icon="mdi-coffee" title="Runde aussetzen" color="#967259"></v-btn>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col v-for="possibleGuess in props.possibleGuesses" :key="possibleGuess.guess">
-            <v-item :value="possibleGuess.guess" v-slot="{ selectedClass, toggle }">
-              <v-card
-                :class="['text-center', selectedClass]"
-                variant="outlined"
-                height="300"
-                :link="true"
-                @click="toggle"
-              >
-                <div class="mt-15">
-                  <v-card-title>{{ possibleGuess.guess }}</v-card-title>
-                  <v-card-subtitle>{{ possibleGuess.description }}</v-card-subtitle>
-                </div>
-              </v-card>
-            </v-item>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-item-group>
-    <v-btn
-      v-if="props.hasTicketToGuess && !props.didGuess && !props.didSkip"
-      width="100%"
-      prepend-icon="mdi-send"
-      append-icon="mdi-send"
-      :disabled="!canGuess"
-      @click="guess"
-      >Ab gehts</v-btn
-    >
-    <p v-else-if="!props.hasTicketToGuess">Warten auf Ticket...</p>
-  </v-container>
+  <div class="d-flex flex-column justify-center align-center">
+    <div v-if="props.hasTicketToGuess && !props.didGuess && !props.didSkip">
+      <div class="d-flex ga-2">
+          <div
+            class="card"
+            v-for="possibleGuess in props.possibleGuesses" :key="possibleGuess.guess"
+            @click="guess(possibleGuess.guess)"
+          >
+            <h2>{{ possibleGuess.guess }}</h2>
+            <span class="guess-description">{{ possibleGuess.description }}</span>
+          </div>
+        <v-btn class="align-self-center ml-10" @click="skip" icon="mdi-coffee" title="Runde aussetzen" color="#967259"></v-btn>
+      </div>
+    </div>
+    <p v-if="!props.hasTicketToGuess">Warten auf Ticket...</p>
+  </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+  border-radius: 5%;
+  transition: 0.4s;
+  min-height: 15rem;
+  min-width: 10rem;
+}
+.card:hover {
+  cursor: pointer;
+  background-color: #82B1FF;
+  transform: translate(0, -10px);
+}
+.guess-description {
+  opacity: 0.6;
+}
+</style>
