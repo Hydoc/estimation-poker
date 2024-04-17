@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/Hydoc/guess-dev/graph/badge.svg?token=W6K85E6PQQ)](https://codecov.io/gh/Hydoc/guess-dev)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Hydoc/guess-dev/backend)](https://goreportcard.com/report/github.com/Hydoc/guess-dev/backend)
 
-# Guess-Dev
+# Estimation Poker
 This project idea was born during a Dev-Meeting. It is a web interface with a websocket backend to simplify the estimation process.
 
 ## Why?
