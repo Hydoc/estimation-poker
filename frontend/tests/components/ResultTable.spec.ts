@@ -72,9 +72,7 @@ describe("ResultTable", () => {
     it("should return 0 as average guess when there a no devs that have guessed", () => {
       const wrapper = mount(ResultTable, {
         props: {
-          developerList: [
-            { name: "test", guess: 0, role: Role.Developer, doSkip: true },
-          ],
+          developerList: [{ name: "test", guess: 0, role: Role.Developer, doSkip: true }],
           showAllGuesses: true,
           roundIsFinished: false,
         },
@@ -84,7 +82,8 @@ describe("ResultTable", () => {
       });
 
       expect(wrapper.findAll("tbody tr").at(0).findAll("td").at(0).text()).equal("test");
-      expect(wrapper.findAll("tbody tr").at(0).findAll("td").at(1).find(".mdi-coffee").exists()).true;
+      expect(wrapper.findAll("tbody tr").at(0).findAll("td").at(1).find(".mdi-coffee").exists())
+        .true;
       expect(wrapper.findAll("tbody tr").at(1).findAll("td").at(0).text()).equal("Durchschnitt");
       expect(wrapper.findAll("tbody tr").at(1).findAll("td").at(1).text()).equal("0");
     });

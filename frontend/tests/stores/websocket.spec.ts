@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useWebsocketStore } from "../../src/stores/websocket";
 import { Role, RoundState } from "../../src/components/types";
 import { createPinia, setActivePinia } from "pinia";
-import { nextTick } from "vue";
 
 const websocketSendSpy = vi.fn();
 const websocketCloseSpy = vi.fn();
@@ -181,7 +180,7 @@ describe("Websocket Store", () => {
 
     expect(websocketStore.didSkip).true;
   });
-  
+
   it("should fetch users in room and end round when everyone-guessed message appeared", async () => {
     const usersInRoom = {
       developerList: [{ name: "C", role: Role.Developer, guess: 0 }],

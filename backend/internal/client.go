@@ -59,11 +59,13 @@ func (client *Client) websocketReader() {
 		switch {
 		case incMessage.Type == skipRound && client.Role == Developer:
 			client.DoSkip = true
+			client.Guess = 0
 			client.room.broadcast <- newSkipRound()
 			client.send <- newYouSkipped()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
 			client.Guess = actualGuess
+			client.DoSkip = false
 			client.room.broadcast <- newDeveloperGuessed()
 			client.send <- newYouGuessed(actualGuess)
 		case incMessage.Type == newRound && client.Role == ProductOwner:
