@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
+	"time"
 )
 
 const (
 	ProductOwner = "product-owner"
 	Developer    = "developer"
+	pongWait     = 60 * time.Second
+	pingPeriod   = (pongWait * 9) / 10
+	writeWait    = 10 * time.Second
 )
 
 type userDTO map[string]any
@@ -39,6 +43,11 @@ func (client *Client) websocketReader() {
 		client.room.broadcast <- newLeave()
 		client.connection.Close()
 	}()
+	client.connection.SetReadDeadline(time.Now().Add(pongWait))
+	client.connection.SetPongHandler(func(string) error {
+		client.connection.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
 		var incMessage clientMessage
 		err := client.connection.ReadJSON(&incMessage)
@@ -97,13 +106,23 @@ func (client *Client) websocketReader() {
 }
 
 func (client *Client) websocketWriter() {
-	defer client.connection.Close()
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		client.connection.Close()
+		ticker.Stop()
+	}()
 	for {
 		select {
 		case msg := <-client.send:
+			client.connection.SetWriteDeadline(time.Now().Add(writeWait))
 			err := client.connection.WriteJSON(msg.ToJson())
 			if err != nil {
 				log.Println("error writing to client:", err)
+				return
+			}
+		case <-ticker.C:
+			client.connection.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := client.connection.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
