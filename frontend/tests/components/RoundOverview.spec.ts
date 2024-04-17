@@ -1,15 +1,21 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import RoundOverview from "../../src/components/RoundOverview.vue";
 import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 import { Role } from "../../src/components/types";
-import { VBtn, VCard, VCardActions } from "vuetify/components";
+import { VBtn, VCard, VCardActions, VProgressCircular, VCardTitle } from "vuetify/components";
 import ResultTable from "../../src/components/ResultTable.vue";
 
 let vuetify: ReturnType<typeof createVuetify>;
+const ResizeObserverMock = vi.fn(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
 
+vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 beforeEach(() => {
   vuetify = createVuetify({
     components,
@@ -34,7 +40,7 @@ describe("RoundOverview", () => {
       });
 
       expect(wrapper.findComponent(VCard).exists()).to.be.true;
-      expect(wrapper.findComponent(VCard).props("title")).equal(
+      expect(wrapper.findComponent(VCard).findComponent(VCardTitle).find("span").text()).equal(
         "Aktuelles Ticket zum schätzen: WR-123",
       );
 
@@ -113,6 +119,32 @@ describe("RoundOverview", () => {
   });
 
   describe("functionality", () => {
+    it("should calculate percentage correctly", () => {
+      const wrapper = mount(RoundOverview, {
+        props: {
+          ticketToGuess: "WR-123",
+          showAllGuesses: false,
+          developerList: [
+            { name: "Test", guess: 2, doSkip: false, role: Role.Developer },
+            { name: "Test", guess: 0, doSkip: true, role: Role.Developer },
+            { name: "Test", guess: 0, doSkip: false, role: Role.Developer },
+            { name: "Test", guess: 1, doSkip: false, role: Role.Developer },
+            { name: "Test", guess: 0, doSkip: false, role: Role.Developer },
+          ],
+          roundIsFinished: false,
+          userIsProductOwner: true,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      expect(wrapper.findComponent(VProgressCircular).props("modelValue")).equal(60);
+      expect(wrapper.findComponent(VProgressCircular).props("color")).equal("teal-darken-1");
+      expect(wrapper.findComponent(VProgressCircular).props("width")).equal("5");
+      expect(wrapper.findComponent(VProgressCircular).props("size")).equal("50");
+      expect(wrapper.findComponent(VProgressCircular).text()).equal("60%");
+    });
     it("should emit on click 'Auflösen'", async () => {
       const wrapper = mount(RoundOverview, {
         props: {

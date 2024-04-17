@@ -22,6 +22,13 @@ import { nextTick } from "vue";
 
 let vuetify: ReturnType<typeof createVuetify>;
 
+const ResizeObserverMock = vi.fn(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 beforeEach(() => {
   vuetify = createVuetify({
     components,
