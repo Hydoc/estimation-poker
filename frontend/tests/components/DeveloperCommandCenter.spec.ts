@@ -3,8 +3,8 @@ import { mount } from "@vue/test-utils";
 import DeveloperCommandCenter from "../../src/components/DeveloperCommandCenter.vue";
 import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
+import { VBtn } from "vuetify/components";
 import * as directives from "vuetify/directives";
-import { VBtn, VCard, VCardSubtitle, VCardTitle, VItem, VItemGroup } from "vuetify/components";
 
 let vuetify: ReturnType<typeof createVuetify>;
 
@@ -19,7 +19,8 @@ describe("DeveloperCommandCenter", () => {
     it("should render", () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
-          didGuess: false,
+          guess: 0,
+          showAllGuesses: false,
           didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
@@ -39,7 +40,6 @@ describe("DeveloperCommandCenter", () => {
       expect(wrapper.findAll(".card").at(0).find("h2").text()).equal("1");
       expect(wrapper.findAll(".card").at(0).find("span").text()).equal("Bis zu 4 Std.");
 
-
       expect(wrapper.findAll(".card").at(1).find("h2").text()).equal("2");
       expect(wrapper.findAll(".card").at(1).find("span").text()).equal("Bis zu 8 Std.");
 
@@ -56,7 +56,8 @@ describe("DeveloperCommandCenter", () => {
     it("should render without ticket to guess", () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
-          didGuess: false,
+          guess: 0,
+          showAllGuesses: false,
           didSkip: false,
           hasTicketToGuess: false,
           possibleGuesses: [
@@ -75,10 +76,11 @@ describe("DeveloperCommandCenter", () => {
       expect(wrapper.find("p").text()).equal("Warten auf Ticket...");
     });
 
-    it("should not render when developer did guess", () => {
+    it("should render with correct guess when developer did guess", async () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
-          didGuess: true,
+          guess: 2,
+          showAllGuesses: false,
           didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
@@ -94,7 +96,32 @@ describe("DeveloperCommandCenter", () => {
         },
       });
 
-      expect(wrapper.find("div").text()).equal("");
+      expect(wrapper.find(".active-guess").find("h2").text()).equal("2");
+      expect(wrapper.find(".active-guess").find("span").text()).equal("Bis zu 8 Std.");
+    });
+
+    it("should render with correct color when developer didSkip", () => {
+      const wrapper = mount(DeveloperCommandCenter, {
+        props: {
+          guess: 0,
+          showAllGuesses: false,
+          didSkip: true,
+          hasTicketToGuess: true,
+          possibleGuesses: [
+            { guess: 1, description: "Bis zu 4 Std." },
+            { guess: 2, description: "Bis zu 8 Std." },
+            { guess: 3, description: "Bis zu 3 Tagen" },
+            { guess: 4, description: "Bis zu 5 Tagen" },
+            { guess: 5, description: "Mehr als 5 Tage" },
+          ],
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      expect(wrapper.findComponent(VBtn).props("icon")).equal("mdi-coffee-outline");
+      expect(wrapper.findComponent(VBtn).props("color")).equal("#38220f");
     });
   });
 
@@ -102,7 +129,8 @@ describe("DeveloperCommandCenter", () => {
     it("should emit guess on card click submit", async () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
-          didGuess: false,
+          guess: 0,
+          showAllGuesses: false,
           didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
@@ -119,14 +147,17 @@ describe("DeveloperCommandCenter", () => {
       });
 
       await wrapper.findAll(".card").at(2).trigger("click");
-
       expect(wrapper.emitted("guess")).toEqual([[3]]);
+
+      await wrapper.findAll(".card").at(3).trigger("click");
+      expect(wrapper.emitted("guess")).toEqual([[3], [4]]);
     });
 
     it("should emit skip on skip button press", async () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
-          didGuess: false,
+          guess: 0,
+          showAllGuesses: false,
           didSkip: false,
           hasTicketToGuess: true,
           possibleGuesses: [
@@ -141,7 +172,7 @@ describe("DeveloperCommandCenter", () => {
           plugins: [vuetify],
         },
       });
-      
+
       await wrapper.findComponent(VBtn).trigger("click");
       expect(wrapper.emitted("skip")).deep.equal([[]]);
     });

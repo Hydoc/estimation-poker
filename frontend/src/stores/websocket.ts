@@ -125,8 +125,10 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           break;
         case "you-guessed":
           guess.value = decoded.data;
+          didSkip.value = false;
           break;
         case "you-skipped":
+          guess.value = 0;
           didSkip.value = true;
           break;
         case "everyone-done":

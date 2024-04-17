@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
+  type Permissions,
   type PossibleGuess,
   Role,
   RoundState,
   type UserOverview,
-  type Permissions,
 } from "@/components/types";
 import UserBox from "@/components/UserBox.vue";
 import CommandCenter from "@/components/CommandCenter.vue";
@@ -191,6 +191,7 @@ function openRoom() {
           :ticket-to-guess="props.ticketToGuess"
           :has-developers-in-room="props.usersInRoom.developerList.length > 0"
           :possible-guesses="props.possibleGuesses"
+          :show-all-guesses="props.showAllGuesses"
           @estimate="emit('estimate', $event)"
           @skip="emit('skip')"
           @guess="emit('guess', $event)"

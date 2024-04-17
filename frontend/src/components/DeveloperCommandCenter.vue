@@ -2,8 +2,9 @@
 import { type PossibleGuess } from "@/components/types";
 
 type Props = {
-  didGuess: boolean;
+  guess: number;
   didSkip: boolean;
+  showAllGuesses: boolean;
   hasTicketToGuess: boolean;
   possibleGuesses: PossibleGuess[];
 };
@@ -14,7 +15,7 @@ const emit = defineEmits<{
   (e: "skip"): void;
 }>();
 
-function guess(value: number) {
+function doGuess(value: number) {
   emit("guess", value);
 }
 
@@ -25,17 +26,27 @@ function skip() {
 
 <template>
   <div class="d-flex flex-column justify-center align-center">
-    <div v-if="props.hasTicketToGuess && !props.didGuess && !props.didSkip">
+    <div v-if="props.hasTicketToGuess && !props.showAllGuesses">
       <div class="d-flex ga-2">
-          <div
-            class="card"
-            v-for="possibleGuess in props.possibleGuesses" :key="possibleGuess.guess"
-            @click="guess(possibleGuess.guess)"
-          >
-            <h2>{{ possibleGuess.guess }}</h2>
-            <span class="guess-description">{{ possibleGuess.description }}</span>
-          </div>
-        <v-btn class="align-self-center ml-10" @click="skip" icon="mdi-coffee" title="Runde aussetzen" color="#967259"></v-btn>
+        <div
+          :class="{
+            card: true,
+            'active-guess': props.guess === possibleGuess.guess && !props.didSkip,
+          }"
+          v-for="possibleGuess in props.possibleGuesses"
+          :key="possibleGuess.guess"
+          @click="doGuess(possibleGuess.guess)"
+        >
+          <h2>{{ possibleGuess.guess }}</h2>
+          <span class="guess-description">{{ possibleGuess.description }}</span>
+        </div>
+        <v-btn
+          class="align-self-center ml-10"
+          @click="skip"
+          :icon="props.didSkip ? `mdi-coffee-outline` : `mdi-coffee`"
+          title="Runde aussetzen"
+          :color="props.didSkip ? `#38220f` : `#967259`"
+        ></v-btn>
       </div>
     </div>
     <p v-if="!props.hasTicketToGuess">Warten auf Ticket...</p>
@@ -54,9 +65,10 @@ function skip() {
   min-height: 15rem;
   min-width: 10rem;
 }
-.card:hover {
+.card:hover,
+.active-guess {
   cursor: pointer;
-  background-color: #82B1FF;
+  background-color: #82b1ff;
   transform: translate(0, -10px);
 }
 .guess-description {

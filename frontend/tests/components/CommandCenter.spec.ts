@@ -21,6 +21,7 @@ describe("CommandCenter", () => {
     it("should render for developer", () => {
       const wrapper = mount(CommandCenter, {
         props: {
+          showAllGuesses: false,
           didSkip: false,
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
@@ -43,7 +44,8 @@ describe("CommandCenter", () => {
       expect(wrapper.findComponent(DeveloperCommandCenter).exists()).to.be.true;
       expect(wrapper.findComponent(ProductOwnerCommandCenter).exists()).to.be.false;
 
-      expect(wrapper.findComponent(DeveloperCommandCenter).props("didGuess")).to.be.false;
+      expect(wrapper.findComponent(DeveloperCommandCenter).props("guess")).equal(0);
+      expect(wrapper.findComponent(DeveloperCommandCenter).props("didSkip")).to.be.false;
       expect(wrapper.findComponent(DeveloperCommandCenter).props("hasTicketToGuess")).to.be.false;
     });
 
@@ -52,6 +54,7 @@ describe("CommandCenter", () => {
         props: {
           userRole: Role.ProductOwner,
           didSkip: false,
+          showAllGuesses: false,
           roundState: RoundState.Waiting,
           guess: 0,
           ticketToGuess: "",
@@ -86,6 +89,7 @@ describe("CommandCenter", () => {
         props: {
           userRole: Role.Developer,
           didSkip: false,
+          showAllGuesses: false,
           roundState: RoundState.Waiting,
           guess: 0,
           ticketToGuess: "",
@@ -112,6 +116,7 @@ describe("CommandCenter", () => {
         props: {
           userRole: Role.ProductOwner,
           didSkip: false,
+          showAllGuesses: false,
           roundState: RoundState.Waiting,
           guess: 0,
           ticketToGuess: "",

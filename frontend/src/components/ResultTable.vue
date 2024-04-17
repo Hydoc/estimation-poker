@@ -46,12 +46,10 @@ function developerIsDone(dev: Developer): boolean {
         <td>{{ developer.name }}</td>
         <td>
           <span v-if="!props.showAllGuesses">
-            <v-icon color="green" v-if="developerIsDone(developer)"
-            >mdi-check-circle</v-icon
-            >
+            <v-icon color="green" v-if="developerIsDone(developer)">mdi-check-circle</v-icon>
             <v-icon v-else>mdi-help-circle</v-icon>
           </span>
-          
+
           <span v-else>
             <span v-if="!developer.doSkip">{{ developer.guess }}</span>
             <span v-else><v-icon>mdi-coffee</v-icon></span>

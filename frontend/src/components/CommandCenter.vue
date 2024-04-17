@@ -8,6 +8,7 @@ type Props = {
   userRole: Role;
   roundState: RoundState;
   guess: number;
+  showAllGuesses: boolean;
   didSkip: boolean;
   ticketToGuess: string;
   hasDevelopersInRoom: boolean;
@@ -23,14 +24,14 @@ const emit = defineEmits<{
 
 const isDeveloper = computed(() => props.userRole === Role.Developer);
 const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
-const didGuess = computed(() => props.guess !== 0);
 const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
 </script>
 
 <template>
   <developer-command-center
     v-if="isDeveloper"
-    :did-guess="didGuess"
+    :show-all-guesses="props.showAllGuesses"
+    :guess="props.guess"
     :did-skip="props.didSkip"
     :has-ticket-to-guess="hasTicketToGuess"
     :possible-guesses="props.possibleGuesses"
