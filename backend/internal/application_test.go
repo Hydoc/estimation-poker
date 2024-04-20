@@ -4,17 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	"golang.org/x/crypto/bcrypt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
@@ -429,7 +429,7 @@ func TestApplication_handleWs(t *testing.T) {
 }
 
 func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
-	app := NewApplication(&websocket.Upgrader{}, &GuessConfig{})
+	app := NewApplication(&websocket.Upgrader{}, &GuessConfig{}, nil)
 	roomId := "Test"
 	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom, "")
 	router := app.Routes()
@@ -456,14 +456,10 @@ func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
 
 func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
 	var logBuffer bytes.Buffer
-	log.SetOutput(&logBuffer)
-	defer func() {
-		log.SetOutput(os.Stderr)
-	}()
 
 	app := NewApplication(&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
 		return false
-	}}, &GuessConfig{})
+	}}, &GuessConfig{}, slog.New(slog.NewTextHandler(&logBuffer, nil)))
 	router := app.Routes()
 
 	server := httptest.NewServer(router)
@@ -586,7 +582,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := NewApplication(&websocket.Upgrader{}, test.config)
+			app := NewApplication(&websocket.Upgrader{}, test.config, nil)
 			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)

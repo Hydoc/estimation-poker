@@ -3,15 +3,17 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"log"
+	"log/slog"
 	"net/http"
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 type Application struct {
+	logger      *slog.Logger
 	upgrader    *websocket.Upgrader
 	guessConfig *GuessConfig
 	rooms       map[RoomId]*Room
@@ -179,7 +181,7 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 
 	connection, err := app.upgrader.Upgrade(writer, request, nil)
 	if err != nil {
-		log.Println("upgrade:", err)
+		app.logger.Info(fmt.Sprintf("upgrade: %s", err))
 		return
 	}
 
@@ -216,8 +218,9 @@ func (app *Application) ListenForRoomDestroy() {
 	}
 }
 
-func NewApplication(upgrader *websocket.Upgrader, config *GuessConfig) *Application {
+func NewApplication(upgrader *websocket.Upgrader, config *GuessConfig, logger *slog.Logger) *Application {
 	return &Application{
+		logger:      logger,
 		upgrader:    upgrader,
 		guessConfig: config,
 		rooms:       make(map[RoomId]*Room),

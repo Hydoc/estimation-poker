@@ -29,4 +29,7 @@ build-and-push-image:
 
 check-frontend: check-frontend-format check-frontend-test check-frontend-lint
 
+logs-backend:
+	docker compose logs -tf backend
+
 restart: down up

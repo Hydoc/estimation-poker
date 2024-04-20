@@ -1,10 +1,12 @@
 package main
 
 import (
-	"github.com/Hydoc/guess-dev/backend/internal"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/Hydoc/guess-dev/backend/internal"
 
 	"github.com/gorilla/websocket"
 )
@@ -16,31 +18,35 @@ const (
 
 func main() {
 	var possibleGuesses, possibleGuessesDescription string
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
 	possibleGuesses, ok := os.LookupEnv("POSSIBLE_GUESSES")
 	possibleGuessesDescription, okDesc := os.LookupEnv("POSSIBLE_GUESSES_DESC")
 	if !ok {
-		log.Println("can not find env POSSIBLE_GUESSES")
+		logger.Info("can not find env POSSIBLE_GUESSES")
 		possibleGuesses = defaultGuesses
 	}
 	if !okDesc {
-		log.Println("can not find env POSSIBLE_GUESSES_DESC")
+		logger.Info("can not find env POSSIBLE_GUESSES_DESC")
 		possibleGuessesDescription = defaultGuessesDescription
 	}
-	log.Println("using possible guesses", possibleGuesses)
-	log.Println("using possible guesses description", possibleGuessesDescription)
+	logger.Info(fmt.Sprintf("using possible guesses %s", possibleGuesses))
+	logger.Info(fmt.Sprintf("using possible guesses description %s", possibleGuessesDescription))
 
 	upgrader := &websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
 	}
+
 	config, err := internal.NewGuessConfig(possibleGuesses, possibleGuessesDescription)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err.Error())
 		return
 	}
-	app := internal.NewApplication(upgrader, config)
+
+	app := internal.NewApplication(upgrader, config, logger)
 	go app.ListenForRoomDestroy()
 	router := app.Routes()
-	log.Fatal(http.ListenAndServe(":8080", router))
+	logger.Error(http.ListenAndServe(":8080", router).Error())
 }
