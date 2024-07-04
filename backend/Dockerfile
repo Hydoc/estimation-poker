@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine as base
+FROM golang:1.22-alpine AS base
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -8,14 +8,14 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 
-FROM alpine:latest as prod
+FROM alpine:latest AS prod
 
 COPY --from=base /server /server
 
 CMD ["/server"]
 
-FROM base as dev
+FROM base AS dev
 
-RUN go install github.com/cosmtrek/air@latest && go install github.com/go-delve/delve/cmd/dlv@latest
+RUN go install github.com/air-verse/air@latest && go install github.com/go-delve/delve/cmd/dlv@latest
 
 CMD ["air", "-c", ".air.toml"]

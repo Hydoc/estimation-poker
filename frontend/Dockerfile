@@ -1,4 +1,4 @@
-FROM node:20-alpine as base
+FROM node:20-alpine AS base
 
 WORKDIR /opt/frontend
 RUN npm i -g pnpm
@@ -6,10 +6,10 @@ COPY . .
 RUN pnpm install --production=false
 RUN pnpm run build
 
-FROM caddy:2.7.6-alpine as prod
+FROM caddy:2.7.6-alpine AS prod
 
 COPY --from=base /opt/frontend/dist /usr/share/caddy
 
-FROM base as dev
+FROM base AS dev
 
 CMD ["pnpm", "dev"]
