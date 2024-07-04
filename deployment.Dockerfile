@@ -1,10 +1,10 @@
-FROM node:20-alpine as base
+FROM node:20-alpine AS base
 
 RUN apk add caddy supervisor
 
 
 
-FROM base as build
+FROM base AS build
 RUN npm i -g pnpm
 
 WORKDIR /opt/backend
@@ -25,7 +25,7 @@ RUN pnpm run build
 
 
 
-FROM base as live
+FROM base AS live
 
 COPY --from=build /opt/build/dist /opt/frontend
 COPY --from=build /server /server
