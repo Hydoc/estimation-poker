@@ -82,11 +82,18 @@ onMounted(fetchActiveRooms);
 
 <template>
   <v-container>
-    <v-dialog width="500" v-model="showPasswordDialog">
+    <v-dialog
+      v-model="showPasswordDialog"
+      width="500"
+    >
       <v-card>
         <v-card-title>Für diesen Raum wird ein Passwort benötigt</v-card-title>
         <v-card-text>
-          <v-text-field type="password" placeholder="Passwort" v-model="passwordForRoom" />
+          <v-text-field
+            v-model="passwordForRoom"
+            type="password"
+            placeholder="Passwort"
+          />
           <v-alert
             v-if="showPasswordDoesNotMatch"
             color="error"
@@ -94,16 +101,31 @@ onMounted(fetchActiveRooms);
           />
         </v-card-text>
         <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="red" @click="showPasswordDialog = false">Abbrechen</v-btn>
-          <v-btn color="green" @click="connect">Ok</v-btn>
+          <v-spacer />
+          <v-btn
+            color="red"
+            @click="showPasswordDialog = false"
+          >
+            Abbrechen
+          </v-btn>
+          <v-btn
+            color="green"
+            @click="connect"
+          >
+            Ok
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-row align="center" justify="center">
+    <v-row
+      align="center"
+      justify="center"
+    >
       <v-col>
         <v-card prepend-icon="mdi-poker-chip">
-          <template #title> Ich brauche noch ein paar Informationen bevor es los geht </template>
+          <template #title>
+            Ich brauche noch ein paar Informationen bevor es los geht
+          </template>
           <v-card-text>
             <v-container>
               <room-form
@@ -115,7 +137,10 @@ onMounted(fetchActiveRooms);
               />
             </v-container>
             <v-container v-if="activeRooms.length > 0">
-              <the-active-room-overview :active-rooms="activeRooms" @join="setFieldsAndConnect" />
+              <the-active-room-overview
+                :active-rooms="activeRooms"
+                @join="setFieldsAndConnect"
+              />
             </v-container>
           </v-card-text>
         </v-card>

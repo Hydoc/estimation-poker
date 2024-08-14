@@ -23,7 +23,10 @@ function formatUser(user: User): string {
     <v-card-title>{{ props.title }}</v-card-title>
     <v-card-text>
       <v-list v-if="props.userList.length > 0">
-        <v-list-item v-for="user in props.userList" :key="user.name">
+        <v-list-item
+          v-for="user in props.userList"
+          :key="user.name"
+        >
           <v-list-item-title>{{ formatUser(user) }}</v-list-item-title>
         </v-list-item>
       </v-list>

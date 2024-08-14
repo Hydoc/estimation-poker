@@ -19,7 +19,8 @@ const form: Ref<VForm | undefined> = ref();
 
 const ticketRules = [
   (value: string) => !!value || "Fehler: Hier müsste eigentlich was stehen",
-  (value: string) => /^[A-Z]{2}-\d+$/.test(value) || "Fehler: Muss im Format ^[A-Z]{2}-\\d+$ sein",
+  (value: string) =>
+    /^[A-Z]{2,}-\d+$/.test(value) || "Fehler: Muss im Format ^[A-Z]{2,}-\\d+$ sein",
 ];
 const canEstimate = computed(() => ticketToGuess.value !== "" && form.value?.isValid);
 
@@ -35,17 +36,17 @@ function doLetEstimate() {
 <template>
   <v-container>
     <v-form
+      v-if="props.roundIsWaiting && props.hasDevelopersInRoom && !props.hasTicketToGuess"
       ref="form"
       :fast-fail="true"
-      v-if="props.roundIsWaiting && props.hasDevelopersInRoom && !props.hasTicketToGuess"
       @submit.prevent="doLetEstimate"
     >
       <v-row>
         <v-col>
           <v-text-field
+            v-model="ticketToGuess"
             label="Ticket zum schätzen"
             :rules="ticketRules"
-            v-model="ticketToGuess"
             placeholder="CC-0000"
             required
           />
@@ -53,11 +54,18 @@ function doLetEstimate() {
       </v-row>
       <v-row>
         <v-col class="text-right">
-          <v-btn type="submit" :disabled="!canEstimate">Schätzen lassen</v-btn>
+          <v-btn
+            type="submit"
+            :disabled="!canEstimate"
+          >
+            Schätzen lassen
+          </v-btn>
         </v-col>
       </v-row>
     </v-form>
-    <p v-else-if="!props.hasDevelopersInRoom">Warten auf Entwickler...</p>
+    <p v-else-if="!props.hasDevelopersInRoom">
+      Warten auf Entwickler...
+    </p>
   </v-container>
 </template>
 

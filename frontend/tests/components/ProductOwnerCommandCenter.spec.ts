@@ -132,7 +132,7 @@ describe("ProductOwnerCommandCenter", () => {
       await wrapper.findComponent(VTextField).trigger("blur");
       await nextTick();
       expect(wrapper.findComponent(VTextField).text()).contains(
-        "Fehler: Muss im Format ^[A-Z]{2}-\\d+$ sein",
+        "Fehler: Muss im Format ^[A-Z]{2,}-\\d+$ sein",
       );
     });
 

@@ -26,13 +26,16 @@ function showDialogForRoom(room: string) {
 
 <template>
   <v-sheet>
-    <v-dialog v-model="showDialog" width="500">
+    <v-dialog
+      v-model="showDialog"
+      width="500"
+    >
       <v-card title="Raum beitreten">
         <v-card-text>
           <room-form
-            :is-room-id-disabled="true"
             v-model:role="role"
             v-model:name="name"
+            :is-room-id-disabled="true"
             :room-id="roomToJoin"
             @submit="emit('join', roomToJoin, name, role)"
           />
@@ -45,16 +48,22 @@ function showDialogForRoom(room: string) {
       <thead>
         <tr>
           <th>Raum</th>
-          <th></th>
+          <th />
         </tr>
       </thead>
       <tbody>
-        <tr v-for="room in props.activeRooms" :key="room">
+        <tr
+          v-for="room in props.activeRooms"
+          :key="room"
+        >
           <td>{{ room }}</td>
           <td class="text-right">
-            <v-btn append-icon="mdi-location-enter" @click="showDialogForRoom(room)"
-              >Beitreten</v-btn
+            <v-btn
+              append-icon="mdi-location-enter"
+              @click="showDialogForRoom(room)"
             >
+              Beitreten
+            </v-btn>
           </td>
         </tr>
       </tbody>

@@ -13,7 +13,16 @@ export default mergeConfig(
         },
       },
       coverage: {
-        exclude: ["src/main.ts", ".eslintrc.cjs", "env.d.ts", "**/types.ts", "src/router/index.ts"],
+        exclude: [
+          "src/main.ts",
+          "vite.config.ts",
+          "vitest.config.ts",
+          "dist/**",
+          "eslint.config.js",
+          "env.d.ts",
+          "**/types.ts",
+          "src/router/index.ts",
+        ],
       },
       environment: "jsdom",
       exclude: [...configDefaults.exclude, "e2e/*"],

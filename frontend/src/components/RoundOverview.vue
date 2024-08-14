@@ -27,7 +27,12 @@ const emit = defineEmits<{
   <v-card>
     <v-card-title class="d-flex justify-space-between">
       <span>Aktuelles Ticket zum schätzen: {{ props.ticketToGuess }}</span>
-      <v-progress-circular :model-value="percentageDone" size="50" width="5" color="teal-darken-1">
+      <v-progress-circular
+        :model-value="percentageDone"
+        size="50"
+        width="5"
+        color="teal-darken-1"
+      >
         <template #default>
           <span class="text-body-2"> {{ percentageDone }}% </span>
         </template>
@@ -42,10 +47,20 @@ const emit = defineEmits<{
 
       <v-card-actions v-if="props.roundIsFinished && props.userIsProductOwner">
         <v-spacer />
-        <v-btn v-if="!props.showAllGuesses" color="primary" @click="emit('reveal')">Auflösen</v-btn>
-        <v-btn v-if="props.showAllGuesses" color="blue-darken-4" @click="emit('new-round')"
-          >Neue Runde</v-btn
+        <v-btn
+          v-if="!props.showAllGuesses"
+          color="primary"
+          @click="emit('reveal')"
         >
+          Auflösen
+        </v-btn>
+        <v-btn
+          v-if="props.showAllGuesses"
+          color="blue-darken-4"
+          @click="emit('new-round')"
+        >
+          Neue Runde
+        </v-btn>
       </v-card-actions>
     </v-container>
   </v-card>

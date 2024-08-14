@@ -1,0 +1,47 @@
+version: 3
+
+tasks:
+  up:
+    cmd: docker compose up -d --build
+
+  down:
+    cmd: docker compose down
+
+  restart:
+    cmds:
+      - task: down
+      - task: up
+
+  up-prod:
+    cmd: docker compose -f docker-compose.prod.yml up -d --build
+
+  down-prod:
+    cmd: docker compose -f docker-compose.prop.yml down
+
+  check-backend-test:
+    cmd: docker compose exec backend go test ./...
+
+  logs-backend:
+    cmd: docker compose logs -tf backend
+
+  check-frontend-test:
+    cmd: docker compose exec frontend pnpm test
+
+  check-frontend-format:
+    cmd: docker compose exec frontend pnpm format
+
+  check-frontend-lint:
+    cmd: docker compose exec frontend pnpm lint
+
+  check-frontend:
+    cmds:
+      - task: check-frontend-format
+      - task: check-frontend-lint
+      - task: check-frontend-test
+
+  build-and-push-image:
+    cmds:
+      - docker build -t hydoc/estimation:{{.VERSION}} -f deployment.Dockerfile .
+      - docker push hydoc/estimation:{{.VERSION}}
+    requires:
+      vars: [VERSION]

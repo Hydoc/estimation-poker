@@ -29,12 +29,12 @@ function skip() {
     <div v-if="props.hasTicketToGuess && !props.showAllGuesses">
       <div class="d-flex ga-2">
         <div
+          v-for="possibleGuess in props.possibleGuesses"
+          :key="possibleGuess.guess"
           :class="{
             card: true,
             'active-guess': props.guess === possibleGuess.guess && !props.didSkip,
           }"
-          v-for="possibleGuess in props.possibleGuesses"
-          :key="possibleGuess.guess"
           @click="doGuess(possibleGuess.guess)"
         >
           <h2>{{ possibleGuess.guess }}</h2>
@@ -42,14 +42,16 @@ function skip() {
         </div>
         <v-btn
           class="align-self-center ml-10"
-          @click="skip"
           :icon="props.didSkip ? `mdi-coffee-outline` : `mdi-coffee`"
           title="Runde aussetzen"
           :color="props.didSkip ? `#38220f` : `#967259`"
-        ></v-btn>
+          @click="skip"
+        />
       </div>
     </div>
-    <p v-if="!props.hasTicketToGuess">Warten auf Ticket...</p>
+    <p v-if="!props.hasTicketToGuess">
+      Warten auf Ticket...
+    </p>
   </div>
 </template>
 

@@ -7,9 +7,9 @@ type Props = {
   isRoomIdDisabled?: boolean;
 };
 
-const name = defineModel("name", { required: true, default: "" });
-const roomId = defineModel("roomId", { required: true, default: "" });
-const role = defineModel("role", { required: true, default: Role.Empty });
+const name = defineModel("name", { required: true, type: String, default: "" });
+const roomId = defineModel("roomId", { required: true, type: String, default: "" });
+const role = defineModel("role", { required: true, type: String, default: Role.Empty });
 
 const props = withDefaults(defineProps<Props>(), {
   errorMessage: null,
@@ -29,25 +29,46 @@ const textFieldRules = computed(() => [
 </script>
 
 <template>
-  <v-form :fast-fail="true" @submit.prevent="emit('submit')" validate-on="input">
+  <v-form
+    :fast-fail="true"
+    validate-on="input"
+    @submit.prevent="emit('submit')"
+  >
     <v-col>
       <v-text-field
+        v-model="roomId"
         :disabled="props.isRoomIdDisabled"
         label="Raum"
-        v-model="roomId"
         required
         :rules="textFieldRules"
       />
-      <v-text-field label="Name" v-model="name" required :rules="textFieldRules" />
+      <v-text-field
+        v-model="name"
+        label="Name"
+        required
+        :rules="textFieldRules"
+      />
     </v-col>
 
-    <v-radio-group label="Deine Rolle" v-model="role">
-      <v-radio label="Product Owner" :value="Role.ProductOwner"></v-radio>
-      <v-radio label="Entwickler" :value="Role.Developer"></v-radio>
+    <v-radio-group
+      v-model="role"
+      label="Deine Rolle"
+    >
+      <v-radio
+        label="Product Owner"
+        :value="Role.ProductOwner"
+      />
+      <v-radio
+        label="Entwickler"
+        :value="Role.Developer"
+      />
     </v-radio-group>
 
     <v-col v-if="props.errorMessage !== '' && props.errorMessage !== null">
-      <v-alert color="error" :text="props.errorMessage" />
+      <v-alert
+        color="error"
+        :text="props.errorMessage"
+      />
     </v-col>
 
     <v-col class="text-right">
@@ -56,8 +77,9 @@ const textFieldRules = computed(() => [
         color="primary"
         prepend-icon="mdi-connection"
         :disabled="!isButtonEnabled"
-        >Verbinden</v-btn
       >
+        Verbinden
+      </v-btn>
     </v-col>
   </v-form>
 </template>

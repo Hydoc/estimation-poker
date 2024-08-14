@@ -83,24 +83,36 @@ function openRoom() {
 </script>
 
 <template>
-  <v-dialog max-width="500" v-model="showSetRoomPasswordDialog">
+  <v-dialog
+    v-model="showSetRoomPasswordDialog"
+    max-width="500"
+  >
     <v-card>
       <v-card-title>Passwort setzen</v-card-title>
       <v-card-text>
         <v-text-field
+          v-model="roomPassword"
           placeholder="Passwort"
           :type="showPassword ? 'text' : 'password'"
           :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
           @click:append="showPassword = !showPassword"
-          v-model="roomPassword"
-        ></v-text-field>
+        />
       </v-card-text>
       <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn @click="showSetRoomPasswordDialog = false" color="red">Abbrechen</v-btn>
-        <v-btn :disabled="roomPassword.length === 0" @click="lockRoom" color="green"
-          >Abschließen</v-btn
+        <v-spacer />
+        <v-btn
+          color="red"
+          @click="showSetRoomPasswordDialog = false"
         >
+          Abbrechen
+        </v-btn>
+        <v-btn
+          :disabled="roomPassword.length === 0"
+          color="green"
+          @click="lockRoom"
+        >
+          Abschließen
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -110,41 +122,52 @@ function openRoom() {
       <v-col>
         <h1>
           {{ roomIsLockedText }} Raum: {{ props.roomId }}
-          <v-icon title="Raum kopieren" size="x-small" @click="copyRoomName"
-            >mdi-content-copy</v-icon
+          <v-icon
+            title="Raum kopieren"
+            size="x-small"
+            @click="copyRoomName"
           >
+            mdi-content-copy
+          </v-icon>
         </h1>
       </v-col>
-      <v-col v-if="roundIsWaiting" class="text-right align-self-center">
+      <v-col
+        v-if="roundIsWaiting"
+        class="text-right align-self-center"
+      >
         <v-btn
           class="mr-1"
           append-icon="mdi-location-exit"
           color="deep-purple-darken-1"
           @click="emit('leave')"
-          >Raum verlassen</v-btn
         >
+          Raum verlassen
+        </v-btn>
         <v-btn
           v-if="permissions.room.canLock && !roomIsLocked"
           append-icon="mdi-lock"
           color="grey-darken-2"
           @click="showSetRoomPasswordDialog = true"
-          >Raum schließen</v-btn
         >
+          Raum schließen
+        </v-btn>
         <v-btn
-          class="mr-1"
           v-if="permissions.room.canLock && roomIsLocked"
+          class="mr-1"
           append-icon="mdi-key"
           color="grey-darken-2"
           @click="openRoom"
-          >Raum öffnen</v-btn
         >
+          Raum öffnen
+        </v-btn>
         <v-btn
-          color="indigo-darken-3"
           v-if="roomIsLocked && permissions.room.canLock"
-          @click="copyPassword"
+          color="indigo-darken-3"
           append-icon="mdi-content-copy"
-          >Passwort kopieren</v-btn
+          @click="copyPassword"
         >
+          Passwort kopieren
+        </v-btn>
       </v-col>
     </v-row>
   </v-container>
@@ -167,7 +190,10 @@ function openRoom() {
       </v-col>
     </v-row>
 
-    <v-row class="mt-15" v-if="ticketToGuess !== ''">
+    <v-row
+      v-if="ticketToGuess !== ''"
+      class="mt-15"
+    >
       <v-col cols="12">
         <round-overview
           :round-is-finished="roundIsFinished"
@@ -199,7 +225,12 @@ function openRoom() {
       </v-col>
     </v-row>
   </v-container>
-  <v-snackbar :timeout="3000" v-model="showSnackbar">{{ snackbarText }}</v-snackbar>
+  <v-snackbar
+    v-model="showSnackbar"
+    :timeout="3000"
+  >
+    {{ snackbarText }}
+  </v-snackbar>
 </template>
 
 <style scoped></style>
