@@ -172,7 +172,7 @@ function openRoom() {
     </v-row>
   </v-container>
 
-  <v-container width="200">
+  <v-container>
     <v-row>
       <v-col>
         <user-box
