@@ -19,7 +19,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 WORKDIR /opt/build
 COPY ./frontend /opt/build
 
-RUN pnpm install --production=false
+RUN CI=1 pnpm install --production=false
 RUN pnpm run build
 
 
