@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { Role } from "@/components/types";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 type Props = {
   errorMessage?: string | null;
   isRoomIdDisabled?: boolean;
 };
 
+const maxAllowedChars = 40;
+const form = ref();
 const name = defineModel("name", { required: true, type: String, default: "" });
 const roomId = defineModel("roomId", { required: true, type: String, default: "" });
 const role = defineModel("role", { required: true, type: String, default: Role.Empty });
@@ -20,16 +22,18 @@ const emit = defineEmits<{
 }>();
 
 const isButtonEnabled = computed(
-  () => roomId.value !== "" && name.value !== "" && role.value !== "",
+  () => name.value !== "" && name.value.length <= maxAllowedChars && roomId.value !== "" && roomId.value.length <= maxAllowedChars && role.value !== Role.Empty
 );
 
 const textFieldRules = computed(() => [
   (value: string) => !!value || "Fehler: Hier müsste eigentlich was stehen",
+  (value: string) => (value && value.length <= maxAllowedChars) || "Fehler: Maximallänge von 40 darf nicht überschritten werden"
 ]);
 </script>
 
 <template>
   <v-form
+    ref="form"
     :fast-fail="true"
     validate-on="input"
     @submit.prevent="emit('submit')"
