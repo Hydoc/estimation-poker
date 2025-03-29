@@ -57,24 +57,38 @@ function skip() {
 
 <style scoped>
 .card {
+  z-index: 1;
+  background-color: white;
+  box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.4);
   user-select: none;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(0, 0, 0, 0.5);
   align-items: center;
   justify-content: center;
-  border-radius: 2%;
+  border-radius: 0.5rem;
   transition: 0.2s;
   min-height: 13rem;
   min-width: 9rem;
 }
-.card:hover,
-.active-guess {
-  cursor: pointer;
-  color: white;
-  background-color: #479b48;
-  transform: translate(0, -15px);
+
+.card:not(:first-child) {
+  margin-left: calc(2rem * -1);
 }
+
+.active-guess,
+.card:hover ~ .card,
+.card:focus-within ~ .card {
+  transform: translateX(2rem);
+}
+
+.card:hover,
+.card:focus-within,
+.active-guess {
+  transform: translateY(-1rem);
+  cursor: pointer;
+  background-color: #f0f8ff;
+}
+
 .guess-description {
   opacity: 0.6;
 }
