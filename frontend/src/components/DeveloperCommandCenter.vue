@@ -57,21 +57,23 @@ function skip() {
 
 <style scoped>
 .card {
+  user-select: none;
   display: flex;
   flex-direction: column;
   border: 1px solid rgba(0, 0, 0, 0.5);
   align-items: center;
   justify-content: center;
-  border-radius: 5%;
-  transition: 0.4s;
-  min-height: 15rem;
-  min-width: 10rem;
+  border-radius: 2%;
+  transition: 0.2s;
+  min-height: 13rem;
+  min-width: 9rem;
 }
 .card:hover,
 .active-guess {
   cursor: pointer;
-  background-color: #82b1ff;
-  transform: translate(0, -10px);
+  color: white;
+  background-color: #479b48;
+  transform: translate(0, -15px);
 }
 .guess-description {
   opacity: 0.6;
