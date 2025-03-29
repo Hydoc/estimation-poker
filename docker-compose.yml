@@ -9,7 +9,7 @@ services:
     ports:
       - "2345:2345"
     networks:
-      - guess-dev
+      - app
     environment:
       POSSIBLE_GUESSES: 1,2,3,4,5
       POSSIBLE_GUESSES_DESC: Bis zu 4 Std.,Bis zu 8 Std.,Bis zu 3 Tagen,Bis zu 5 Tagen,Mehr als 5 Tage
@@ -22,7 +22,7 @@ services:
     volumes:
       - ./frontend:/opt/frontend
     networks:
-      - guess-dev
+      - app
     depends_on:
       - backend
 
@@ -33,7 +33,7 @@ services:
     volumes:
       - ./.docker/Caddyfile:/etc/caddy/Caddyfile
     networks:
-      - guess-dev
+      - app
 
 networks:
-  guess-dev:
+  app:

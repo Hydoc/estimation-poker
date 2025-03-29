@@ -3,7 +3,7 @@ FROM node:20-alpine AS base
 WORKDIR /opt/frontend
 RUN npm i -g pnpm
 COPY . .
-RUN pnpm install --production=false
+RUN CI=1 pnpm install --production=false
 RUN pnpm run build
 
 FROM caddy:2.7.6-alpine AS prod

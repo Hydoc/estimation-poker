@@ -7,11 +7,11 @@ type Props = {
   isRoomIdDisabled?: boolean;
 };
 
-const maxAllowedChars = 40;
-const form = ref();
+const maxAllowedChars = 25;
 const name = defineModel("name", { required: true, type: String, default: "" });
 const roomId = defineModel("roomId", { required: true, type: String, default: "" });
 const role = defineModel("role", { required: true, type: String, default: Role.Empty });
+const formIsValid = ref(false);
 
 const props = withDefaults(defineProps<Props>(), {
   errorMessage: null,
@@ -21,19 +21,15 @@ const emit = defineEmits<{
   (e: "submit"): void;
 }>();
 
-const isButtonEnabled = computed(
-  () => name.value !== "" && name.value.length <= maxAllowedChars && roomId.value !== "" && roomId.value.length <= maxAllowedChars && role.value !== Role.Empty
-);
-
 const textFieldRules = computed(() => [
   (value: string) => !!value || "Fehler: Hier müsste eigentlich was stehen",
-  (value: string) => (value && value.length <= maxAllowedChars) || "Fehler: Maximallänge von 40 darf nicht überschritten werden"
+  (value: string) => (value && value.length <= maxAllowedChars) || `Fehler: Maximallänge von ${maxAllowedChars} darf nicht überschritten werden`
 ]);
 </script>
 
 <template>
   <v-form
-    ref="form"
+    v-model="formIsValid"
     :fast-fail="true"
     validate-on="input"
     @submit.prevent="emit('submit')"
@@ -80,7 +76,7 @@ const textFieldRules = computed(() => [
         type="submit"
         color="primary"
         prepend-icon="mdi-connection"
-        :disabled="!isButtonEnabled"
+        :disabled="!formIsValid"
       >
         Verbinden
       </v-btn>
