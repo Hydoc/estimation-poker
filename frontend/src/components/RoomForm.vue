@@ -53,6 +53,7 @@ const textFieldRules = computed(() => [
     <v-radio-group
       v-model="role"
       label="Deine Rolle"
+      :rules="[(value) => !!value || 'Fehler: Hier müsste eigentlich was stehen']"
     >
       <v-radio
         label="Product Owner"
