@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
 )
@@ -178,6 +179,11 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
+
+	if utf8.RuneCountInString(name) > 25 || utf8.RuneCountInString(roomId) > 25 {
+		app.writeJson(writer, http.StatusBadRequest, envelope{"message": "name and room must be smaller than 25"}, nil)
+		return
+	}
 
 	connection, err := app.upgrader.Upgrade(writer, request, nil)
 	if err != nil {
