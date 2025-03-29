@@ -33,6 +33,7 @@ describe("RoundOverview", () => {
           developerList: developerList,
           roundIsFinished: false,
           userIsProductOwner: false,
+          developerDone: [],
         },
         global: {
           plugins: [vuetify],
@@ -60,6 +61,7 @@ describe("RoundOverview", () => {
           developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
           roundIsFinished: true,
           userIsProductOwner: true,
+          developerDone: [],
         },
         global: {
           plugins: [vuetify],
@@ -84,6 +86,7 @@ describe("RoundOverview", () => {
           developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
           roundIsFinished: true,
           userIsProductOwner: true,
+          developerDone: [],
         },
         global: {
           plugins: [vuetify],
@@ -108,6 +111,7 @@ describe("RoundOverview", () => {
           developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
           roundIsFinished: true,
           userIsProductOwner: false,
+          developerDone: [],
         },
         global: {
           plugins: [vuetify],
@@ -125,14 +129,15 @@ describe("RoundOverview", () => {
           ticketToGuess: "WR-123",
           showAllGuesses: false,
           developerList: [
-            { name: "Test", guess: 2, doSkip: false, role: Role.Developer },
-            { name: "Test", guess: 0, doSkip: true, role: Role.Developer },
-            { name: "Test", guess: 0, doSkip: false, role: Role.Developer },
-            { name: "Test", guess: 1, doSkip: false, role: Role.Developer },
-            { name: "Test", guess: 0, doSkip: false, role: Role.Developer },
+            { name: "Test", isDone: true, role: Role.Developer },
+            { name: "Test", isDone: true, role: Role.Developer },
+            { name: "Test", isDone: false, role: Role.Developer },
+            { name: "Test", isDone: true, role: Role.Developer },
+            { name: "Test", isDone: false, role: Role.Developer },
           ],
           roundIsFinished: false,
           userIsProductOwner: true,
+          developerDone: [],
         },
         global: {
           plugins: [vuetify],
@@ -153,6 +158,7 @@ describe("RoundOverview", () => {
           developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
           roundIsFinished: true,
           userIsProductOwner: true,
+          developerDone: [],
         },
         global: {
           plugins: [vuetify],
@@ -172,6 +178,7 @@ describe("RoundOverview", () => {
           developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
           roundIsFinished: true,
           userIsProductOwner: true,
+          developerDone: [],
         },
         global: {
           plugins: [vuetify],

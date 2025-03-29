@@ -203,7 +203,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
-      data: JSON.stringify({ type: "reveal" }),
+      data: JSON.stringify({ type: "reveal-round", data: [] }),
     });
     expect(websocketStore.showAllGuesses).to.be.true;
   });

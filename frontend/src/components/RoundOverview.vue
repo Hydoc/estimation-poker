@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import ResultTable from "@/components/ResultTable.vue";
-import type { Developer } from "@/components/types";
+import type { Developer, DeveloperDone } from "@/components/types";
 import { computed } from "vue";
 
 type Props = {
   ticketToGuess: string;
   showAllGuesses: boolean;
+  developerDone: DeveloperDone[];
   developerList: Developer[];
   roundIsFinished: boolean;
   userIsProductOwner: boolean;
 };
 const percentageDone = computed(() => {
-  const devsThatAreDone = props.developerList.filter((dev) => dev.doSkip || dev.guess > 0).length;
+  const devsThatAreDone = props.developerList.filter((dev) => dev.isDone).length;
   const totalDevs = props.developerList.length;
   return Math.round((devsThatAreDone / totalDevs) * 100);
 });
@@ -40,6 +41,7 @@ const emit = defineEmits<{
     </v-card-title>
     <v-container>
       <result-table
+        :developer-done="props.developerDone"
         :developer-list="props.developerList"
         :show-all-guesses="props.showAllGuesses"
         :round-is-finished="props.roundIsFinished"

@@ -2,9 +2,10 @@ package internal
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -70,6 +71,8 @@ func (client *Client) websocketReader() {
 			client.send <- newYouGuessed(actualGuess)
 		case incMessage.Type == newRound && client.Role == ProductOwner:
 			client.room.broadcast <- newResetRound()
+		case incMessage.Type == reveal && client.Role == ProductOwner:
+			client.room.broadcast <- newRevealRound(client.room.clients)
 		case incMessage.Type == lockRoom:
 			pw, pwOk := incMessage.Data.(map[string]any)["password"]
 			key, keyOk := incMessage.Data.(map[string]any)["key"]
@@ -136,13 +139,21 @@ func (client *Client) reset() {
 	client.DoSkip = false
 }
 
+func (client *Client) AsReveal() map[string]any {
+	return map[string]any{
+		"name":   client.Name,
+		"role":   client.Role,
+		"guess":  client.Guess,
+		"doSkip": client.DoSkip,
+	}
+}
+
 func (client *Client) toJson() userDTO {
 	if client.Role == Developer {
 		return map[string]interface{}{
 			"name":   client.Name,
 			"role":   client.Role,
-			"guess":  client.Guess,
-			"doSkip": client.DoSkip,
+			"isDone": client.Guess > 0 || client.DoSkip,
 		}
 	}
 	return map[string]interface{}{

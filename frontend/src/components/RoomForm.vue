@@ -23,7 +23,9 @@ const emit = defineEmits<{
 
 const textFieldRules = computed(() => [
   (value: string) => !!value || "Fehler: Hier müsste eigentlich was stehen",
-  (value: string) => (value && value.length <= maxAllowedChars) || `Fehler: Maximallänge von ${maxAllowedChars} darf nicht überschritten werden`
+  (value: string) =>
+    (value && value.length <= maxAllowedChars) ||
+    `Fehler: Maximallänge von ${maxAllowedChars} darf nicht überschritten werden`,
 ]);
 </script>
 

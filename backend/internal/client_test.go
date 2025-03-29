@@ -2,9 +2,6 @@ package internal
 
 import (
 	"bytes"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +10,10 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var upgrader = &websocket.Upgrader{}
@@ -76,8 +77,7 @@ func TestClient_NewDeveloper(t *testing.T) {
 	expectedJsonRepresentation := userDTO{
 		"name":   expectedName,
 		"role":   expectedRole,
-		"guess":  expectedGuess,
-		"doSkip": expectedDoSkip,
+		"isDone": false,
 	}
 
 	got := client.toJson()

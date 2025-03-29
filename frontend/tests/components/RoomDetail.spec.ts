@@ -61,6 +61,7 @@ describe("RoomDetail", () => {
             },
           },
           roomIsLocked: false,
+          developerDone: [],
           possibleGuesses: [
             { guess: 1, description: "Bis zu 4 Std." },
             { guess: 2, description: "Bis zu 8 Std." },
@@ -121,6 +122,7 @@ describe("RoomDetail", () => {
       const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId: "ABC",
           usersInRoom: {
             developerList,
@@ -160,6 +162,7 @@ describe("RoomDetail", () => {
       const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId: "ABC",
           usersInRoom: {
             developerList,
@@ -213,6 +216,7 @@ describe("RoomDetail", () => {
       const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId: "ABC",
           usersInRoom: {
             developerList,
@@ -275,6 +279,7 @@ describe("RoomDetail", () => {
       const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId: "ABC",
           usersInRoom: {
             developerList,
@@ -320,6 +325,7 @@ describe("RoomDetail", () => {
       const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId: "ABC",
           usersInRoom: {
             developerList,
@@ -372,6 +378,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -433,6 +440,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -482,6 +490,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -521,6 +530,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -560,6 +570,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -599,6 +610,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -638,6 +650,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -677,6 +690,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -794,6 +808,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -847,6 +862,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -924,6 +940,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -969,6 +986,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -1008,6 +1026,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
@@ -1048,6 +1067,7 @@ describe("RoomDetail", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
+          developerDone: [],
           roomId,
           usersInRoom: {
             developerList: [{ name: "Test", guess: 0, role: Role.Developer }],

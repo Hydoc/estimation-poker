@@ -21,6 +21,7 @@ const showAllGuesses = computed(() => websocketStore.showAllGuesses);
 const possibleGuesses = computed(() => websocketStore.possibleGuesses);
 const permissions = computed(() => websocketStore.permissions);
 const roomIsLocked = computed(() => websocketStore.roomIsLocked);
+const developerDone = computed(() => websocketStore.developerDone);
 
 function sendMessage(
   type: SendableWebsocketMessageType,
@@ -48,6 +49,7 @@ onMounted(async () => {
     :current-username="currentUsername"
     :room-id="roomId"
     :users-in-room="usersInRoom"
+    :developer-done="developerDone"
     :user-role="userRole"
     :round-state="roundState"
     :ticket-to-guess="ticketToGuess"

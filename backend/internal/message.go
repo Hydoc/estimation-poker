@@ -7,6 +7,7 @@ const (
 	lockRoom  = "lock-room"
 	openRoom  = "open-room"
 	skipRound = "skip"
+	reveal    = "reveal"
 )
 
 type messageDTO map[string]interface{}
@@ -27,6 +28,10 @@ type join struct{}
 type leave struct{}
 
 type resetRound struct{}
+
+type revealRound struct {
+	clients map[*Client]bool
+}
 
 type developerGuessed struct{}
 
@@ -113,6 +118,20 @@ func (youSkipped youSkipped) ToJson() messageDTO {
 	}
 }
 
+func (revealRound revealRound) ToJson() messageDTO {
+	out := []map[string]any{}
+	for client, _ := range revealRound.clients {
+		if client.Role == Developer {
+			out = append(out, client.AsReveal())
+		}
+	}
+
+	return map[string]interface{}{
+		"type": "reveal-round",
+		"data": out,
+	}
+}
+
 func newJoin() join {
 	return join{}
 }
@@ -139,6 +158,12 @@ func newEveryoneIsDone() everyoneIsDone {
 
 func newResetRound() resetRound {
 	return resetRound{}
+}
+
+func newRevealRound(clients map[*Client]bool) revealRound {
+	return revealRound{
+		clients: clients,
+	}
 }
 
 func newSkipRound() skip {

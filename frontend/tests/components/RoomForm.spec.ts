@@ -86,7 +86,7 @@ describe("RoomForm", () => {
       await wrapper.findAllComponents(VTextField).at(0).setValue("Blub");
       await wrapper.findAllComponents(VTextField).at(1).setValue("My name");
       await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
-      
+
       await nextTick();
 
       expect(wrapper.findComponent(VBtn).props("disabled")).to.be.false;

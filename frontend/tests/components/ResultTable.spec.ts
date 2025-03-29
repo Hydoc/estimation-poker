@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
+import { VIcon, VTable } from "vuetify/components";
 import * as directives from "vuetify/directives";
 import { mount } from "@vue/test-utils";
 import ResultTable from "../../src/components/ResultTable.vue";
 import { Role } from "../../src/components/types";
-import { VIcon, VTable } from "vuetify/components";
 
 let vuetify: ReturnType<typeof createVuetify>;
 
@@ -20,9 +20,10 @@ describe("ResultTable", () => {
     it("should render", () => {
       const wrapper = mount(ResultTable, {
         props: {
+          developerDone: [],
           developerList: [
-            { name: "test", guess: 0, role: Role.Developer },
-            { name: "another", guess: 1, role: Role.Developer },
+            { name: "test", isDone: false, role: Role.Developer },
+            { name: "another", isDone: true, role: Role.Developer },
           ],
           showAllGuesses: false,
           roundIsFinished: false,
@@ -72,7 +73,8 @@ describe("ResultTable", () => {
     it("should return 0 as average guess when there a no devs that have guessed", () => {
       const wrapper = mount(ResultTable, {
         props: {
-          developerList: [{ name: "test", guess: 0, role: Role.Developer, doSkip: true }],
+          developerDone: [{ name: "test", guess: 0, role: Role.Developer, doSkip: true }],
+          developerList: [{ name: "test", isDone: true, role: Role.Developer }],
           showAllGuesses: true,
           roundIsFinished: false,
         },
@@ -91,12 +93,19 @@ describe("ResultTable", () => {
     it("should render all guesses and average as text when show all guesses = true", () => {
       const wrapper = mount(ResultTable, {
         props: {
+          developerDone: [
+            { name: "test", guess: 2, doSkip: false, role: Role.Developer },
+            { name: "another 1", guess: 1, doSkip: false, role: Role.Developer },
+            { name: "another 2", guess: 1, doSkip: false, role: Role.Developer },
+            { name: "another 3", guess: 1, doSkip: false, role: Role.Developer },
+            { name: "another 4", guess: 2, doSkip: false, role: Role.Developer },
+          ],
           developerList: [
-            { name: "test", guess: 2, role: Role.Developer },
-            { name: "another 1", guess: 1, role: Role.Developer },
-            { name: "another 2", guess: 1, role: Role.Developer },
-            { name: "another 3", guess: 1, role: Role.Developer },
-            { name: "another 4", guess: 2, role: Role.Developer },
+            { name: "test", isDone: true, role: Role.Developer },
+            { name: "another 1", isDone: true, role: Role.Developer },
+            { name: "another 2", isDone: true, role: Role.Developer },
+            { name: "another 3", isDone: true, role: Role.Developer },
+            { name: "another 4", isDone: true, role: Role.Developer },
           ],
           showAllGuesses: true,
           roundIsFinished: false,

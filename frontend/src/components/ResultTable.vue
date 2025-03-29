@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Developer } from "@/components/types";
+import type { Developer, DeveloperDone } from "@/components/types";
 import { computed } from "vue";
 
 type Props = {
   developerList: Developer[];
+  developerDone: DeveloperDone[];
   showAllGuesses: boolean;
   roundIsFinished: boolean;
 };
@@ -11,7 +12,7 @@ type Props = {
 const props = defineProps<Props>();
 
 const averageGuess = computed(() => {
-  const developerThatDoNotSkip = props.developerList.filter((dev) => !dev.doSkip);
+  const developerThatDoNotSkip = props.developerDone.filter((dev) => !dev.doSkip);
   const average = Math.round(
     developerThatDoNotSkip.reduce((sum, dev) => sum + dev.guess, 0) / developerThatDoNotSkip.length,
   );
@@ -19,11 +20,16 @@ const averageGuess = computed(() => {
 });
 
 function developerDidNotGuessAverage(dev: Developer): boolean {
-  return dev.guess !== averageGuess.value && props.showAllGuesses && !dev.doSkip;
+  const foundDeveloperDone = foundDeveloper(dev);
+  return (
+    foundDeveloperDone?.guess !== averageGuess.value &&
+    props.showAllGuesses &&
+    !foundDeveloperDone?.doSkip
+  );
 }
 
-function developerIsDone(dev: Developer): boolean {
-  return dev.guess !== 0 || dev.doSkip;
+function foundDeveloper(dev: Developer): DeveloperDone | null {
+  return props.developerDone.find((it) => it.name === dev.name) || null;
 }
 </script>
 
@@ -47,14 +53,16 @@ function developerIsDone(dev: Developer): boolean {
         <td>
           <span v-if="!props.showAllGuesses">
             <v-icon
-              v-if="developerIsDone(developer)"
+              v-if="developer.isDone"
               color="green"
             >mdi-check-circle</v-icon>
             <v-icon v-else>mdi-help-circle</v-icon>
           </span>
 
           <span v-else>
-            <span v-if="!developer.doSkip">{{ developer.guess }}</span>
+            <span v-if="!foundDeveloper(developer)?.doSkip">{{
+              foundDeveloper(developer)?.guess
+            }}</span>
             <span v-else><v-icon>mdi-coffee</v-icon></span>
           </span>
         </td>

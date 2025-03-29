@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  type DeveloperDone,
   type Permissions,
   type PossibleGuess,
   Role,
@@ -14,6 +15,7 @@ import RoundOverview from "@/components/RoundOverview.vue";
 type Props = {
   roomId: string;
   usersInRoom: UserOverview;
+  developerDone: DeveloperDone[];
   currentUsername: string;
   userRole: Role;
   roundState: RoundState;
@@ -199,6 +201,7 @@ function openRoom() {
           :round-is-finished="roundIsFinished"
           :show-all-guesses="props.showAllGuesses"
           :developer-list="props.usersInRoom.developerList"
+          :developer-done="props.developerDone"
           :ticket-to-guess="props.ticketToGuess"
           :user-is-product-owner="userIsProductOwner"
           @reveal="emit('reveal')"

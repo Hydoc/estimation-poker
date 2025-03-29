@@ -1,7 +1,12 @@
 import type { Ref } from "vue";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { type PossibleGuess, type UserOverview, type Permissions } from "@/components/types";
+import {
+  type PossibleGuess,
+  type UserOverview,
+  type Permissions,
+  type DeveloperDone,
+} from "@/components/types";
 import { Role, RoundState } from "@/components/types";
 
 type WebsocketStore = {
@@ -30,6 +35,7 @@ type WebsocketStore = {
   possibleGuesses: Ref<PossibleGuess[]>;
   permissions: Ref<Permissions>;
   roomIsLocked: Ref<boolean>;
+  developerDone: Ref<DeveloperDone[]>;
 };
 
 export type SendableWebsocketMessageType =
@@ -55,7 +61,7 @@ type ReceivableWebsocketMessage = {
     | "everyone-done"
     | "you-guessed"
     | "you-skipped"
-    | "reveal"
+    | "reveal-round"
     | "reset-round"
     | "room-locked"
     | "developer-skipped"
@@ -80,6 +86,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const possibleGuesses: Ref<PossibleGuess[]> = ref([]);
   const permissions: Ref<Permissions> = ref({ room: { canLock: false } });
   const roomIsLocked: Ref<boolean> = ref(false);
+  const developerDone: Ref<DeveloperDone[]> = ref([]);
 
   const isConnected = computed(() => websocket.value !== null);
 
@@ -135,7 +142,8 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           await fetchUsersInRoom();
           roundState.value = RoundState.End;
           break;
-        case "reveal":
+        case "reveal-round":
+          developerDone.value = decoded.data;
           showAllGuesses.value = true;
           break;
         case "room-locked":
@@ -176,6 +184,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     roundState.value = RoundState.Waiting;
     showAllGuesses.value = false;
     didSkip.value = false;
+    developerDone.value = [];
   }
 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
@@ -286,5 +295,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     passwordMatchesRoom,
     permissions,
     roomIsLocked,
+    developerDone,
   };
 });

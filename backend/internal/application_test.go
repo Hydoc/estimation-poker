@@ -226,20 +226,17 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				"developerList": {
 					{
 						"name":   "Also a dev",
-						"guess":  float64(0),
-						"doSkip": false,
+						"isDone": false,
 						"role":   Developer,
 					},
 					{
 						"name":   "Another",
-						"guess":  float64(0),
+						"isDone": false,
 						"role":   Developer,
-						"doSkip": false,
 					},
 					{
 						"name":   "B",
-						"guess":  float64(0),
-						"doSkip": false,
+						"isDone": false,
 						"role":   Developer,
 					},
 				},
@@ -269,8 +266,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				"developerList": {
 					{
 						"name":   "B",
-						"doSkip": false,
-						"guess":  float64(0),
+						"isDone": false,
 						"role":   Developer,
 					},
 				},
