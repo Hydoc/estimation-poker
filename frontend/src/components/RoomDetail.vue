@@ -11,6 +11,7 @@ import UserBox from "@/components/UserBox.vue";
 import CommandCenter from "@/components/CommandCenter.vue";
 import { computed, ref } from "vue";
 import RoundOverview from "@/components/RoundOverview.vue";
+import TableOverview from "@/components/TableOverview.vue";
 
 type Props = {
   roomId: string;
@@ -192,23 +193,9 @@ function openRoom() {
       </v-col>
     </v-row>
 
-    <v-row
-      v-if="ticketToGuess !== ''"
-      class="mt-15"
-    >
-      <v-col cols="12">
-        <round-overview
-          :round-is-finished="roundIsFinished"
-          :show-all-guesses="props.showAllGuesses"
+        <table-overview
           :developer-list="props.usersInRoom.developerList"
-          :developer-done="props.developerDone"
-          :ticket-to-guess="props.ticketToGuess"
-          :user-is-product-owner="userIsProductOwner"
-          @reveal="emit('reveal')"
-          @new-round="emit('new-round')"
-        />
-      </v-col>
-    </v-row>
+        ></table-overview>
 
     <v-row class="mt-15">
       <v-col cols="12">
