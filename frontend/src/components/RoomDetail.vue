@@ -10,7 +10,6 @@ import {
 import UserBox from "@/components/UserBox.vue";
 import CommandCenter from "@/components/CommandCenter.vue";
 import { computed, ref } from "vue";
-import RoundOverview from "@/components/RoundOverview.vue";
 import TableOverview from "@/components/TableOverview.vue";
 
 type Props = {
@@ -194,7 +193,7 @@ function openRoom() {
     </v-row>
 
         <table-overview
-          :developer-list="props.usersInRoom.developerList"
+          :users-in-room="props.usersInRoom"
         ></table-overview>
 
     <v-row class="mt-15">

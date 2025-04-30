@@ -1,31 +1,34 @@
 <script setup lang="ts">
-import { type Ref, onBeforeMount, ref } from 'vue';
-import type { Developer } from './types';
+import { computed, onUpdated, type Ref, ref } from 'vue';
+import type {  UserOverview } from './types';
 
 type Props = {
-  developerList: Developer[];
+  usersInRoom: UserOverview;
 }
 const props = defineProps<Props>();
 const seats: Ref<HTMLLIElement[] | null> = ref(null);
+const users = computed(() => {
+  return [...props.usersInRoom.productOwnerList, ...props.usersInRoom.developerList];
+});
 
-onBeforeMount(() => {
+onUpdated(() => {
   const cx = 300;
   const cy = 300;
   const radius = 200;
 
-  seats.value?.forEach((seat: HTMLLIElement, index: number, ) => {
+  seats.value!.forEach((seat: HTMLLIElement, index: number, ) => {
     const theta = 2 * Math.PI * (index / seats.value!.length);
     const left = cx + radius * Math.sin(theta);
     const top = cy - radius * Math.cos(theta);
-    seat.style.left = left.toString() + "px";
-    seat.style.top = top.toString() + "px";
+    seat.style.left = `${left}px`;
+    seat.style.top = `${top}px`;
   });
 });
 </script>
 
 <template>
   <ul class="virtual-table">
-    <li ref="seats" v-for="developer in props.developerList" :key="developer.name">{{ developer.name }}</li>
+    <li ref="seats" v-for="user in users" :key="user.name">{{ user.name }}</li>
   </ul>
 </template>
 
