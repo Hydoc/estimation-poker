@@ -1,34 +1,35 @@
 <script setup lang="ts">
-import { computed, onUpdated, type Ref, ref } from 'vue';
-import type {  UserOverview } from './types';
+import { computed } from 'vue';
+import type { UserOverview } from './types';
 
 type Props = {
   usersInRoom: UserOverview;
 }
 const props = defineProps<Props>();
-const seats: Ref<HTMLLIElement[] | null> = ref(null);
+const radius = 200;
+const cy = 300;
+const cx = 300;
 const users = computed(() => {
   return [...props.usersInRoom.productOwnerList, ...props.usersInRoom.developerList];
 });
 
-onUpdated(() => {
-  const cx = 300;
-  const cy = 300;
-  const radius = 200;
+function topForElement(index: number): string {
+  const theta = 2 * Math.PI * (index / users.value.length);
+  const top = cy - radius * Math.cos(theta);
+  return `${top}px`;
+}
 
-  seats.value!.forEach((seat: HTMLLIElement, index: number, ) => {
-    const theta = 2 * Math.PI * (index / seats.value!.length);
-    const left = cx + radius * Math.sin(theta);
-    const top = cy - radius * Math.cos(theta);
-    seat.style.left = `${left}px`;
-    seat.style.top = `${top}px`;
-  });
-});
+function leftForElement(index: number): string {
+  const theta = 2 * Math.PI * (index / users.value.length);
+  const left = cx + radius * Math.sin(theta);
+  return `${left}px`;
+}
 </script>
 
 <template>
   <ul class="virtual-table">
-    <li ref="seats" v-for="user in users" :key="user.name">{{ user.name }}</li>
+    <li :style="`left:${leftForElement(index)};top:${topForElement(index)}`" v-for="(user, index) in users"
+      :key="user.name">{{ user.name }}</li>
   </ul>
 </template>
 
@@ -39,7 +40,7 @@ onUpdated(() => {
   height: 600px;
 }
 
-.virtual-table > li {
+.virtual-table>li {
   position: absolute;
   list-style: none;
 }
