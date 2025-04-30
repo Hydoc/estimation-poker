@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { UserOverview } from './types';
+import { computed } from "vue";
+import type { UserOverview } from "./types";
 
 type Props = {
   usersInRoom: UserOverview;
-}
+};
 const props = defineProps<Props>();
 const radius = 200;
 const cy = 300;
@@ -28,8 +28,13 @@ function leftForElement(index: number): string {
 
 <template>
   <ul class="virtual-table">
-    <li :style="`left:${leftForElement(index)};top:${topForElement(index)}`" v-for="(user, index) in users"
-      :key="user.name">{{ user.name }}</li>
+    <li
+      v-for="(user, index) in users"
+      :key="user.name"
+      :style="`left:${leftForElement(index)};top:${topForElement(index)}`"
+    >
+      {{ user.name }}
+    </li>
   </ul>
 </template>
 
@@ -40,7 +45,7 @@ function leftForElement(index: number): string {
   height: 600px;
 }
 
-.virtual-table>li {
+.virtual-table > li {
   position: absolute;
   list-style: none;
 }

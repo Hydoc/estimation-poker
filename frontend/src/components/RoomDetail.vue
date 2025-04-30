@@ -192,9 +192,7 @@ function openRoom() {
       </v-col>
     </v-row>
 
-        <table-overview
-          :users-in-room="props.usersInRoom"
-        ></table-overview>
+    <table-overview :users-in-room="props.usersInRoom" />
 
     <v-row class="mt-15">
       <v-col cols="12">
