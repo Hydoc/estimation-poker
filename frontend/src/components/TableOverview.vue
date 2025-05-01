@@ -25,8 +25,6 @@ const users = computed(() => {
   return [...props.usersInRoom.productOwnerList, ...props.usersInRoom.developerList];
 });
 
-const hasDevelopersInRoom = computed(() => props.usersInRoom.developerList.length > 0);
-
 function isDeveloper(user: (ProductOwner | Developer)): user is Developer {
   return user.role === "developer";
 }
@@ -49,35 +47,32 @@ function leftForElement(index: number): string {
 </script>
 
 <template>
-  <div>
-    <div class="virtual-table">
-      <div class="table">
-        <product-owner-command-center
-          v-if="props.userIsProductOwner"
-          :round-state="props.roundState"
-          :developer-list="props.usersInRoom.developerList"
-          :has-ticket-to-guess="props.hasTicketToGuess"
-          :has-developers-in-room="hasDevelopersInRoom"
-          :show-all-guesses="props.showAllGuesses"
-          @estimate="emit('estimate', $event)"
-          @reveal="emit('reveal')"
-          @new-round="emit('new-round')"
-        />
-        <span v-if="!props.hasTicketToGuess && !props.userIsProductOwner">Warten auf Ticket…</span>
-      </div>
-      <div
-        v-for="(user, index) in users"
-        :key="user.name"
-        class="seat"
-        :style="`left:${leftForElement(index)};top:${topForElement(index)}`"
-      >
-        <developer-card
-          v-if="isDeveloper(user)"
-          :developer="user"
-          :developer-done="findDeveloperDone(user)"
-        />
-        <span v-else>{{ user.name }}</span>
-      </div>
+  <div class="virtual-table">
+    <div class="table">
+      <product-owner-command-center
+        v-if="props.userIsProductOwner"
+        :round-state="props.roundState"
+        :developer-list="props.usersInRoom.developerList"
+        :has-ticket-to-guess="props.hasTicketToGuess"
+        :show-all-guesses="props.showAllGuesses"
+        @estimate="emit('estimate', $event)"
+        @reveal="emit('reveal')"
+        @new-round="emit('new-round')"
+      />
+      <span v-if="!props.hasTicketToGuess && !props.userIsProductOwner">Warten auf Ticket…</span>
+    </div>
+    <div
+      v-for="(user, index) in users"
+      :key="user.name"
+      class="seat"
+      :style="`left:${leftForElement(index)};top:${topForElement(index)}`"
+    >
+      <developer-card
+        v-if="isDeveloper(user)"
+        :developer="user"
+        :developer-done="findDeveloperDone(user)"
+      />
+      <span v-else>{{ user.name }}</span>
     </div>
   </div>
 </template>

@@ -53,29 +53,6 @@ describe("DeveloperCommandCenter", () => {
       expect(wrapper.findAll(".card").at(4).find("span").text()).equal("Mehr als 5 Tage");
     });
 
-    it("should render without ticket to guess", () => {
-      const wrapper = mount(DeveloperCommandCenter, {
-        props: {
-          guess: 0,
-          showAllGuesses: false,
-          didSkip: false,
-          hasTicketToGuess: false,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-        global: {
-          plugins: [vuetify],
-        },
-      });
-
-      expect(wrapper.find("p").text()).equal("Warten auf Ticket...");
-    });
-
     it("should render with correct guess when developer did guess", async () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {

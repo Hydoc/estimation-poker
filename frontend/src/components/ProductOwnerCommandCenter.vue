@@ -2,12 +2,10 @@
 import { computed, type Ref, ref } from "vue";
 import type { VForm } from "vuetify/components";
 import { type Developer, RoundState } from "@/components/types.ts";
-import percent = CSS.percent;
 
 type Props = {
   roundState: RoundState;
   hasTicketToGuess: boolean;
-  hasDevelopersInRoom: boolean;
   showAllGuesses: boolean;
   developerList: Developer[];
 };
@@ -34,6 +32,8 @@ const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 
 const roundCanBeRevealed = computed(() => props.roundState === RoundState.End);
 
+const hasDevelopersInRoom = computed(() => props.developerList.length > 0);
+
 const percentageDone = computed(() => {
   const devsThatAreDone = props.developerList.filter((dev) => dev.isDone).length;
   const totalDevs = props.developerList.length;
@@ -52,7 +52,7 @@ function doLetEstimate() {
 <template>
   <v-container fluid>
     <v-form
-      v-if="roundIsWaiting && props.hasDevelopersInRoom && !props.hasTicketToGuess"
+      v-if="roundIsWaiting && hasDevelopersInRoom && !props.hasTicketToGuess"
       ref="form"
       :fast-fail="true"
       @submit.prevent="doLetEstimate"
@@ -94,7 +94,7 @@ function doLetEstimate() {
     >
       Neue Runde
     </v-btn>
-    <p v-else-if="!props.hasDevelopersInRoom">
+    <p v-else-if="!hasDevelopersInRoom">
       Warten auf Entwickler...
     </p>
   </v-container>
