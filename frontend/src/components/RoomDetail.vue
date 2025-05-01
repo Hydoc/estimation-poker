@@ -7,7 +7,6 @@ import {
   RoundState,
   type UserOverview,
 } from "@/components/types";
-import UserBox from "@/components/UserBox.vue";
 import CommandCenter from "@/components/CommandCenter.vue";
 import { computed, ref } from "vue";
 import TableOverview from "@/components/TableOverview.vue";
@@ -44,7 +43,6 @@ const snackbarText = ref("");
 const showSetRoomPasswordDialog = ref(false);
 const roomPassword = ref("");
 const showPassword = ref(false);
-const roundIsFinished = computed(() => props.roundState === RoundState.End);
 const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
 const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 const roomIsLockedText = computed(() => (props.roomIsLocked ? "privater" : "öffentlicher"));
@@ -175,24 +173,18 @@ function openRoom() {
   </v-container>
 
   <v-container>
-    <v-row>
-      <v-col>
-        <user-box
-          title="Product Owner"
-          :user-list="usersInRoom.productOwnerList"
-          :current-username="currentUsername"
-        />
-      </v-col>
-      <v-col>
-        <user-box
-          title="Entwickler"
-          :user-list="usersInRoom.developerList"
-          :current-username="currentUsername"
-        />
-      </v-col>
-    </v-row>
-
-    <table-overview :users-in-room="props.usersInRoom" />
+    <table-overview
+      :show-all-guesses="props.showAllGuesses"
+      :users-in-room="props.usersInRoom"
+      :has-developers-in-room="props.usersInRoom.developerList.length > 0"
+      :has-ticket-to-guess="props.ticketToGuess !== ''"
+      :round-state="props.roundState"
+      :user-is-product-owner="userIsProductOwner"
+      :developer-done="developerDone"
+      @estimate="emit('estimate', $event)"
+      @reveal="emit('reveal')"
+      @new-round="emit('new-round')"
+    />
 
     <v-row class="mt-15">
       <v-col cols="12">

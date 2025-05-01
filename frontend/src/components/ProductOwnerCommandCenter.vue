@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { computed, type Ref, ref } from "vue";
 import type { VForm } from "vuetify/components";
+import { type Developer, RoundState } from "@/components/types.ts";
+import percent = CSS.percent;
 
 type Props = {
-  roundIsWaiting: boolean;
+  roundState: RoundState;
   hasTicketToGuess: boolean;
   hasDevelopersInRoom: boolean;
+  showAllGuesses: boolean;
+  developerList: Developer[];
 };
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "estimate", ticket: string): void;
+  (e: "reveal"): void;
+  (e: "new-round"): void;
 }>();
 
 const ticketToGuess = ref("");
@@ -24,6 +30,16 @@ const ticketRules = [
 ];
 const canEstimate = computed(() => ticketToGuess.value !== "" && form.value?.isValid);
 
+const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
+
+const roundCanBeRevealed = computed(() => props.roundState === RoundState.End);
+
+const percentageDone = computed(() => {
+  const devsThatAreDone = props.developerList.filter((dev) => dev.isDone).length;
+  const totalDevs = props.developerList.length;
+  return Math.round((devsThatAreDone / totalDevs) * 100);
+});
+
 function doLetEstimate() {
   if (!canEstimate.value) {
     return;
@@ -34,35 +50,50 @@ function doLetEstimate() {
 </script>
 
 <template>
-  <v-container>
+  <v-container fluid>
     <v-form
-      v-if="props.roundIsWaiting && props.hasDevelopersInRoom && !props.hasTicketToGuess"
+      v-if="roundIsWaiting && props.hasDevelopersInRoom && !props.hasTicketToGuess"
       ref="form"
       :fast-fail="true"
       @submit.prevent="doLetEstimate"
     >
-      <v-row>
-        <v-col>
-          <v-text-field
-            v-model="ticketToGuess"
-            label="Ticket zum schätzen"
-            :rules="ticketRules"
-            placeholder="CC-0000"
-            required
-          />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="text-right">
-          <v-btn
-            type="submit"
-            :disabled="!canEstimate"
-          >
-            Schätzen lassen
-          </v-btn>
-        </v-col>
-      </v-row>
+      <v-text-field
+        v-model="ticketToGuess"
+        bg-color="white"
+        label="Ticket zum schätzen"
+        :rules="ticketRules"
+        placeholder="CC-0000"
+        required
+      />
+      <v-btn
+        width="100%"
+        type="submit"
+        :disabled="!canEstimate"
+      >
+        Schätzen lassen
+      </v-btn>
     </v-form>
+    <v-btn
+      v-if="props.hasTicketToGuess && !props.showAllGuesses"
+      width="100%"
+      color="blue-grey"
+      :loading="!roundCanBeRevealed"
+      :disabled="!roundCanBeRevealed"
+      @click="emit('reveal')"
+    >
+      <template #loader>
+        <v-progress-circular v-model="percentageDone" />
+      </template>
+      Auflösen
+    </v-btn>
+    <v-btn
+      v-if="props.showAllGuesses"
+      width="100%"
+      color="blue-grey"
+      @click="emit('new-round')"
+    >
+      Neue Runde
+    </v-btn>
     <p v-else-if="!props.hasDevelopersInRoom">
       Warten auf Entwickler...
     </p>

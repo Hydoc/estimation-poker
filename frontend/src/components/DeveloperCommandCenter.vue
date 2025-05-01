@@ -49,9 +49,6 @@ function skip() {
         />
       </div>
     </div>
-    <p v-if="!props.hasTicketToGuess">
-      Warten auf Ticket...
-    </p>
   </div>
 </template>
 

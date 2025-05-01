@@ -1,17 +1,38 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { UserOverview } from "./types";
+import { type Developer, type DeveloperDone, type ProductOwner, RoundState, type UserOverview } from "./types";
+import DeveloperCard from "@/components/DeveloperCard.vue";
+import ProductOwnerCommandCenter from "@/components/ProductOwnerCommandCenter.vue";
 
 type Props = {
   usersInRoom: UserOverview;
+  roundState: RoundState;
+  developerDone: DeveloperDone[];
+  showAllGuesses: boolean;
+  hasTicketToGuess: boolean;
+  hasDevelopersInRoom: boolean;
+  userIsProductOwner: boolean;
 };
 const props = defineProps<Props>();
-const radius = 200;
-const cy = 300;
-const cx = 300;
+const emit = defineEmits<{
+  (e: "reveal"): void;
+  (e: "new-round"): void;
+  (e: "estimate", ticket: string): void;
+}>();
+const radius = 250;
+const cy = 250;
+const cx = 250;
 const users = computed(() => {
   return [...props.usersInRoom.productOwnerList, ...props.usersInRoom.developerList];
 });
+
+function isDeveloper(user: (ProductOwner | Developer)): user is Developer {
+  return user.role === "developer";
+}
+
+function findDeveloperDone(developer: Developer): DeveloperDone | undefined {
+  return props.developerDone.find((it) => it.name === developer.name);
+}
 
 function topForElement(index: number): string {
   const theta = 2 * Math.PI * (index / users.value.length);
@@ -27,15 +48,37 @@ function leftForElement(index: number): string {
 </script>
 
 <template>
-  <ul class="virtual-table">
-    <li
-      v-for="(user, index) in users"
-      :key="user.name"
-      :style="`left:${leftForElement(index)};top:${topForElement(index)}`"
-    >
-      {{ user.name }}
-    </li>
-  </ul>
+  <div>
+    <div class="virtual-table">
+      <div class="table">
+        <product-owner-command-center
+          v-if="props.userIsProductOwner"
+          :round-state="props.roundState"
+          :developer-list="props.usersInRoom.developerList"
+          :has-ticket-to-guess="props.hasTicketToGuess"
+          :has-developers-in-room="props.hasDevelopersInRoom"
+          :show-all-guesses="props.showAllGuesses"
+          @estimate="emit('estimate', $event)"
+          @reveal="emit('reveal')"
+          @new-round="emit('new-round')"
+        />
+        <span v-if="!props.hasTicketToGuess && !props.userIsProductOwner">Warten auf Ticket…</span>
+      </div>
+      <div
+        v-for="(user, index) in users"
+        :key="user.name"
+        class="seat"
+        :style="`left:${leftForElement(index)};top:${topForElement(index)}`"
+      >
+        <developer-card
+          v-if="isDeveloper(user)"
+          :developer="user"
+          :developer-done="findDeveloperDone(user)"
+        />
+        <span v-else>{{ user.name }}</span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -43,10 +86,34 @@ function leftForElement(index: number): string {
   position: relative;
   width: 600px;
   height: 600px;
+  margin: 0 auto;
 }
 
-.virtual-table > li {
+.seat {
   position: absolute;
-  list-style: none;
+}
+
+.table {
+  position: absolute;
+  top: 19%;
+  left: 22%;
+  width: 300px;
+  height: 300px;
+  background-color: #d7e9ff;
+  border-radius: 50%;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.table button {
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  width: 9rem;
+  height: 3rem;
+  color: white;
 }
 </style>

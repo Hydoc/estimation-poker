@@ -38,13 +38,6 @@ const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
     @guess="emit('guess', $event)"
     @skip="emit('skip')"
   />
-  <product-owner-command-center
-    v-else
-    :round-is-waiting="roundIsWaiting"
-    :has-ticket-to-guess="hasTicketToGuess"
-    :has-developers-in-room="props.hasDevelopersInRoom"
-    @estimate="emit('estimate', $event)"
-  />
 </template>
 
 <style scoped></style>
