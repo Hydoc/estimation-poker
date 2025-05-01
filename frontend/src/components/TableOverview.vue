@@ -10,7 +10,6 @@ type Props = {
   developerDone: DeveloperDone[];
   showAllGuesses: boolean;
   hasTicketToGuess: boolean;
-  hasDevelopersInRoom: boolean;
   userIsProductOwner: boolean;
 };
 const props = defineProps<Props>();
@@ -25,6 +24,8 @@ const cx = 300;
 const users = computed(() => {
   return [...props.usersInRoom.productOwnerList, ...props.usersInRoom.developerList];
 });
+
+const hasDevelopersInRoom = computed(() => props.usersInRoom.developerList.length > 0);
 
 function isDeveloper(user: (ProductOwner | Developer)): user is Developer {
   return user.role === "developer";
@@ -56,7 +57,7 @@ function leftForElement(index: number): string {
           :round-state="props.roundState"
           :developer-list="props.usersInRoom.developerList"
           :has-ticket-to-guess="props.hasTicketToGuess"
-          :has-developers-in-room="props.hasDevelopersInRoom"
+          :has-developers-in-room="hasDevelopersInRoom"
           :show-all-guesses="props.showAllGuesses"
           @estimate="emit('estimate', $event)"
           @reveal="emit('reveal')"

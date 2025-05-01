@@ -3,22 +3,21 @@ import { mount } from "@vue/test-utils";
 import RoomDetail from "../../src/components/RoomDetail.vue";
 import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
-import * as directives from "vuetify/directives";
-import { Role, RoundState } from "../../src/components/types";
 import {
   VBtn,
+  VCard,
+  VCardActions,
+  VCardTitle,
+  VDialog,
   VIcon,
   VSnackbar,
-  VDialog,
-  VCard,
-  VCardTitle,
   VTextField,
-  VCardActions,
 } from "vuetify/components";
-import UserBox from "../../src/components/UserBox.vue";
-import RoundOverview from "../../src/components/RoundOverview.vue";
-import CommandCenter from "../../src/components/CommandCenter.vue";
+import * as directives from "vuetify/directives";
+import { Role, RoundState } from "../../src/components/types";
 import { nextTick } from "vue";
+import TableOverview from "../../src/components/TableOverview.vue";
+import DeveloperCommandCenter from "../../src/components/DeveloperCommandCenter.vue";
 
 let vuetify: ReturnType<typeof createVuetify>;
 
@@ -40,7 +39,7 @@ describe("RoomDetail", () => {
     it("should render", () => {
       const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
       const currentUsername = "Test";
-      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
+      const developerList = [{ name: currentUsername, isDone: false, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
           roomId: "ABC",
@@ -90,28 +89,39 @@ describe("RoomDetail", () => {
       expect(wrapper.findComponent(VBtn).props("appendIcon")).equal("mdi-location-exit");
       expect(wrapper.findComponent(VBtn).text()).equal("Raum verlassen");
 
-      expect(wrapper.findAllComponents(UserBox)).length(2);
-      expect(wrapper.findAllComponents(UserBox).at(0).props("title")).equal("Product Owner");
-      expect(wrapper.findAllComponents(UserBox).at(0).props("userList")).deep.equal(
-        productOwnerList,
-      );
-      expect(wrapper.findAllComponents(UserBox).at(0).props("currentUsername")).equal(
-        currentUsername,
-      );
-      expect(wrapper.findAllComponents(UserBox).at(1).props("title")).equal("Entwickler");
-      expect(wrapper.findAllComponents(UserBox).at(1).props("userList")).deep.equal(developerList);
-      expect(wrapper.findAllComponents(UserBox).at(1).props("currentUsername")).equal(
-        currentUsername,
-      );
+      expect(wrapper.findComponent(TableOverview).exists()).to.be.true;
+      expect(wrapper.findComponent(TableOverview).props("showAllGuesses")).to.be.false;
+      expect(wrapper.findComponent(TableOverview).props("usersInRoom")).deep.equal({
+        developerList: [
+          {
+            isDone: false,
+            name: "Test",
+            role: "developer",
+          },
+        ],
+        productOwnerList: [
+          {
+            name: "Product Owner Test",
+            role: "product-owner",
+          },
+        ],
+      });
+      expect(wrapper.findComponent(TableOverview).props("hasTicketToGuess")).to.be.false;
+      expect(wrapper.findComponent(TableOverview).props("roundState")).equal(RoundState.Waiting);
+      
+      expect(wrapper.findComponent(DeveloperCommandCenter).exists()).to.be.true;
+      expect(wrapper.findComponent(DeveloperCommandCenter).props("showAllGuesses")).to.be.false;
+      expect(wrapper.findComponent(DeveloperCommandCenter).props("guess")).equal(0);
+      expect(wrapper.findComponent(DeveloperCommandCenter).props("didSkip")).to.be.false;
+      expect(wrapper.findComponent(DeveloperCommandCenter).props("hasTicketToGuess")).to.be.false;
+      expect(wrapper.findComponent(DeveloperCommandCenter).props("possibleGuesses")).deep.equal([
+        { guess: 1, description: "Bis zu 4 Std." },
+        { guess: 2, description: "Bis zu 8 Std." },
+        { guess: 3, description: "Bis zu 3 Tagen" },
+        { guess: 4, description: "Bis zu 5 Tagen" },
+        { guess: 5, description: "Mehr als 5 Tage" },
+      ]);
 
-      expect(wrapper.findComponent(RoundOverview).exists()).to.be.false;
-
-      expect(wrapper.findComponent(CommandCenter).exists()).to.be.true;
-      expect(wrapper.findComponent(CommandCenter).props("userRole")).equal(Role.Developer);
-      expect(wrapper.findComponent(CommandCenter).props("roundState")).equal(RoundState.Waiting);
-      expect(wrapper.findComponent(CommandCenter).props("guess")).equal(0);
-      expect(wrapper.findComponent(CommandCenter).props("ticketToGuess")).equal("");
-      expect(wrapper.findComponent(CommandCenter).props("hasDevelopersInRoom")).to.be.true;
       expect(wrapper.findComponent(VSnackbar).exists()).to.be.true;
       expect(wrapper.findComponent(VSnackbar).props("modelValue")).to.be.false;
     });
@@ -119,7 +129,7 @@ describe("RoomDetail", () => {
     it("should render when room is locked", () => {
       const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
       const currentUsername = "Test";
-      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
+      const developerList = [{ name: currentUsername, isDone: false, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
@@ -159,7 +169,7 @@ describe("RoomDetail", () => {
     it("should render additional buttons when room is not locked and current user has permissions to lock", () => {
       const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
       const currentUsername = "Test";
-      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
+      const developerList = [{ name: currentUsername, isDone: false, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
@@ -213,7 +223,7 @@ describe("RoomDetail", () => {
     it("should render additional buttons when room is locked and current user has permissions to lock", () => {
       const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
       const currentUsername = "Test";
-      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
+      const developerList = [{ name: currentUsername, isDone: false, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
@@ -273,56 +283,10 @@ describe("RoomDetail", () => {
       );
     });
 
-    it("should render RoundOverview when ticketToGuess != ''", () => {
-      const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
-      const currentUsername = "Test";
-      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
-      const wrapper = mount(RoomDetail, {
-        props: {
-          developerDone: [],
-          roomId: "ABC",
-          usersInRoom: {
-            developerList,
-            productOwnerList,
-          },
-          currentUsername: currentUsername,
-          userRole: Role.Developer,
-          roundState: RoundState.Waiting,
-          ticketToGuess: "CC-1",
-          didSkip: false,
-          guess: 0,
-          showAllGuesses: false,
-          permissions: {
-            room: {
-              canLock: false,
-            },
-          },
-          roomIsLocked: false,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-        global: {
-          plugins: [vuetify],
-        },
-      });
-
-      expect(wrapper.findComponent(RoundOverview).exists()).to.be.true;
-      expect(wrapper.findComponent(RoundOverview).props("roundIsFinished")).to.be.false;
-      expect(wrapper.findComponent(RoundOverview).props("showAllGuesses")).to.be.false;
-      expect(wrapper.findComponent(RoundOverview).props("developerList")).deep.equal(developerList);
-      expect(wrapper.findComponent(RoundOverview).props("ticketToGuess")).equal("CC-1");
-      expect(wrapper.findComponent(RoundOverview).props("userIsProductOwner")).to.be.false;
-    });
-
     it("should not render leave room when round has begun", () => {
       const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
       const currentUsername = "Test";
-      const developerList = [{ name: currentUsername, guess: 0, role: Role.Developer }];
+      const developerList = [{ name: currentUsername, isDone: false, role: Role.Developer }];
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
@@ -381,7 +345,7 @@ describe("RoomDetail", () => {
           developerDone: [],
           roomId,
           usersInRoom: {
-            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            developerList: [{ name: "Test", isDone: false, role: Role.Developer }],
             productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
           },
           currentUsername: "Test",
@@ -443,7 +407,7 @@ describe("RoomDetail", () => {
           developerDone: [],
           roomId,
           usersInRoom: {
-            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            developerList: [{ name: "Test", isDone: false, role: Role.Developer }],
             productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
           },
           currentUsername: "Test",
@@ -486,7 +450,7 @@ describe("RoomDetail", () => {
       });
     });
 
-    it("should emit estimate when command center emits estimate", () => {
+    it("should emit estimate when table overview emits estimate", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
@@ -522,18 +486,18 @@ describe("RoomDetail", () => {
         },
       });
 
-      wrapper.findComponent(CommandCenter).vm.$emit("estimate", "WR-1");
+      wrapper.findComponent(TableOverview).vm.$emit("estimate", "WR-1");
       expect(wrapper.emitted("estimate")).deep.equal([["WR-1"]]);
     });
 
-    it("should emit guess when command center emits guess", () => {
+    it("should emit guess when developer command center emits guess", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
           roomId,
           usersInRoom: {
-            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
+            developerList: [{ name: "Test", isDone: false, role: Role.Developer }],
             productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
           },
           currentUsername: "Test",
@@ -562,11 +526,11 @@ describe("RoomDetail", () => {
         },
       });
 
-      wrapper.findComponent(CommandCenter).vm.$emit("guess", 1);
+      wrapper.findComponent(DeveloperCommandCenter).vm.$emit("guess", 1);
       expect(wrapper.emitted("guess")).deep.equal([[1]]);
     });
 
-    it("should emit reveal when round overview emits reveal", () => {
+    it("should emit reveal when table overview emits reveal", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
@@ -602,11 +566,11 @@ describe("RoomDetail", () => {
         },
       });
 
-      wrapper.findComponent(RoundOverview).vm.$emit("reveal");
+      wrapper.findComponent(TableOverview).vm.$emit("reveal");
       expect(wrapper.emitted("reveal")).deep.equal([[]]);
     });
 
-    it("should emit new round when round overview emits new round", () => {
+    it("should emit new round when table overview emits new round", () => {
       const roomId = "ABC";
       const wrapper = mount(RoomDetail, {
         props: {
@@ -642,7 +606,7 @@ describe("RoomDetail", () => {
         },
       });
 
-      wrapper.findComponent(RoundOverview).vm.$emit("new-round");
+      wrapper.findComponent(TableOverview).vm.$emit("new-round");
       expect(wrapper.emitted("new-round")).deep.equal([[]]);
     });
 

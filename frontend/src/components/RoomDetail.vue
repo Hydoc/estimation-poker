@@ -182,7 +182,6 @@ function openRoom() {
       <table-overview
         :show-all-guesses="props.showAllGuesses"
         :users-in-room="props.usersInRoom"
-        :has-developers-in-room="props.usersInRoom.developerList.length > 0"
         :has-ticket-to-guess="hasTicketToGuess"
         :round-state="props.roundState"
         :user-is-product-owner="userIsProductOwner"
