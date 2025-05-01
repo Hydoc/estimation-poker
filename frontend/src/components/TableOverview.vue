@@ -20,8 +20,8 @@ const emit = defineEmits<{
   (e: "estimate", ticket: string): void;
 }>();
 const radius = 250;
-const cy = 250;
-const cx = 250;
+const cy = 300;
+const cx = 300;
 const users = computed(() => {
   return [...props.usersInRoom.productOwnerList, ...props.usersInRoom.developerList];
 });
@@ -84,9 +84,8 @@ function leftForElement(index: number): string {
 <style scoped>
 .virtual-table {
   position: relative;
-  width: 600px;
-  height: 600px;
-  margin: 0 auto;
+  width: 37.5rem;
+  height: 37.5rem;
 }
 
 .seat {
@@ -95,10 +94,10 @@ function leftForElement(index: number): string {
 
 .table {
   position: absolute;
-  top: 19%;
-  left: 22%;
-  width: 300px;
-  height: 300px;
+  top: 25%;
+  left: 25%;
+  width: 350px;
+  height: 350px;
   background-color: #d7e9ff;
   border-radius: 50%;
   padding: 1rem;

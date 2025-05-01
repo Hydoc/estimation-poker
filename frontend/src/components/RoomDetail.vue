@@ -7,9 +7,9 @@ import {
   RoundState,
   type UserOverview,
 } from "@/components/types";
-import CommandCenter from "@/components/CommandCenter.vue";
 import { computed, ref } from "vue";
 import TableOverview from "@/components/TableOverview.vue";
+import DeveloperCommandCenter from "@/components/DeveloperCommandCenter.vue";
 
 type Props = {
   roomId: string;
@@ -44,8 +44,10 @@ const showSetRoomPasswordDialog = ref(false);
 const roomPassword = ref("");
 const showPassword = ref(false);
 const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
+const userIsDeveloper = computed(() => props.userRole === Role.Developer);
 const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 const roomIsLockedText = computed(() => (props.roomIsLocked ? "privater" : "öffentlicher"));
+const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
 
 async function writeToClipboard(text: string) {
   // @ts-ignore
@@ -172,36 +174,40 @@ function openRoom() {
     </v-row>
   </v-container>
 
-  <v-container>
-    <table-overview
-      :show-all-guesses="props.showAllGuesses"
-      :users-in-room="props.usersInRoom"
-      :has-developers-in-room="props.usersInRoom.developerList.length > 0"
-      :has-ticket-to-guess="props.ticketToGuess !== ''"
-      :round-state="props.roundState"
-      :user-is-product-owner="userIsProductOwner"
-      :developer-done="developerDone"
-      @estimate="emit('estimate', $event)"
-      @reveal="emit('reveal')"
-      @new-round="emit('new-round')"
-    />
+  <v-container fluid>
+    <v-row
+      align="center"
+      justify="center"
+    >
+      <table-overview
+        :show-all-guesses="props.showAllGuesses"
+        :users-in-room="props.usersInRoom"
+        :has-developers-in-room="props.usersInRoom.developerList.length > 0"
+        :has-ticket-to-guess="hasTicketToGuess"
+        :round-state="props.roundState"
+        :user-is-product-owner="userIsProductOwner"
+        :developer-done="developerDone"
+        @estimate="emit('estimate', $event)"
+        @reveal="emit('reveal')"
+        @new-round="emit('new-round')"
+      />
+    </v-row>
 
-    <v-row class="mt-15">
-      <v-col cols="12">
-        <command-center
-          :user-role="props.userRole"
-          :round-state="props.roundState"
-          :guess="props.guess"
-          :did-skip="props.didSkip"
-          :ticket-to-guess="props.ticketToGuess"
-          :has-developers-in-room="props.usersInRoom.developerList.length > 0"
-          :possible-guesses="props.possibleGuesses"
-          :show-all-guesses="props.showAllGuesses"
-          @estimate="emit('estimate', $event)"
-          @skip="emit('skip')"
-          @guess="emit('guess', $event)"
-        />
-      </v-col>
+    <v-row
+      align="center"
+      justify="center"
+      class="ml-16"
+    >
+      <developer-command-center
+        v-if="userIsDeveloper"
+        :show-all-guesses="props.showAllGuesses"
+        :guess="props.guess"
+        :did-skip="props.didSkip"
+        :has-ticket-to-guess="hasTicketToGuess"
+        :possible-guesses="props.possibleGuesses"
+        @guess="emit('guess', $event)"
+        @skip="emit('skip')"
+      />
     </v-row>
   </v-container>
   <v-snackbar

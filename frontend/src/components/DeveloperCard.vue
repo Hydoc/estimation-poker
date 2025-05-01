@@ -12,7 +12,7 @@ const props = withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-  <div>
+  <div class="developer-card">
     <div class="flip-card">
       <div :class="{'flip-card__inner': true, 'reveal': props.developerDone}">
         <div :class="{'flip-card__front': true, 'waiting-for-guess': !props.developerDone, 'guessed': props.developer.isDone }" />
@@ -29,6 +29,12 @@ const props = withDefaults(defineProps<Props>(), {
 </template>
 
 <style scoped>
+.developer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .flip-card {
   margin: 0 auto;
   width: 2rem;
