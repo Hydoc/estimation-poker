@@ -27,13 +27,11 @@ describe("DeveloperCard", () => {
     });
 
     it("should render when developer is done but it has not been revealed", () => {
-      const wrapper = createWrapper(
-        {
-          name: "Test Dev",
-          isDone: true,
-          role: "developer",
-        }
-      );
+      const wrapper = createWrapper({
+        name: "Test Dev",
+        isDone: true,
+        role: "developer",
+      });
       expect(wrapper.find(".reveal").exists()).to.be.false;
       expect(wrapper.find(".waiting-for-guess").exists()).to.be.false;
       expect(wrapper.find(".guessed").exists()).to.be.true;
@@ -45,45 +43,37 @@ describe("DeveloperCard", () => {
         name: "Test Dev",
         isDone: true,
         role: "developer",
-      }
-      const wrapper = createWrapper(
-        dev,
-        {
-          ...dev,
-          doSkip: false,
-          guess: 2,
-        },
-      );
+      };
+      const wrapper = createWrapper(dev, {
+        ...dev,
+        doSkip: false,
+        guess: 2,
+      });
       expect(wrapper.find(".reveal").exists()).to.be.true;
       expect(wrapper.find(".waiting-for-guess").exists()).to.be.false;
       expect(wrapper.find(".guessed").exists()).to.be.true;
       expect(wrapper.find(".flip-card__back > span").exists()).to.be.true;
       expect(wrapper.find(".flip-card__back > span").text()).equal("2");
     });
-    
+
     it("should render skip icon when round has been revealed and developer skipped", () => {
       const dev: Developer = {
         name: "Test Dev",
         isDone: true,
         role: "developer",
-      }
-      const wrapper = createWrapper(
-        dev,
-        {
-          ...dev,
-          doSkip: true,
-          guess: 0,
-        },
-      );
+      };
+      const wrapper = createWrapper(dev, {
+        ...dev,
+        doSkip: true,
+        guess: 0,
+      });
       expect(wrapper.find(".reveal").exists()).to.be.true;
       expect(wrapper.find(".waiting-for-guess").exists()).to.be.false;
       expect(wrapper.find(".guessed").exists()).to.be.true;
       expect(wrapper.findComponent(VIcon).exists()).to.be.true;
-      expect(wrapper.findComponent(VIcon).find("i").classes()).contains(
-        "mdi-coffee",
-      );
+      expect(wrapper.findComponent(VIcon).find("i").classes()).contains("mdi-coffee");
     });
-  })
+  });
 });
 
 function createWrapper(

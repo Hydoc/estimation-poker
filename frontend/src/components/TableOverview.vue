@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { type Developer, type DeveloperDone, type ProductOwner, RoundState, type UserOverview } from "./types";
+import {
+  type Developer,
+  type DeveloperDone,
+  type ProductOwner,
+  RoundState,
+  type UserOverview,
+} from "./types";
 import DeveloperCard from "@/components/DeveloperCard.vue";
 import ProductOwnerCommandCenter from "@/components/ProductOwnerCommandCenter.vue";
 
@@ -25,7 +31,7 @@ const users = computed(() => {
   return [...props.usersInRoom.productOwnerList, ...props.usersInRoom.developerList];
 });
 
-function isDeveloper(user: (ProductOwner | Developer)): user is Developer {
+function isDeveloper(user: ProductOwner | Developer): user is Developer {
   return user.role === "developer";
 }
 

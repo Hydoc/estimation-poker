@@ -8,14 +8,19 @@ type Props = {
 const props = withDefaults(defineProps<Props>(), {
   developerDone: undefined,
 });
-
 </script>
 
 <template>
   <div class="developer-card">
     <div class="flip-card">
-      <div :class="{'flip-card__inner': true, 'reveal': props.developerDone}">
-        <div :class="{'flip-card__front': true, 'waiting-for-guess': !props.developer.isDone, 'guessed': props.developer.isDone }" />
+      <div :class="{ 'flip-card__inner': true, reveal: props.developerDone }">
+        <div
+          :class="{
+            'flip-card__front': true,
+            'waiting-for-guess': !props.developer.isDone,
+            guessed: props.developer.isDone,
+          }"
+        />
         <div class="flip-card__back">
           <span v-if="props.developerDone">
             <v-icon v-if="props.developerDone.doSkip">mdi-coffee</v-icon>
@@ -74,7 +79,7 @@ const props = withDefaults(defineProps<Props>(), {
   justify-content: center;
   align-items: center;
   transform: rotateY(180deg);
-  border: 2px solid #2196F3;
+  border: 2px solid #2196f3;
   background-color: white;
 }
 
@@ -83,7 +88,6 @@ const props = withDefaults(defineProps<Props>(), {
 }
 
 .guessed {
-  background-color: #2196F3;
+  background-color: #2196f3;
 }
-
 </style>

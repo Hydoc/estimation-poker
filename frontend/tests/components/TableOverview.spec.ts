@@ -60,7 +60,7 @@ describe("TableOverview", () => {
         role: "developer",
       } as Developer);
       expect(wrapper.findAllComponents(DeveloperCard).at(0).props("developerDone")).to.be.undefined;
-      
+
       expect(wrapper.findAll(".seat > span")).length(1);
       expect(wrapper.findAll(".seat > span").at(0).text()).equal("Test PO");
     });
@@ -73,7 +73,7 @@ describe("TableOverview", () => {
       expect(wrapper.findAllComponents(DeveloperCard)).length(1);
     });
   });
-  
+
   describe("functionality", () => {
     it("should emit estimate when product owner command center emits estimate", () => {
       const wrapper = createWrapper(
@@ -87,7 +87,7 @@ describe("TableOverview", () => {
         false,
         true,
       );
-      
+
       wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("estimate", "WH-12");
       expect(wrapper.emitted("estimate")).deep.equal([["WH-12"]]);
     });
@@ -125,7 +125,7 @@ describe("TableOverview", () => {
       wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("new-round");
       expect(wrapper.emitted("new-round")).deep.equal([[]]);
     });
-  })
+  });
 });
 
 function createWrapper(

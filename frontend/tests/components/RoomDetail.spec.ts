@@ -108,7 +108,7 @@ describe("RoomDetail", () => {
       });
       expect(wrapper.findComponent(TableOverview).props("hasTicketToGuess")).to.be.false;
       expect(wrapper.findComponent(TableOverview).props("roundState")).equal(RoundState.Waiting);
-      
+
       expect(wrapper.findComponent(DeveloperCommandCenter).exists()).to.be.true;
       expect(wrapper.findComponent(DeveloperCommandCenter).props("showAllGuesses")).to.be.false;
       expect(wrapper.findComponent(DeveloperCommandCenter).props("guess")).equal(0);
