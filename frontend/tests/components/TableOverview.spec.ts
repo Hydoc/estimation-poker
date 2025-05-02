@@ -66,9 +66,66 @@ describe("TableOverview", () => {
     });
 
     it("should render as developer", () => {
-      // TODO
+      const wrapper = createWrapper();
+
+      expect(wrapper.findComponent(ProductOwnerCommandCenter).exists()).to.be.false;
+      expect(wrapper.text()).contains("Warten auf Ticket…");
+      expect(wrapper.findAllComponents(DeveloperCard)).length(1);
     });
   });
+  
+  describe("functionality", () => {
+    it("should emit estimate when product owner command center emits estimate", () => {
+      const wrapper = createWrapper(
+        {
+          productOwnerList: [{ name: "Test PO", role: "product-owner" } as ProductOwner],
+          developerList: [{ name: "Test Dev", isDone: false, role: "developer" } as Developer],
+        },
+        RoundState.Waiting,
+        [] as DeveloperDone[],
+        false,
+        false,
+        true,
+      );
+      
+      wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("estimate", "WH-12");
+      expect(wrapper.emitted("estimate")).deep.equal([["WH-12"]]);
+    });
+
+    it("should emit reveal when product owner command center emits reveal", () => {
+      const wrapper = createWrapper(
+        {
+          productOwnerList: [{ name: "Test PO", role: "product-owner" } as ProductOwner],
+          developerList: [{ name: "Test Dev", isDone: false, role: "developer" } as Developer],
+        },
+        RoundState.Waiting,
+        [] as DeveloperDone[],
+        false,
+        false,
+        true,
+      );
+
+      wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("reveal");
+      expect(wrapper.emitted("reveal")).deep.equal([[]]);
+    });
+
+    it("should emit new-round when product owner command center emits new-round", () => {
+      const wrapper = createWrapper(
+        {
+          productOwnerList: [{ name: "Test PO", role: "product-owner" } as ProductOwner],
+          developerList: [{ name: "Test Dev", isDone: false, role: "developer" } as Developer],
+        },
+        RoundState.Waiting,
+        [] as DeveloperDone[],
+        false,
+        false,
+        true,
+      );
+
+      wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("new-round");
+      expect(wrapper.emitted("new-round")).deep.equal([[]]);
+    });
+  })
 });
 
 function createWrapper(
