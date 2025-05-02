@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import DeveloperCommandCenter from "../../src/components/DeveloperCommandCenter.vue";
 import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
-import { VBtn } from "vuetify/components";
+import { VBtn, VIcon } from "vuetify/components";
 import * as directives from "vuetify/directives";
 
 let vuetify: ReturnType<typeof createVuetify>;
@@ -36,7 +36,7 @@ describe("DeveloperCommandCenter", () => {
         },
       });
 
-      expect(wrapper.findAll(".card")).length(5);
+      expect(wrapper.findAll(".card")).length(6);
       expect(wrapper.findAll(".card").at(0).find("h2").text()).equal("1");
       expect(wrapper.findAll(".card").at(0).find("span").text()).equal("Bis zu 4 Std.");
 
@@ -51,6 +51,9 @@ describe("DeveloperCommandCenter", () => {
 
       expect(wrapper.findAll(".card").at(4).find("h2").text()).equal("5");
       expect(wrapper.findAll(".card").at(4).find("span").text()).equal("Mehr als 5 Tage");
+      
+      expect(wrapper.findAll(".card").at(5).findComponent(VIcon).find("i").classes()).contains("mdi-coffee");
+      expect(wrapper.findAll(".card").at(5).find("span").text()).equal("Runde aussetzen");
     });
 
     it("should render with correct guess when developer did guess", async () => {
@@ -96,9 +99,9 @@ describe("DeveloperCommandCenter", () => {
           plugins: [vuetify],
         },
       });
-
-      expect(wrapper.findComponent(VBtn).props("icon")).equal("mdi-coffee-outline");
-      expect(wrapper.findComponent(VBtn).props("color")).equal("#38220f");
+      
+      expect(wrapper.find(".active-guess").findComponent(VIcon).find("i").classes()).contains("mdi-coffee");
+      expect(wrapper.find(".active-guess").find("span").text()).equal("Runde aussetzen");
     });
   });
 
@@ -124,13 +127,13 @@ describe("DeveloperCommandCenter", () => {
       });
 
       await wrapper.findAll(".card").at(2).trigger("click");
-      expect(wrapper.emitted("guess")).toEqual([[3]]);
+      expect(wrapper.emitted("guess")).deep.equal([[3]]);
 
       await wrapper.findAll(".card").at(3).trigger("click");
-      expect(wrapper.emitted("guess")).toEqual([[3], [4]]);
+      expect(wrapper.emitted("guess")).deep.equal([[3], [4]]);
     });
 
-    it("should emit skip on skip button press", async () => {
+    it("should emit skip on skip card press", async () => {
       const wrapper = mount(DeveloperCommandCenter, {
         props: {
           guess: 0,
@@ -150,7 +153,7 @@ describe("DeveloperCommandCenter", () => {
         },
       });
 
-      await wrapper.findComponent(VBtn).trigger("click");
+      await wrapper.findAll(".card").at(5).trigger("click");
       expect(wrapper.emitted("skip")).deep.equal([[]]);
     });
   });
