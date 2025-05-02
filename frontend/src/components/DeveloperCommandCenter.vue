@@ -64,8 +64,8 @@ function skip() {
   justify-content: center;
   border-radius: 0.5rem;
   transition: 0.2s;
-  min-height: 13rem;
-  min-width: 9rem;
+  min-height: 11rem;
+  min-width: 7rem;
 }
 
 .card:not(:first-child) {

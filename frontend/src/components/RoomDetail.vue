@@ -195,7 +195,7 @@ function openRoom() {
     <v-row
       align="center"
       justify="center"
-      class="ml-16"
+      class="ml-16 mt-16"
     >
       <developer-command-center
         v-if="userIsDeveloper"
