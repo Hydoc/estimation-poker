@@ -51,8 +51,10 @@ describe("DeveloperCommandCenter", () => {
 
       expect(wrapper.findAll(".card").at(4).find("h2").text()).equal("5");
       expect(wrapper.findAll(".card").at(4).find("span").text()).equal("Mehr als 5 Tage");
-      
-      expect(wrapper.findAll(".card").at(5).findComponent(VIcon).find("i").classes()).contains("mdi-coffee");
+
+      expect(wrapper.findAll(".card").at(5).findComponent(VIcon).find("i").classes()).contains(
+        "mdi-coffee",
+      );
       expect(wrapper.findAll(".card").at(5).find("span").text()).equal("Runde aussetzen");
     });
 
@@ -99,8 +101,10 @@ describe("DeveloperCommandCenter", () => {
           plugins: [vuetify],
         },
       });
-      
-      expect(wrapper.find(".active-guess").findComponent(VIcon).find("i").classes()).contains("mdi-coffee");
+
+      expect(wrapper.find(".active-guess").findComponent(VIcon).find("i").classes()).contains(
+        "mdi-coffee",
+      );
       expect(wrapper.find(".active-guess").find("span").text()).equal("Runde aussetzen");
     });
   });

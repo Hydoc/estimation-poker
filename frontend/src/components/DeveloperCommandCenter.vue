@@ -41,7 +41,7 @@ function skip() {
           <span class="guess-description">{{ possibleGuess.description }}</span>
         </div>
         <div
-          :class="{card: true, 'active-guess': props.didSkip}"
+          :class="{ card: true, 'active-guess': props.didSkip }"
           @click="skip"
         >
           <h2><v-icon>mdi-coffee</v-icon></h2>
