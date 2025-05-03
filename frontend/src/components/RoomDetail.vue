@@ -44,7 +44,6 @@ const snackbarText = ref("");
 const showSetRoomPasswordDialog = ref(false);
 const roomPassword = ref("");
 const showPassword = ref(false);
-const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
 const userIsDeveloper = computed(() => props.userRole === Role.Developer);
 const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 const roomIsLockedText = computed(() => (props.roomIsLocked ? "privater" : "öffentlicher"));
@@ -181,39 +180,38 @@ function openRoom() {
   </v-container>
 
   <v-container fluid>
-    <v-row
-      align="center"
-      justify="center"
-    >
-      <table-overview
-        :show-all-guesses="props.showAllGuesses"
-        :users-in-room="props.usersInRoom"
-        :has-ticket-to-guess="hasTicketToGuess"
-        :round-state="props.roundState"
-        :user-is-product-owner="userIsProductOwner"
-        :developer-done="developerDone"
-        @estimate="emit('estimate', $event)"
-        @reveal="emit('reveal')"
-        @new-round="emit('new-round')"
-      />
-    </v-row>
+    <v-col cols="12">
+      <v-row>
+        <table-overview
+          :show-all-guesses="props.showAllGuesses"
+          :users-in-room="props.usersInRoom"
+          :round-state="props.roundState"
+          :user-role="props.userRole"
+          :developer-done="developerDone"
+          :ticket-to-guess="props.ticketToGuess"
+          @estimate="emit('estimate', $event)"
+          @reveal="emit('reveal')"
+          @new-round="emit('new-round')"
+        />
+      </v-row>
 
-    <v-row
-      align="center"
-      justify="center"
-      class="ml-16 mt-16"
-    >
-      <developer-command-center
-        v-if="userIsDeveloper"
-        :show-all-guesses="props.showAllGuesses"
-        :guess="props.guess"
-        :did-skip="props.didSkip"
-        :has-ticket-to-guess="hasTicketToGuess"
-        :possible-guesses="props.possibleGuesses"
-        @guess="emit('guess', $event)"
-        @skip="emit('skip')"
-      />
-    </v-row>
+      <v-row
+        align="center"
+        justify="center"
+      >
+        <developer-command-center
+          v-if="userIsDeveloper"
+          class="developer-command-center"
+          :show-all-guesses="props.showAllGuesses"
+          :guess="props.guess"
+          :did-skip="props.didSkip"
+          :has-ticket-to-guess="hasTicketToGuess"
+          :possible-guesses="props.possibleGuesses"
+          @guess="emit('guess', $event)"
+          @skip="emit('skip')"
+        />
+      </v-row>
+    </v-col>
   </v-container>
   <v-snackbar
     v-model="showSnackbar"
@@ -223,4 +221,9 @@ function openRoom() {
   </v-snackbar>
 </template>
 
-<style scoped></style>
+<style scoped>
+.developer-command-center {
+  margin-left: 2rem;
+  margin-top: 8rem;
+}
+</style>

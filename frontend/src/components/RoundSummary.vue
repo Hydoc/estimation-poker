@@ -19,8 +19,7 @@ const stats = computed(() => {
 });
 
 const mostGuessedPercentage = computed(() => {
-  const guess = Math.max(...Object.keys(stats.value).map((it) => parseInt(it)));
-  const amount = stats.value[guess];
+  const amount = Math.max(...Object.values(stats.value));
   return (amount / totalDevelopers.value) * 100;
 });
 </script>

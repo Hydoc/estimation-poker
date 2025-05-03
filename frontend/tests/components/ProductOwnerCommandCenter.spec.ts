@@ -30,6 +30,7 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
+          actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [{ name: "Test", isDone: false, role: "developer" } as Developer],
         },
@@ -58,6 +59,7 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
+          actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [],
         },
@@ -75,6 +77,7 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.InProgress,
           hasTicketToGuess: true,
+          actualTicketToGuess: "WH-2",
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -89,11 +92,9 @@ describe("ProductOwnerCommandCenter", () => {
       expect(wrapper.findComponent(VForm).exists()).to.be.false;
 
       expect(wrapper.findAllComponents(VBtn)).length(1);
-      expect(wrapper.findComponent(VBtn).text()).equal("Auflösen");
-      expect(wrapper.findComponent(VBtn).props("loading")).to.be.true;
+      expect(wrapper.findComponent(VBtn).text()).equal("WH-2 auflösen");
       expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
-      expect(wrapper.findComponent(VBtn).props("color")).equal("blue-grey");
-      expect(wrapper.findComponent(VBtn).props("width")).equal("100%");
+      expect(wrapper.findComponent(VBtn).props("color")).equal("teal");
 
       expect(wrapper.findComponent(VProgressCircular).exists()).to.be.true;
       expect(wrapper.findComponent(VProgressCircular).props("modelValue")).equal(50);
@@ -104,7 +105,8 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.End,
           hasTicketToGuess: true,
-          showAllGuesses: false,
+          actualTicketToGuess: "WH-2",
+          showAllGuesses: true,
           developerList: [
             { name: "Test", isDone: true, role: "developer" } as Developer,
             { name: "Test 2", isDone: true, role: "developer" } as Developer,
@@ -118,10 +120,7 @@ describe("ProductOwnerCommandCenter", () => {
       expect(wrapper.findComponent(VForm).exists()).to.be.false;
 
       expect(wrapper.findAllComponents(VBtn)).length(1);
-      expect(wrapper.findComponent(VBtn).text()).equal("Auflösen");
-      expect(wrapper.findComponent(VBtn).props("loading")).to.be.false;
-      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.false;
-
+      expect(wrapper.findComponent(VBtn).text()).equal("Neue Runde");
       expect(wrapper.findComponent(VProgressCircular).exists()).to.be.false;
     });
   });
@@ -132,6 +131,7 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
+          actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -155,6 +155,7 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
+          actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -179,6 +180,7 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
+          actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -203,6 +205,7 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
+          actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -227,6 +230,7 @@ describe("ProductOwnerCommandCenter", () => {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
+          actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,

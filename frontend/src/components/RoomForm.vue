@@ -7,7 +7,7 @@ type Props = {
   isRoomIdDisabled?: boolean;
 };
 
-const maxAllowedChars = 25;
+const maxAllowedChars = 15;
 const name = defineModel("name", { required: true, type: String, default: "" });
 const roomId = defineModel("roomId", { required: true, type: String, default: "" });
 const role = defineModel("role", { required: true, type: String, default: Role.Empty });

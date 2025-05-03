@@ -1,15 +1,28 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 import { mount } from "@vue/test-utils";
 import TableOverview from "../../src/components/TableOverview.vue";
-import { Developer, DeveloperDone, ProductOwner, RoundState } from "../../src/components/types";
+import {
+  Developer,
+  DeveloperDone,
+  ProductOwner,
+  Role,
+  RoundState,
+} from "../../src/components/types";
 import ProductOwnerCommandCenter from "../../src/components/ProductOwnerCommandCenter.vue";
 import DeveloperCard from "../../src/components/DeveloperCard.vue";
 
 let vuetify: ReturnType<typeof createVuetify>;
 
+const ResizeObserverMock = vi.fn(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 beforeEach(() => {
   vuetify = createVuetify({
     components,
@@ -27,8 +40,8 @@ describe("TableOverview", () => {
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
-        false,
-        true,
+        Role.ProductOwner,
+        "",
       );
 
       expect(wrapper.find(".virtual-table").exists()).to.be.true;
@@ -48,9 +61,9 @@ describe("TableOverview", () => {
       expect(wrapper.text()).not.contains("Warten auf Ticket…");
 
       expect(wrapper.findAll(".seat")).length(2);
-      expect(wrapper.findAll(".seat").at(0).attributes("style")).equal("left: 300px; top: 50px;");
+      expect(wrapper.findAll(".seat").at(0).attributes("style")).equal("left: 285px; top: 50px;");
       expect(wrapper.findAll(".seat").at(1).attributes("style")).equal(
-        "left: 300.00000000000006px; top: 550px;",
+        "left: 283.00000000000006px; top: 550px;",
       );
 
       expect(wrapper.findAllComponents(DeveloperCard)).length(1);
@@ -84,8 +97,8 @@ describe("TableOverview", () => {
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
-        false,
-        true,
+        Role.ProductOwner,
+        "",
       );
 
       wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("estimate", "WH-12");
@@ -101,8 +114,8 @@ describe("TableOverview", () => {
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
-        false,
-        true,
+        Role.ProductOwner,
+        "",
       );
 
       wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("reveal");
@@ -118,8 +131,8 @@ describe("TableOverview", () => {
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
-        false,
-        true,
+        Role.ProductOwner,
+        "WH-2",
       );
 
       wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("new-round");
@@ -136,8 +149,8 @@ function createWrapper(
   roundState = RoundState.Waiting,
   developerDone = [] as DeveloperDone[],
   showAllGuesses = false,
-  hasTicketToGuess = false,
-  userIsProductOwner = false,
+  role = Role.Developer,
+  ticketToGuess = "",
 ) {
   return mount(TableOverview, {
     props: {
@@ -145,8 +158,8 @@ function createWrapper(
       roundState,
       developerDone,
       showAllGuesses,
-      hasTicketToGuess,
-      userIsProductOwner,
+      userRole: role,
+      ticketToGuess,
     },
     global: {
       plugins: [vuetify],
