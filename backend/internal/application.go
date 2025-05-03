@@ -180,8 +180,8 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 
 	name := request.URL.Query().Get("name")
 
-	if utf8.RuneCountInString(name) > 25 || utf8.RuneCountInString(roomId) > 25 {
-		app.writeJson(writer, http.StatusBadRequest, envelope{"message": "name and room must be smaller than 25"}, nil)
+	if utf8.RuneCountInString(name) > 15 || utf8.RuneCountInString(roomId) > 15 {
+		app.writeJson(writer, http.StatusBadRequest, envelope{"message": "name and room must be smaller or equal to 15"}, nil)
 		return
 	}
 

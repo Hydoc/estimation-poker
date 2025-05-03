@@ -140,7 +140,9 @@ describe("TheActiveRoomOverview", () => {
         .findComponent(VBtn)
         .trigger("click");
 
+      // @ts-ignore
       wrapper.vm.name = "Test";
+      // @ts-ignore
       wrapper.vm.role = Role.Developer;
 
       wrapper.findComponent(RoomForm).vm.$emit("submit");
