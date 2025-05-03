@@ -94,7 +94,10 @@ function doLetEstimate() {
     >
       Neue Runde
     </v-btn>
-    <p v-else-if="!hasDevelopersInRoom">
+    <p
+      v-else-if="!hasDevelopersInRoom"
+      class="text-center"
+    >
       Warten auf Entwickler...
     </p>
   </v-container>

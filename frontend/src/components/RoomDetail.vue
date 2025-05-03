@@ -10,6 +10,7 @@ import {
 import { computed, ref } from "vue";
 import TableOverview from "@/components/TableOverview.vue";
 import DeveloperCommandCenter from "@/components/DeveloperCommandCenter.vue";
+import RoundSummary from "@/components/RoundSummary.vue";
 
 type Props = {
   roomId: string;
@@ -118,6 +119,11 @@ function openRoom() {
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <round-summary
+    v-if="props.showAllGuesses"
+    :developer-done="props.developerDone"
+  />
 
   <v-container>
     <v-row>

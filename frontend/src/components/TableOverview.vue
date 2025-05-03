@@ -97,7 +97,7 @@ function leftForElement(index: number): string {
 .table {
   position: absolute;
   top: 25%;
-  left: 25%;
+  left: 27%;
   width: 350px;
   height: 350px;
   background-color: #d7e9ff;
