@@ -92,6 +92,27 @@ describe("RoomForm", () => {
       expect(wrapper.findComponent(VBtn).props("disabled")).to.be.false;
     });
 
+    it("should emit submit when form is submitted", async () => {
+      const wrapper = mount(RoomForm, {
+        props: {
+          name: "",
+          roomId: "",
+          role: Role.Empty,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+      expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
+
+      await wrapper.findAllComponents(VTextField).at(0).setValue("Blub");
+      await wrapper.findAllComponents(VTextField).at(1).setValue("My name");
+      await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
+
+      await wrapper.findComponent(VForm).trigger("submit");
+      expect(wrapper.emitted("submit")).deep.equal([[]]);
+    });
+
     it("should show validation messages when fields are cleared", async () => {
       const wrapper = mount(RoomForm, {
         props: {
@@ -116,6 +137,33 @@ describe("RoomForm", () => {
       await nextTick();
       expect(wrapper.findAllComponents(VTextField).at(1).text()).contains(
         "Fehler: Hier müsste eigentlich was stehen",
+      );
+    });
+
+    it("should show validation message when text is too long", async () => {
+      const wrapper = mount(RoomForm, {
+        props: {
+          name: "",
+          roomId: "",
+          role: Role.Empty,
+        },
+        global: {
+          plugins: [vuetify],
+        },
+      });
+
+      await wrapper.findAllComponents(VTextField).at(0).setValue("a".repeat(16));
+      await nextTick();
+      await nextTick();
+      expect(wrapper.findAllComponents(VTextField).at(0).text()).contains(
+        "Fehler: Maximallänge von 15 darf nicht überschritten werden",
+      );
+
+      await wrapper.findAllComponents(VTextField).at(1).setValue("a".repeat(16));
+      await nextTick();
+      await nextTick();
+      expect(wrapper.findAllComponents(VTextField).at(1).text()).contains(
+        "Fehler: Maximallänge von 15 darf nicht überschritten werden",
       );
     });
   });

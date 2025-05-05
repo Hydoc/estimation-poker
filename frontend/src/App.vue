@@ -9,13 +9,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <header>
-    <div class="wrapper">
-      <h1>Estimation Poker</h1>
-    </div>
-  </header>
+  <v-app>
+    <header>
+      <v-app-bar :elevation="2">
+        <v-app-bar-title>Estimation Poker</v-app-bar-title>
+      </v-app-bar>
+    </header>
 
-  <RouterView />
+    <RouterView class="mt-12" />
+  </v-app>
 </template>
-
-<style scoped></style>

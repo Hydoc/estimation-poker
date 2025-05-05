@@ -83,8 +83,11 @@ describe("TheRoomChoice", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.role = Role.Developer;
+      // @ts-ignore
       wrapper.vm.name = "my name";
+      // @ts-ignore
       wrapper.vm.roomId = "test";
 
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
@@ -99,7 +102,7 @@ describe("TheRoomChoice", () => {
       await nextTick();
       await nextTick();
 
-      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
+      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/test");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
       expect(websocketStore.connect).toHaveBeenNthCalledWith(1, "my name", "developer", "test");
     });
@@ -112,8 +115,11 @@ describe("TheRoomChoice", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.role = Role.Developer;
+      // @ts-ignore
       wrapper.vm.name = "my name";
+      // @ts-ignore
       wrapper.vm.roomId = "test";
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
       await nextTick();
@@ -143,8 +149,11 @@ describe("TheRoomChoice", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.role = Role.Developer;
+      // @ts-ignore
       wrapper.vm.name = "my name";
+      // @ts-ignore
       wrapper.vm.roomId = "test";
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
       await nextTick();
@@ -191,7 +200,7 @@ describe("TheRoomChoice", () => {
       await nextTick();
       await nextTick();
 
-      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
+      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/test");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");
       expect(websocketStore.connect).toHaveBeenNthCalledWith(1, "my name", "developer", "test");
     });
@@ -268,8 +277,11 @@ describe("TheRoomChoice", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.role = Role.Developer;
+      // @ts-ignore
       wrapper.vm.name = "my name";
+      // @ts-ignore
       wrapper.vm.roomId = "test";
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
 
@@ -285,9 +297,13 @@ describe("TheRoomChoice", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.role = Role.Developer;
+      // @ts-ignore
       wrapper.vm.name = "my name";
+      // @ts-ignore
       wrapper.vm.roomId = "test";
+      // @ts-ignore
       wrapper.vm.passwordForRoom = "top secret";
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
       await nextTick();
@@ -314,9 +330,13 @@ describe("TheRoomChoice", () => {
         },
       });
 
+      // @ts-ignore
       wrapper.vm.role = Role.Developer;
+      // @ts-ignore
       wrapper.vm.name = "my name";
+      // @ts-ignore
       wrapper.vm.roomId = "test";
+      // @ts-ignore
       wrapper.vm.passwordForRoom = "top secret";
       await wrapper.findComponent(RoomForm).vm.$emit("submit");
       await nextTick();
@@ -336,7 +356,7 @@ describe("TheRoomChoice", () => {
       await nextTick();
       await nextTick();
 
-      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room");
+      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/test");
       expect(websocketStore.isRoomLocked).toHaveBeenNthCalledWith(1, "test");
       expect(websocketStore.passwordMatchesRoom).toHaveBeenNthCalledWith(1, "test", "top secret");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "my name", "test");

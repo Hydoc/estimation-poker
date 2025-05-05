@@ -63,7 +63,7 @@ async function connect() {
     return;
   }
   await websocketStore.connect(name.value, role.value, roomId.value);
-  await router.push("/room");
+  await router.push(`/room/${roomId.value}`);
 }
 
 async function setFieldsAndConnect(roomToJoin: string, passedName: string, passedRole: Role) {
