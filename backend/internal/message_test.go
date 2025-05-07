@@ -93,6 +93,44 @@ func TestMessage_ToJson(t *testing.T) {
 				"type": "you-skipped",
 			},
 		},
+		{
+			name: "reveal-round",
+			message: newRevealRound(map[*Client]bool{
+				&Client{
+					Name:   "Test 1",
+					Role:   Developer,
+					Guess:  2,
+					DoSkip: false,
+				}: true,
+				&Client{
+					Name: "Test 2",
+					Role: ProductOwner,
+				}: true,
+				&Client{
+					Name:   "Test 3",
+					Role:   Developer,
+					Guess:  0,
+					DoSkip: true,
+				}: true,
+			}),
+			expectedDTO: messageDTO{
+				"type": "reveal-round",
+				"data": []map[string]any{
+					{
+						"name":   "Test 1",
+						"role":   Developer,
+						"guess":  2,
+						"doSkip": false,
+					},
+					{
+						"name":   "Test 3",
+						"role":   Developer,
+						"guess":  0,
+						"doSkip": true,
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -100,7 +138,7 @@ func TestMessage_ToJson(t *testing.T) {
 			got := test.message.ToJson()
 			want := test.expectedDTO
 			if !reflect.DeepEqual(got, want) {
-				t.Errorf("expected %v, got %v", want, got)
+				t.Errorf("expected %#v, got %#v", want, got)
 			}
 		})
 	}

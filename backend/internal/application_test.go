@@ -382,6 +382,28 @@ func TestApplication_handleWs(t *testing.T) {
 			expectedRoomId: "1",
 			expectedRole:   ProductOwner,
 		},
+		{
+			name:  "not registering due to name too long",
+			url:   "/api/estimation/room/1/product-owner?name=mynameiswaytoolongitshouldnotbecreated",
+			rooms: make(map[RoomId]*Room),
+			expectedError: map[string]string{
+				"message": "name and room must be smaller or equal to 15",
+			},
+			expectedStatus: 400,
+			expectedRoomId: "1",
+			expectedRole:   ProductOwner,
+		},
+		{
+			name:  "not registering due to roomId too long",
+			url:   "/api/estimation/room/whateverthatroomisitiswaytoolong/product-owner?name=nameok",
+			rooms: make(map[RoomId]*Room),
+			expectedError: map[string]string{
+				"message": "name and room must be smaller or equal to 15",
+			},
+			expectedStatus: 400,
+			expectedRoomId: "1",
+			expectedRole:   ProductOwner,
+		},
 	}
 
 	for _, test := range tests {
