@@ -109,9 +109,11 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 		t.Errorf("want room id %v, got %v", roomId, gotId)
 	}
 
+	room.clientMu.Lock()
 	if _, ok := room.clients[client]; ok {
 		t.Error("expected room not to have client")
 	}
+	room.clientMu.Unlock()
 }
 
 func TestRoom_Run_BroadcastEstimate(t *testing.T) {
