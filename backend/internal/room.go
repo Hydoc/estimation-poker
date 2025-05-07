@@ -1,14 +1,18 @@
 package internal
 
 import (
+	"log"
+	"sync"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 )
 
 type RoomId string
 
 type Room struct {
+	clientMu sync.Mutex
+
 	id             RoomId
 	inProgress     bool
 	leave          chan *Client
@@ -88,7 +92,9 @@ func (room *Room) Run() {
 	for {
 		select {
 		case client := <-room.join:
+			room.clientMu.Lock()
 			room.clients[client] = true
+			room.clientMu.Unlock()
 		case client := <-room.leave:
 			if _, ok := room.clients[client]; ok {
 				delete(room.clients, client)

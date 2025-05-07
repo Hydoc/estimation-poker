@@ -2,12 +2,13 @@ package internal
 
 import (
 	"bytes"
-	"github.com/google/uuid"
 	"log"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestNewRoom(t *testing.T) {
@@ -77,9 +78,11 @@ func TestRoom_Run_RegisteringAClient(t *testing.T) {
 
 	room.join <- client
 
+	room.clientMu.Lock()
 	if _, ok := room.clients[client]; !ok {
 		t.Error("expected room to have client")
 	}
+	room.clientMu.Unlock()
 }
 
 func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
