@@ -150,13 +150,13 @@ func (client *Client) AsReveal() map[string]any {
 
 func (client *Client) toJson() userDTO {
 	if client.Role == Developer {
-		return map[string]interface{}{
+		return map[string]any{
 			"name":   client.Name,
 			"role":   client.Role,
 			"isDone": client.Guess > 0 || client.DoSkip,
 		}
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"name": client.Name,
 		"role": client.Role,
 	}

@@ -10,7 +10,7 @@ const (
 	reveal    = "reveal"
 )
 
-type messageDTO map[string]interface{}
+type messageDTO map[string]any
 
 type message interface {
 	ToJson() messageDTO
@@ -48,12 +48,12 @@ type youGuessed struct {
 type youSkipped struct{}
 
 func (leave leave) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "leave",
 	}
 }
 func (incMessage clientMessage) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": incMessage.Type,
 		"data": incMessage.Data,
 	}
@@ -64,19 +64,19 @@ func (incMessage clientMessage) isEstimate() bool {
 }
 
 func (join join) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "join",
 	}
 }
 
 func (devGuessed developerGuessed) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "developer-guessed",
 	}
 }
 
 func (s skip) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "developer-skipped",
 	}
 }
@@ -94,39 +94,39 @@ func (rOpened roomOpened) ToJson() messageDTO {
 }
 
 func (everyOneGuessed everyoneIsDone) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "everyone-done",
 	}
 }
 
 func (resetRound resetRound) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "reset-round",
 	}
 }
 
 func (youGuessed youGuessed) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "you-guessed",
 		"data": youGuessed.guess,
 	}
 }
 
 func (youSkipped youSkipped) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "you-skipped",
 	}
 }
 
 func (revealRound revealRound) ToJson() messageDTO {
 	out := []map[string]any{}
-	for client, _ := range revealRound.clients {
+	for client := range revealRound.clients {
 		if client.Role == Developer {
 			out = append(out, client.AsReveal())
 		}
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"type": "reveal-round",
 		"data": out,
 	}

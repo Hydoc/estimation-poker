@@ -96,17 +96,17 @@ func TestMessage_ToJson(t *testing.T) {
 		{
 			name: "reveal-round",
 			message: newRevealRound(map[*Client]bool{
-				&Client{
+				{
 					Name:   "Test 1",
 					Role:   Developer,
 					Guess:  2,
 					DoSkip: false,
 				}: true,
-				&Client{
+				{
 					Name: "Test 2",
 					Role: ProductOwner,
 				}: true,
-				&Client{
+				{
 					Name:   "Test 3",
 					Role:   Developer,
 					Guess:  0,

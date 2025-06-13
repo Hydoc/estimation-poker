@@ -21,7 +21,7 @@ var upgrader = &websocket.Upgrader{}
 type failingMessage struct{}
 
 func (msg failingMessage) ToJson() messageDTO {
-	return map[string]interface{}{
+	return map[string]any{
 		"b": make(chan int),
 	}
 }
