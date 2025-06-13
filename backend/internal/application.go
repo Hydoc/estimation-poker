@@ -8,12 +8,15 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
 )
 
 type Application struct {
+	roomMu sync.Mutex
+
 	logger      *slog.Logger
 	upgrader    *websocket.Upgrader
 	guessConfig *GuessConfig
@@ -37,6 +40,9 @@ func (app *Application) withRequiredQueryParam(param string, next http.HandlerFu
 }
 
 func (app *Application) handleRoomAuthenticate(writer http.ResponseWriter, request *http.Request) {
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
+
 	defer request.Body.Close()
 	roomId := request.PathValue("id")
 	actualRoom, ok := app.rooms[RoomId(roomId)]
@@ -64,6 +70,9 @@ func (app *Application) handleRoomAuthenticate(writer http.ResponseWriter, reque
 }
 
 func (app *Application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
+
 	roomId := request.PathValue("id")
 	username := request.PathValue("username")
 	actualRoom, ok := app.rooms[RoomId(roomId)]
@@ -98,6 +107,9 @@ func (app *Application) handlePossibleGuesses(writer http.ResponseWriter, _ *htt
 }
 
 func (app *Application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
+
 	roomId := request.PathValue("id")
 	actualRoom, ok := app.rooms[RoomId(roomId)]
 	if !ok {
@@ -114,6 +126,8 @@ func (app *Application) handleFetchRoomState(writer http.ResponseWriter, request
 }
 
 func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
 	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
@@ -146,6 +160,9 @@ func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
 	roomId := request.PathValue("id")
 
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
+
 	var usersInRoom = map[string][]userDTO{
 		"productOwnerList": {},
 		"developerList":    {},
@@ -176,6 +193,9 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 }
 
 func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
+
 	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
@@ -217,6 +237,8 @@ func (app *Application) ListenForRoomDestroy() {
 	for {
 		select {
 		case roomId := <-app.destroyRoom:
+			app.roomMu.Lock()
+			defer app.roomMu.Unlock()
 			if _, ok := app.rooms[roomId]; ok {
 				delete(app.rooms, roomId)
 			}
