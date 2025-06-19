@@ -8,6 +8,9 @@ import (
 	"maps"
 	"net/http"
 	"strings"
+
+	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
 )
 
 type envelope map[string]any
@@ -104,10 +107,13 @@ func (app *application) readJSON(writer http.ResponseWriter, request *http.Reque
 	return nil
 }
 
-func (app *application) readIdParam(request *http.Request) (string, error) {
-	id := request.PathValue("id")
-	if id == "" {
-		return "", errors.New("invalid id")
+func (app *application) readUUIDParam(request *http.Request) (uuid.UUID, error) {
+	params := httprouter.ParamsFromContext(request.Context())
+
+	id, err := uuid.Parse(params.ByName("id"))
+	if err != nil {
+		return uuid.Nil, errors.New("invalid id parameter")
 	}
+
 	return id, nil
 }

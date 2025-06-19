@@ -1,26 +1,27 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func (app *application) healthcheckHandler(writer http.ResponseWriter, _ *http.Request) {
 	app.writeJSON(writer, http.StatusOK, envelope{"status": "ok"}, nil)
 }
 
 func (app *application) handleWS(writer http.ResponseWriter, request *http.Request) {
-	id, err := app.readIdParam(request)
+	id, err := app.readUUIDParam(request)
 	if err != nil {
 		app.writeJSON(writer, http.StatusBadRequest, envelope{"error": err.Error()}, nil)
 		return
 	}
-	app.logger.Info(id)
-	app.writeJSON(writer, http.StatusOK, envelope{"id": id}, nil)
+	app.writeJSON(writer, http.StatusOK, envelope{"id": id.String()}, nil)
 	return
 }
 
 func (app *application) tablesHandler(writer http.ResponseWriter, request *http.Request) {
 	var message struct {
-		Name    string
-		Payload any
+		Name    string `json:"name"`
+		Payload any    `json:"payload"`
 	}
 
 	err := app.readJSON(writer, request, &message)
@@ -28,5 +29,6 @@ func (app *application) tablesHandler(writer http.ResponseWriter, request *http.
 		app.writeJSON(writer, http.StatusBadRequest, envelope{"error": err.Error()}, nil)
 		return
 	}
-	return
+
+	app.writeJSON(writer, http.StatusOK, envelope{"message": message}, nil)
 }

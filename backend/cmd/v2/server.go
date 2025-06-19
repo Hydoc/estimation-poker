@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const PORT = 4000
+const PORT = 4001
 
 func (app *application) serve() error {
 	srv := &http.Server{
