@@ -2,7 +2,7 @@ package main
 
 import "net/http"
 
-func (app *application) healthcheckHandler(writer http.ResponseWriter, request *http.Request) {
+func (app *application) healthcheckHandler(writer http.ResponseWriter, _ *http.Request) {
 	app.writeJSON(writer, http.StatusOK, envelope{"status": "ok"}, nil)
 }
 
@@ -13,6 +13,7 @@ func (app *application) handleWS(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 	app.logger.Info(id)
+	app.writeJSON(writer, http.StatusOK, envelope{"id": id}, nil)
 	return
 }
 
