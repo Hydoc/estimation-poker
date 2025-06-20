@@ -1,11 +1,7 @@
 package game
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
-
-	"github.com/Hydoc/guess-dev/backend/internal/message"
 )
 
 type Rooms interface {
@@ -18,21 +14,19 @@ type RoomModel struct {
 }
 
 type Room struct {
-	id      uuid.UUID
+	Id      uuid.UUID
 	clients map[*Player]bool
 }
 
-type CreateRoomMessage struct{}
-
-func NewRoom() *Room {
+func NewRoom(id uuid.UUID) *Room {
 	return &Room{
-		id:      uuid.New(),
+		Id:      id,
 		clients: make(map[*Player]bool),
 	}
 }
 
 func (m *RoomModel) Save(r *Room) {
-	m.rooms[r.id] = r
+	m.rooms[r.Id] = r
 }
 
 func (m *RoomModel) Find(id uuid.UUID) *Room {
@@ -40,19 +34,6 @@ func (m *RoomModel) Find(id uuid.UUID) *Room {
 		return r
 	}
 	return nil
-}
-
-func CreateRoomHandler(messageChan <-chan message.Message) {
-	for msg := range messageChan {
-		actual, ok := msg.Payload.(CreateRoomMessage)
-		if !ok {
-			fmt.Println("invalid message data")
-			continue
-		}
-
-		room := NewRoom()
-
-	}
 }
 
 func NewRoomModel() *RoomModel {
