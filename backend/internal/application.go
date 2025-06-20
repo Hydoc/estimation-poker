@@ -238,10 +238,10 @@ func (app *Application) ListenForRoomDestroy() {
 		select {
 		case roomId := <-app.destroyRoom:
 			app.roomMu.Lock()
-			defer app.roomMu.Unlock()
 			if _, ok := app.rooms[roomId]; ok {
 				delete(app.rooms, roomId)
 			}
+			app.roomMu.Unlock()
 		}
 	}
 }
