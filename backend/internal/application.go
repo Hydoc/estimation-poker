@@ -11,14 +11,13 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
 )
 
 type Application struct {
 	roomMu sync.Mutex
 
 	logger      *slog.Logger
-	upgrader    *websocket.Upgrader
 	guessConfig *GuessConfig
 	rooms       map[RoomId]*Room
 	destroyRoom chan RoomId
@@ -205,7 +204,7 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	connection, err := app.upgrader.Upgrade(writer, request, nil)
+	connection, err := websocket.Accept(writer, request, nil)
 	if err != nil {
 		app.logger.Info(fmt.Sprintf("upgrade: %s", err))
 		return
@@ -246,10 +245,9 @@ func (app *Application) ListenForRoomDestroy() {
 	}
 }
 
-func NewApplication(upgrader *websocket.Upgrader, config *GuessConfig, logger *slog.Logger) *Application {
+func NewApplication(config *GuessConfig, logger *slog.Logger) *Application {
 	return &Application{
 		logger:      logger,
-		upgrader:    upgrader,
 		guessConfig: config,
 		rooms:       make(map[RoomId]*Room),
 		destroyRoom: make(chan RoomId),

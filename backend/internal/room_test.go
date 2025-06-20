@@ -134,7 +134,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 	}
 	go room.Run()
 
-	msg := clientMessage{
+	msg := message{
 		Type: estimate,
 		Data: nil,
 	}
@@ -170,7 +170,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 		destroy:   nil,
 	}
 	go room.Run()
-	room.broadcast <- developerGuessed{}
+	room.broadcast <- newDeveloperGuessed()
 
 	gotClientMsg := <-clientSendChannel
 
@@ -201,7 +201,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 		destroy:   nil,
 	}
 	go room.Run()
-	msg := developerGuessed{}
+	msg := newDeveloperGuessed()
 	room.broadcast <- msg
 
 	gotClientMsg := <-clientSendChannel
@@ -236,7 +236,7 @@ func TestRoom_Run_BroadcastResetRound(t *testing.T) {
 	}
 	go room.Run()
 
-	msg := resetRound{}
+	msg := newResetRound()
 	room.broadcast <- msg
 
 	gotClientMsg := <-clientSendChannel
@@ -281,7 +281,7 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 	}
 	go room.Run()
 
-	msg := leave{}
+	msg := newLeave()
 	room.broadcast <- msg
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel

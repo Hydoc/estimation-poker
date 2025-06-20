@@ -7,8 +7,6 @@ import (
 	"os"
 
 	"github.com/Hydoc/guess-dev/backend/internal"
-
-	"github.com/gorilla/websocket"
 )
 
 const (
@@ -33,19 +31,13 @@ func main() {
 	logger.Info(fmt.Sprintf("using possible guesses %s", possibleGuesses))
 	logger.Info(fmt.Sprintf("using possible guesses description %s", possibleGuessesDescription))
 
-	upgrader := &websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-
 	config, err := internal.NewGuessConfig(possibleGuesses, possibleGuessesDescription)
 	if err != nil {
 		logger.Error(err.Error())
 		return
 	}
 
-	app := internal.NewApplication(upgrader, config, logger)
+	app := internal.NewApplication(config, logger)
 	go app.ListenForRoomDestroy()
 	router := app.Routes()
 	logger.Error(http.ListenAndServe(":8080", router).Error())

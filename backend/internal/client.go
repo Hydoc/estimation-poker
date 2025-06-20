@@ -1,11 +1,13 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 )
 
 const (
@@ -42,16 +44,11 @@ func (client *Client) websocketReader() {
 	defer func() {
 		client.room.leave <- client
 		client.room.broadcast <- newLeave()
-		client.connection.Close()
+		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
-	client.connection.SetReadDeadline(time.Now().Add(pongWait))
-	client.connection.SetPongHandler(func(string) error {
-		client.connection.SetReadDeadline(time.Now().Add(pongWait))
-		return nil
-	})
 	for {
-		var incMessage clientMessage
-		err := client.connection.ReadJSON(&incMessage)
+		var incMessage message
+		err := wsjson.Read(context.Background(), client.connection, &incMessage)
 		if err != nil {
 			log.Println("error reading incoming client message:", err)
 			break
@@ -73,6 +70,8 @@ func (client *Client) websocketReader() {
 			client.room.broadcast <- newResetRound()
 		case incMessage.Type == reveal && client.Role == ProductOwner:
 			client.room.broadcast <- newRevealRound(client.room.clients)
+		case incMessage.Type == estimate && client.Role == ProductOwner:
+			client.room.broadcast <- incMessage
 		case incMessage.Type == lockRoom:
 			pw, pwOk := incMessage.Data.(map[string]any)["password"]
 			key, keyOk := incMessage.Data.(map[string]any)["key"]
@@ -105,29 +104,18 @@ func (client *Client) websocketReader() {
 			}
 			log.Println("was not able to open room")
 		default:
-			client.room.broadcast <- incMessage
+			log.Printf("unknown message %#v\n", incMessage)
 		}
 	}
 }
 
 func (client *Client) websocketWriter() {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		client.connection.Close()
-		ticker.Stop()
-	}()
 	for {
 		select {
 		case msg := <-client.send:
-			client.connection.SetWriteDeadline(time.Now().Add(writeWait))
-			err := client.connection.WriteJSON(msg.ToJson())
+			err := wsjson.Write(context.Background(), client.connection, msg)
 			if err != nil {
 				log.Println("error writing to client:", err)
-				return
-			}
-		case <-ticker.C:
-			client.connection.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := client.connection.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
@@ -139,7 +127,7 @@ func (client *Client) reset() {
 	client.DoSkip = false
 }
 
-func (client *Client) AsReveal() map[string]any {
+func (client *Client) asReveal() map[string]any {
 	return map[string]any{
 		"name":   client.Name,
 		"role":   client.Role,

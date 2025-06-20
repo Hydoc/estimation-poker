@@ -2,9 +2,9 @@ package internal
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -12,8 +12,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/coder/websocket"
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -297,7 +297,6 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &Application{
-				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
@@ -410,7 +409,6 @@ func TestApplication_handleWs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			expectedMsg := newJoin()
 			app := &Application{
-				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: make(chan RoomId),
@@ -421,7 +419,7 @@ func TestApplication_handleWs(t *testing.T) {
 			defer server.Close()
 
 			url := "ws" + strings.TrimPrefix(server.URL, "http") + test.url
-			_, response, _ := websocket.DefaultDialer.Dial(url, nil)
+			_, response, _ := websocket.Dial(context.Background(), url, nil)
 
 			if test.expectedError != nil {
 				var got map[string]string
@@ -447,7 +445,7 @@ func TestApplication_handleWs(t *testing.T) {
 }
 
 func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
-	app := NewApplication(&websocket.Upgrader{}, &GuessConfig{}, nil)
+	app := NewApplication(&GuessConfig{}, nil)
 	roomId := "Test"
 	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom, "")
 	router := app.Routes()
@@ -460,7 +458,7 @@ func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		url := "ws" + strings.TrimPrefix(server.URL, "http") + fmt.Sprintf("/api/estimation/room/%s/developer?name=Test", roomId)
-		websocket.DefaultDialer.Dial(url, nil)
+		websocket.Dial(context.Background(), url, nil)
 	}()
 
 	wg.Wait()
@@ -469,26 +467,6 @@ func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
 
 	if expectedRoom.id != got.id {
 		t.Errorf("want room with id %v, got %v", expectedRoom.id, got.id)
-	}
-}
-
-func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
-	var logBuffer bytes.Buffer
-
-	app := NewApplication(&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
-		return false
-	}}, &GuessConfig{}, slog.New(slog.NewTextHandler(&logBuffer, nil)))
-	router := app.Routes()
-
-	server := httptest.NewServer(router)
-	defer server.Close()
-
-	url := "ws" + strings.TrimPrefix(server.URL, "http") + "/api/estimation/room/1/product-owner?name=Test"
-	websocket.DefaultDialer.Dial(url, nil)
-
-	wantLog := "upgrade: websocket: request origin not allowed"
-	if !strings.Contains(logBuffer.String(), wantLog) {
-		t.Errorf("expected to log %v, got %v", wantLog, logBuffer.String())
 	}
 }
 
@@ -520,7 +498,6 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &Application{
-				upgrader:    &websocket.Upgrader{},
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
@@ -600,7 +577,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := NewApplication(&websocket.Upgrader{}, test.config, nil)
+			app := NewApplication(test.config, nil)
 			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
@@ -621,7 +598,6 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 	destroyChannel := make(chan RoomId)
 	roomToDestroy := RoomId("Test")
 	app := &Application{
-		upgrader:    &websocket.Upgrader{},
 		guessConfig: &GuessConfig{},
 		rooms: map[RoomId]*Room{
 			roomToDestroy: {
@@ -717,7 +693,6 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 		t.Errorf("error hashing password: %v", err)
 	}
 	app := &Application{
-		upgrader:    &websocket.Upgrader{},
 		guessConfig: &GuessConfig{},
 		rooms: map[RoomId]*Room{
 			"1": {
@@ -804,7 +779,6 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 	}
 
 	app := &Application{
-		upgrader:    &websocket.Upgrader{},
 		guessConfig: &GuessConfig{},
 		rooms: map[RoomId]*Room{
 			"1": {
