@@ -18,7 +18,7 @@ type Room struct {
 	leave          chan *Client
 	join           chan *Client
 	clients        map[*Client]bool
-	broadcast      chan message
+	broadcast      chan *message
 	destroy        chan<- RoomId
 	nameOfCreator  string
 	isLocked       bool
@@ -33,7 +33,7 @@ func newRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 		leave:          make(chan *Client),
 		join:           make(chan *Client),
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan message),
+		broadcast:      make(chan *message),
 		destroy:        destroy,
 		nameOfCreator:  nameOfCreator,
 		isLocked:       false,
@@ -80,12 +80,12 @@ func (room *Room) everyDevIsDone() bool {
 	return true
 }
 
-func (room *Room) resetRound(client *Client) {
+func (room *Room) newRound(client *Client) {
 	room.inProgress = false
 	if client.Role == Developer {
 		client.reset()
 	}
-	client.send <- newResetRound()
+	client.send <- newNewRound()
 }
 
 func (room *Room) Run() {
@@ -108,23 +108,23 @@ func (room *Room) Run() {
 				case estimate:
 					room.inProgress = true
 					client.send <- msg
-				case developerGuessed, skipRound:
+				case developerGuessed, skipRound, developerSkipped:
 					if room.everyDevIsDone() {
 						client.send <- newEveryoneIsDone()
 						continue
 					}
 					client.send <- msg
-				case resetRound:
-					room.resetRound(client)
+				case newRound:
+					room.newRound(client)
 				case leave:
 					if room.inProgress {
 						for c := range room.clients {
-							room.resetRound(c)
+							room.newRound(c)
 						}
 						continue
 					}
 					client.send <- msg
-				case join, revealRound:
+				case join, reveal:
 					client.send <- msg
 				default:
 					log.Printf("unexpected message %#v", msg)

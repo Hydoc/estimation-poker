@@ -14,63 +14,53 @@ const (
 	roomOpened       = "room-opened"
 	developerGuessed = "developer-guessed"
 	everyoneDone     = "everyone-done"
-	resetRound       = "reset-round"
-	revealRound      = "reveal-round"
 	developerSkipped = "developer-skipped"
 	youSkipped       = "you-skipped"
 	youGuessed       = "you-guessed"
 )
-
-type messageDTO map[string]any
 
 type message struct {
 	Type string `json:"type"`
 	Data any    `json:"data"`
 }
 
-func newJoin() message {
-	return message{
+func newJoin() *message {
+	return &message{
 		Type: join,
 	}
 }
 
-func newLeave() message {
-	return message{
+func newLeave() *message {
+	return &message{
 		Type: leave,
 	}
 }
 
-func newRoomLocked() message {
-	return message{
+func newRoomLocked() *message {
+	return &message{
 		Type: roomLocked,
 	}
 }
 
-func newRoomOpened() message {
-	return message{
+func newRoomOpened() *message {
+	return &message{
 		Type: roomOpened,
 	}
 }
 
-func newDeveloperGuessed() message {
-	return message{
+func newDeveloperGuessed() *message {
+	return &message{
 		Type: developerGuessed,
 	}
 }
 
-func newEveryoneIsDone() message {
-	return message{
+func newEveryoneIsDone() *message {
+	return &message{
 		Type: everyoneDone,
 	}
 }
 
-func newResetRound() message {
-	return message{
-		Type: resetRound,
-	}
-}
-
-func newRevealRound(clients map[*Client]bool) message {
+func newReveal(clients map[*Client]bool) *message {
 	out := []map[string]any{}
 	for client := range clients {
 		if client.Role == Developer {
@@ -78,26 +68,32 @@ func newRevealRound(clients map[*Client]bool) message {
 		}
 	}
 
-	return message{
-		Type: revealRound,
-		Data: clients,
+	return &message{
+		Type: reveal,
+		Data: out,
 	}
 }
 
-func newSkipRound() message {
-	return message{
+func newNewRound() *message {
+	return &message{
+		Type: newRound,
+	}
+}
+
+func newDeveloperSkipped() *message {
+	return &message{
 		Type: developerSkipped,
 	}
 }
 
-func newYouSkipped() message {
-	return message{
+func newYouSkipped() *message {
+	return &message{
 		Type: youSkipped,
 	}
 }
 
-func newYouGuessed(guess int) message {
-	return message{
+func newYouGuessed(guess int) *message {
+	return &message{
 		Type: youGuessed,
 		Data: guess,
 	}

@@ -27,7 +27,7 @@ type Client struct {
 	Role       string
 	Guess      int
 	DoSkip     bool
-	send       chan message
+	send       chan *message
 }
 
 func newClient(name, role string, room *Room, connection *websocket.Conn) *Client {
@@ -36,7 +36,7 @@ func newClient(name, role string, room *Room, connection *websocket.Conn) *Clien
 		Name:       name,
 		connection: connection,
 		Role:       role,
-		send:       make(chan message),
+		send:       make(chan *message),
 	}
 }
 
@@ -47,18 +47,18 @@ func (client *Client) websocketReader() {
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {
-		var incMessage message
+		var incMessage *message
 		err := wsjson.Read(context.Background(), client.connection, &incMessage)
 		if err != nil {
 			log.Println("error reading incoming client message:", err)
-			break
+			return
 		}
 
 		switch {
 		case incMessage.Type == skipRound && client.Role == Developer:
 			client.DoSkip = true
 			client.Guess = 0
-			client.room.broadcast <- newSkipRound()
+			client.room.broadcast <- newDeveloperSkipped()
 			client.send <- newYouSkipped()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
@@ -67,9 +67,9 @@ func (client *Client) websocketReader() {
 			client.room.broadcast <- newDeveloperGuessed()
 			client.send <- newYouGuessed(actualGuess)
 		case incMessage.Type == newRound && client.Role == ProductOwner:
-			client.room.broadcast <- newResetRound()
+			client.room.broadcast <- incMessage
 		case incMessage.Type == reveal && client.Role == ProductOwner:
-			client.room.broadcast <- newRevealRound(client.room.clients)
+			client.room.broadcast <- newReveal(client.room.clients)
 		case incMessage.Type == estimate && client.Role == ProductOwner:
 			client.room.broadcast <- incMessage
 		case incMessage.Type == lockRoom:

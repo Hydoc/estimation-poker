@@ -1,139 +1,84 @@
 package internal
 
 import (
-	"encoding/json"
-	"reflect"
 	"testing"
+
+	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
-func TestMessage_ToJson(t *testing.T) {
+func TestMessage(t *testing.T) {
 	tests := []struct {
-		name        string
-		message     message
-		expectedDTO messageDTO
+		name         string
+		msg          *message
+		expectedType string
+		expectedData any
 	}{
 		{
-			name:    "join",
-			message: newJoin(),
-			expectedDTO: messageDTO{
-				"type": "join",
-			},
+			name:         "newJoin",
+			msg:          newJoin(),
+			expectedType: join,
+			expectedData: nil,
 		},
 		{
-			name:    "leave",
-			message: newLeave(),
-			expectedDTO: messageDTO{
-				"type": "leave",
-			},
+			name:         "newLeave",
+			msg:          newLeave(),
+			expectedType: leave,
+			expectedData: nil,
 		},
 		{
-			name:    "reset round",
-			message: newResetRound(),
-			expectedDTO: messageDTO{
-				"type": "reset-round",
-			},
+			name:         "newRoomLocked",
+			msg:          newRoomLocked(),
+			expectedType: roomLocked,
+			expectedData: nil,
 		},
 		{
-			name:    "developer guessed",
-			message: newDeveloperGuessed(),
-			expectedDTO: messageDTO{
-				"type": "developer-guessed",
-			},
+			name:         "newRoomOpened",
+			msg:          newRoomOpened(),
+			expectedType: roomOpened,
+			expectedData: nil,
 		},
 		{
-			name:    "everyone is done",
-			message: newEveryoneIsDone(),
-			expectedDTO: messageDTO{
-				"type": "everyone-done",
-			},
+			name:         "newDeveloperGuessed",
+			msg:          newDeveloperGuessed(),
+			expectedType: developerGuessed,
+			expectedData: nil,
 		},
 		{
-			name:    "you guessed",
-			message: newYouGuessed(2),
-			expectedDTO: messageDTO{
-				"type": "you-guessed",
-				"data": 2,
-			},
+			name:         "newEveryoneIsDone",
+			msg:          newEveryoneIsDone(),
+			expectedType: everyoneDone,
+			expectedData: nil,
 		},
 		{
-			name:    "room locked",
-			message: newRoomLocked(),
-			expectedDTO: messageDTO{
-				"type": "room-locked",
-			},
+			name:         "newNewRound",
+			msg:          newNewRound(),
+			expectedType: newRound,
+			expectedData: nil,
 		},
 		{
-			name:    "room opened",
-			message: newRoomOpened(),
-			expectedDTO: messageDTO{
-				"type": "room-opened",
-			},
+			name:         "newReveal",
+			msg:          newReveal(make(map[*Client]bool)),
+			expectedType: reveal,
+			expectedData: []map[string]any{},
 		},
 		{
-			name:    "skip-round",
-			message: newSkipRound(),
-			expectedDTO: messageDTO{
-				"type": "developer-skipped",
-			},
+			name:         "newYouSkipped",
+			msg:          newYouSkipped(),
+			expectedType: youSkipped,
+			expectedData: nil,
 		},
 		{
-			name:    "you-skipped",
-			message: newYouSkipped(),
-			expectedDTO: messageDTO{
-				"type": "you-skipped",
-			},
-		},
-		{
-			name: "reveal-round",
-			message: newRevealRound(map[*Client]bool{
-				{
-					Name:   "Test 1",
-					Role:   Developer,
-					Guess:  2,
-					DoSkip: false,
-				}: true,
-				{
-					Name: "Test 2",
-					Role: ProductOwner,
-				}: true,
-				{
-					Name:   "Test 3",
-					Role:   Developer,
-					Guess:  0,
-					DoSkip: true,
-				}: true,
-			}),
-			expectedDTO: messageDTO{
-				"type": "reveal-round",
-				"data": []map[string]any{
-					{
-						"name":   "Test 1",
-						"role":   Developer,
-						"guess":  2,
-						"doSkip": false,
-					},
-					{
-						"name":   "Test 3",
-						"role":   Developer,
-						"guess":  0,
-						"doSkip": true,
-					},
-				},
-			},
+			name:         "newYouGuessed",
+			msg:          newYouGuessed(2),
+			expectedType: youGuessed,
+			expectedData: 2,
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := json.Marshal(test.message)
-			if err != nil {
-				t.Fatalf("%v", err)
-				return
-			}
-			want := test.expectedDTO
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("expected %#v, got %#v", want, got)
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.msg.Type, tt.expectedType)
+			assert.DeepEqual(t, tt.msg.Data, tt.expectedData)
 		})
 	}
 }

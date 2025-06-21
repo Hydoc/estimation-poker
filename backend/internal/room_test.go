@@ -4,24 +4,18 @@ import (
 	"bytes"
 	"log"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/Hydoc/guess-dev/backend/internal/assert"
 	"github.com/google/uuid"
 )
 
 func TestNewRoom(t *testing.T) {
 	expectedRoomId := RoomId("Test")
 	room := newRoom(expectedRoomId, make(chan<- RoomId), "")
-
-	if room.id != expectedRoomId {
-		t.Errorf("want room id %v, got %v", expectedRoomId, room.id)
-	}
-
-	if room.inProgress {
-		t.Error("expected room not to be in progress")
-	}
+	assert.Equal(t, room.id, expectedRoomId)
+	assert.False(t, room.inProgress)
 }
 
 func TestRoom_everyDevGuessed(t *testing.T) {
@@ -44,12 +38,27 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 			},
 		},
 		{
+			name: "everyone guessed because developer skipped",
+			want: true,
+			clients: map[*Client]bool{
+				{
+					Guess:  0,
+					DoSkip: true,
+					Role:   Developer,
+				}: true,
+				{
+					Role: ProductOwner,
+				}: true,
+			},
+		},
+		{
 			name: "not everyone guessed",
 			want: false,
 			clients: map[*Client]bool{
 				{
-					Guess: 0,
-					Role:  Developer,
+					Guess:  0,
+					DoSkip: false,
+					Role:   Developer,
 				}: true,
 				{
 					Role: ProductOwner,
@@ -64,9 +73,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 				clients: test.clients,
 			}
 			got := room.everyDevIsDone()
-			if got != test.want {
-				t.Errorf("want %v, got %v", test.want, got)
-			}
+			assert.Equal(t, got, test.want)
 		})
 	}
 }
@@ -105,9 +112,8 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 	room.leave <- client
 
 	gotId := <-destroyChannel
-	if gotId != roomId {
-		t.Errorf("want room id %v, got %v", roomId, gotId)
-	}
+
+	assert.Equal(t, gotId, roomId)
 
 	room.clientMu.Lock()
 	if _, ok := room.clients[client]; ok {
@@ -117,7 +123,7 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastEstimate(t *testing.T) {
-	clientSendChannel := make(chan message)
+	clientSendChannel := make(chan *message)
 	client := &Client{
 		send: clientSendChannel,
 	}
@@ -129,12 +135,12 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 		clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: make(chan message),
+		broadcast: make(chan *message),
 		destroy:   nil,
 	}
 	go room.Run()
 
-	msg := message{
+	msg := &message{
 		Type: estimate,
 		Data: nil,
 	}
@@ -142,17 +148,12 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 
 	gotClientMsg := <-clientSendChannel
 
-	if !reflect.DeepEqual(gotClientMsg, msg) {
-		t.Errorf("want message %v, got %v", msg, gotClientMsg)
-	}
-
-	if !room.inProgress {
-		t.Error("expected room to be in progress")
-	}
+	assert.DeepEqual(t, gotClientMsg, msg)
+	assert.True(t, room.inProgress)
 }
 
 func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) {
-	clientSendChannel := make(chan message)
+	clientSendChannel := make(chan *message)
 	client := &Client{
 		send:  clientSendChannel,
 		Role:  Developer,
@@ -166,7 +167,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 		clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: make(chan message),
+		broadcast: make(chan *message),
 		destroy:   nil,
 	}
 	go room.Run()
@@ -174,13 +175,12 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 
 	gotClientMsg := <-clientSendChannel
 
-	if !reflect.DeepEqual(gotClientMsg, newEveryoneIsDone()) {
-		t.Errorf("want msg %v, got %v", newEveryoneIsDone(), gotClientMsg)
-	}
+	assert.DeepEqual(t, gotClientMsg, newEveryoneIsDone())
 }
 
+// sometimes stuck, why
 func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
-	clientSendChannel := make(chan message)
+	clientSendChannel := make(chan *message)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -197,22 +197,22 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 				Guess: 0,
 			}: true,
 		},
-		broadcast: make(chan message),
+		broadcast: make(chan *message),
 		destroy:   nil,
 	}
-	go room.Run()
 	msg := newDeveloperGuessed()
-	room.broadcast <- msg
+	go room.Run()
+	go func() {
+		room.broadcast <- msg
+	}()
 
 	gotClientMsg := <-clientSendChannel
 
-	if !reflect.DeepEqual(gotClientMsg, msg) {
-		t.Errorf("want msg %v, got %v", msg, gotClientMsg)
-	}
+	assert.DeepEqual(t, gotClientMsg, msg)
 }
 
-func TestRoom_Run_BroadcastResetRound(t *testing.T) {
-	clientSendChannel := make(chan message)
+func TestRoom_Run_BroadcastNewRound(t *testing.T) {
+	clientSendChannel := make(chan *message)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -231,33 +231,25 @@ func TestRoom_Run_BroadcastResetRound(t *testing.T) {
 			client:           true,
 			developerToReset: true,
 		},
-		broadcast: make(chan message),
+		broadcast: make(chan *message),
 		destroy:   nil,
 	}
 	go room.Run()
 
-	msg := newResetRound()
+	msg := newNewRound()
 	room.broadcast <- msg
 
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
-	if !reflect.DeepEqual(gotClientMsg, msg) {
-		t.Errorf("want msg %v, got %v", msg, gotClientMsg)
-	}
-
-	if room.inProgress {
-		t.Error("expected room not to be in progress")
-	}
-
-	if developerToReset.Guess > 0 {
-		t.Error("expected developer to be resetted")
-	}
+	assert.DeepEqual(t, gotClientMsg, msg)
+	assert.False(t, room.inProgress)
+	assert.Equal(t, developerToReset.Guess, 0)
 }
 
 func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
-	clientSendChannel := make(chan message)
-	broadcastChannel := make(chan message)
+	clientSendChannel := make(chan *message)
+	broadcastChannel := make(chan *message)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -286,17 +278,9 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
-	if !reflect.DeepEqual(gotClientMsg, newResetRound()) {
-		t.Errorf("want msg %v, got %v", newResetRound(), gotClientMsg)
-	}
-
-	if room.inProgress {
-		t.Error("expected room not to be in progress")
-	}
-
-	if developerToReset.Guess > 0 {
-		t.Error("expected developer to be resetted")
-	}
+	assert.DeepEqual(t, gotClientMsg, newNewRound())
+	assert.False(t, room.inProgress)
+	assert.Equal(t, developerToReset.Guess, 0)
 }
 
 func TestRoom_lock(t *testing.T) {
@@ -307,7 +291,7 @@ func TestRoom_lock(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan message),
+		broadcast:      make(chan *message),
 		destroy:        nil,
 		isLocked:       false,
 		nameOfCreator:  "Bla",
@@ -317,17 +301,9 @@ func TestRoom_lock(t *testing.T) {
 
 	got := room.lock("Bla", "top secret", key.String())
 
-	if got != true {
-		t.Errorf("got %v, want true", got)
-	}
-
-	if !room.isLocked {
-		t.Errorf("wanted room to be locked")
-	}
-
-	if len(room.hashedPassword) == 0 {
-		t.Errorf("wanted room to have hashed password")
-	}
+	assert.True(t, got)
+	assert.True(t, room.isLocked)
+	assert.False(t, len(room.hashedPassword) == 0)
 }
 
 func TestRoom_lock_WhenLockingFails(t *testing.T) {
@@ -338,7 +314,7 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan message),
+		broadcast:      make(chan *message),
 		destroy:        nil,
 		isLocked:       false,
 		nameOfCreator:  "Bla",
@@ -348,9 +324,7 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 
 	got := room.lock("ABC", "top secret", key.String())
 
-	if got != false {
-		t.Errorf("got %v, want false", got)
-	}
+	assert.False(t, got)
 }
 
 func TestRoom_open_WhenUserNotCreator(t *testing.T) {
@@ -362,10 +336,9 @@ func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 		isLocked:      false,
 		key:           id,
 	}
+	got := room.open("invalid user", id.String())
 
-	if got := room.open("invalid user", id.String()); got != false {
-		t.Error("expected to be false")
-	}
+	assert.False(t, got)
 }
 
 func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
@@ -377,9 +350,9 @@ func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
 		key:           uuid.New(),
 	}
 
-	if got := room.open("some user", "incorrect key"); got != false {
-		t.Error("expected to be false")
-	}
+	got := room.open("some user", "incorrect key")
+
+	assert.False(t, got)
 }
 
 func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
@@ -396,7 +369,7 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan message),
+		broadcast:      make(chan *message),
 		destroy:        nil,
 		isLocked:       false,
 		nameOfCreator:  "Bla",
@@ -407,11 +380,6 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 	got := room.lock("ABC", strings.Repeat("bla", 90), key.String())
 	wantedLog := "could not hash password"
 
-	if got != false {
-		t.Errorf("got %v, want false", got)
-	}
-
-	if !strings.Contains(logBuffer.String(), wantedLog) {
-		t.Errorf("expected to log %s", wantedLog)
-	}
+	assert.False(t, got)
+	assert.StringContains(t, logBuffer.String(), wantedLog)
 }

@@ -57,12 +57,12 @@ type ReceivableWebsocketMessage = {
     | "join"
     | "leave"
     | "estimate"
+    | "reveal"
     | "developer-guessed"
     | "everyone-done"
     | "you-guessed"
     | "you-skipped"
-    | "reveal-round"
-    | "reset-round"
+    | "new-round"
     | "room-locked"
     | "developer-skipped"
     | "room-opened";
@@ -142,7 +142,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           await fetchUsersInRoom();
           roundState.value = RoundState.End;
           break;
-        case "reveal-round":
+        case "reveal":
           developerDone.value = decoded.data;
           showAllGuesses.value = true;
           break;
@@ -150,7 +150,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
         case "room-opened":
           await fetchRoomIsLocked();
           break;
-        case "reset-round":
+        case "new-round":
           resetRound();
           await fetchUsersInRoom();
           break;
