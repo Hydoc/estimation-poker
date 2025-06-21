@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Hydoc/guess-dev/backend/internal/assert"
 	"github.com/google/uuid"
@@ -188,8 +189,8 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 	room := &Room{
 		id:         "Test",
 		inProgress: false,
-		leave:      nil,
-		join:       nil,
+		leave:      make(chan *Client),
+		join:       make(chan *Client),
 		clients: map[*Client]bool{
 			client: true,
 			{
@@ -198,7 +199,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 			}: true,
 		},
 		broadcast: make(chan *message),
-		destroy:   nil,
+		destroy:   make(chan<- RoomId),
 	}
 	msg := newDeveloperGuessed()
 	go room.Run()
@@ -206,9 +207,12 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 		room.broadcast <- msg
 	}()
 
-	gotClientMsg := <-clientSendChannel
-
-	assert.DeepEqual(t, gotClientMsg, msg)
+	select {
+	case <-time.After(5 * time.Second):
+		t.Fatalf("timeout")
+	case gotClientMsg := <-clientSendChannel:
+		assert.DeepEqual(t, gotClientMsg, msg)
+	}
 }
 
 func TestRoom_Run_BroadcastNewRound(t *testing.T) {
