@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -121,12 +122,15 @@ func TestClient_WebsocketReaderWhenAnyMessageOccurred(t *testing.T) {
 
 	client := newClient("Any", Developer, room, connection)
 	go client.websocketReader()
-	wsjson.Write(context.Background(), connection, message{
+
+	unknownMessage := message{
 		Type: "",
 		Data: nil,
-	})
+	}
 
-	want := "unknown message"
+	wsjson.Write(context.Background(), connection, unknownMessage)
+
+	want := fmt.Sprintf("unknown message %#v", unknownMessage)
 
 	if !strings.Contains(logBuffer.String(), want) {
 		t.Errorf("expected %v, got %v", want, logBuffer.String())
@@ -374,7 +378,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 	clientChannel := make(chan message)
 	client := &Client{
 		connection: connection,
-		Role:       Developer,
+		Role:       ProductOwner,
 		send:       clientChannel,
 		Name:       "Test",
 		room:       room,
@@ -384,7 +388,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 
 	// due to the echo websocket it writes to itself
 	expectedMsg := message{
-		Type: "hello",
+		Type: estimate,
 	}
 	clientChannel <- expectedMsg
 
