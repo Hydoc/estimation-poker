@@ -625,6 +625,8 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 
 	wg.Wait()
 
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
 	if _, ok := app.rooms[roomToDestroy]; ok {
 		t.Error("expected app to not have room")
 	}
