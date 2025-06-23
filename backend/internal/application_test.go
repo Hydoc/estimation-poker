@@ -463,7 +463,9 @@ func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
 
 	wg.Wait()
 
+	app.roomMu.Lock()
 	got := app.rooms[RoomId(roomId)]
+	app.roomMu.Unlock()
 
 	if expectedRoom.id != got.id {
 		t.Errorf("want room with id %v, got %v", expectedRoom.id, got.id)
