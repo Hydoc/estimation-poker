@@ -616,14 +616,7 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 	}
 	go app.ListenForRoomDestroy()
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.destroyRoom <- roomToDestroy
-	}()
-
-	wg.Wait()
+	app.destroyRoom <- roomToDestroy
 
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
