@@ -24,10 +24,7 @@ export type DeveloperDone = {
   role: "developer";
 };
 
-export type UserOverview = {
-  productOwnerList: ProductOwner[];
-  developerList: Developer[];
-};
+export type UserOverview = (ProductOwner|Developer)[];
 
 export enum RoundState {
   Waiting,

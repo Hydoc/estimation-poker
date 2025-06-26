@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -15,6 +14,8 @@ import (
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
 func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
@@ -64,13 +65,9 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			gotContentType := recorder.Header().Get("Content-Type")
-			if gotContentType != "application/json" {
-				t.Errorf("expected content type application/json, got %v", gotContentType)
-			}
 
-			if !reflect.DeepEqual(test.expectation, got) {
-				t.Errorf("expected %v, got %v", test.expectation, got)
-			}
+			assert.Equal(t, gotContentType, "application/json")
+			assert.DeepEqual(t, got, test.expectation)
 		})
 	}
 }
@@ -159,20 +156,15 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			gotContentType := recorder.Header().Get("Content-Type")
-			if gotContentType != "application/json" {
-				t.Errorf("expected content type application/json, got %v", gotContentType)
+
+			assert.Equal(t, test.statusCode, recorder.Code)
+			assert.Equal(t, gotContentType, "application/json")
+			if test.expectedErrorBody != nil {
+				assert.DeepEqual(t, got, test.expectedErrorBody)
 			}
 
-			if test.expectedErrorBody != nil && !reflect.DeepEqual(test.expectedErrorBody, got) {
-				t.Errorf("expected error body %v, got %v", test.expectedErrorBody, got)
-			}
-
-			if test.expectation != nil && !reflect.DeepEqual(test.expectation, got) {
-				t.Errorf("expected %v, got %v", test.expectation, got)
-			}
-
-			if recorder.Code != test.statusCode {
-				t.Errorf("expected status code %d, got %d", test.statusCode, recorder.Code)
+			if test.expectation != nil {
+				assert.DeepEqual(t, got, test.expectation)
 			}
 		})
 	}
@@ -190,7 +182,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 		name        string
 		roomId      string
 		rooms       map[RoomId]*Room
-		expectation map[string][]userDTO
+		expectation []map[string]any
 	}{
 		{
 			name:   "some users in the same room",
@@ -212,44 +204,37 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 					destroy:   nil,
 				},
 			},
-			expectation: map[string][]userDTO{
-				"productOwnerList": {
-					{
-						"name": "Also a po",
-						"role": ProductOwner,
-					},
-					{
-						"name": "Another one",
-						"role": ProductOwner,
-					},
+			expectation: []map[string]any{
+				{
+					"name":   "Also a dev",
+					"isDone": false,
+					"role":   Developer,
 				},
-				"developerList": {
-					{
-						"name":   "Also a dev",
-						"isDone": false,
-						"role":   Developer,
-					},
-					{
-						"name":   "Another",
-						"isDone": false,
-						"role":   Developer,
-					},
-					{
-						"name":   "B",
-						"isDone": false,
-						"role":   Developer,
-					},
+				{
+					"name": "Also a po",
+					"role": ProductOwner,
+				},
+				{
+					"name":   "Another",
+					"isDone": false,
+					"role":   Developer,
+				},
+				{
+					"name": "Another one",
+					"role": ProductOwner,
+				},
+				{
+					"name":   "B",
+					"isDone": false,
+					"role":   Developer,
 				},
 			},
 		},
 		{
-			name:   "no clients",
-			roomId: "1",
-			rooms:  make(map[RoomId]*Room),
-			expectation: map[string][]userDTO{
-				"productOwnerList": {},
-				"developerList":    {},
-			},
+			name:        "no clients",
+			roomId:      "1",
+			rooms:       make(map[RoomId]*Room),
+			expectation: []map[string]any{},
 		},
 		{
 			name:   "one dev client",
@@ -261,14 +246,11 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 					},
 				},
 			},
-			expectation: map[string][]userDTO{
-				"productOwnerList": {},
-				"developerList": {
-					{
-						"name":   "B",
-						"isDone": false,
-						"role":   Developer,
-					},
+			expectation: []map[string]any{
+				{
+					"name":   "B",
+					"isDone": false,
+					"role":   Developer,
 				},
 			},
 		},
@@ -282,14 +264,11 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				},
 			},
 			roomId: "1",
-			expectation: map[string][]userDTO{
-				"productOwnerList": {
-					{
-						"name": "Another one",
-						"role": ProductOwner,
-					},
+			expectation: []map[string]any{
+				{
+					"name": "Another one",
+					"role": ProductOwner,
 				},
-				"developerList": {},
 			},
 		},
 	}
@@ -307,17 +286,13 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 
 			router.ServeHTTP(recorder, request)
 
-			var got map[string][]userDTO
+			var got []map[string]any
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			gotContentType := recorder.Header().Get("Content-Type")
-			if gotContentType != "application/json" {
-				t.Errorf("expected content type application/json, got %v", gotContentType)
-			}
 
-			if !reflect.DeepEqual(test.expectation, got) {
-				t.Errorf("expected %v, got %v", test.expectation, got)
-			}
+			assert.Equal(t, gotContentType, "application/json")
+			assert.DeepEqual(t, got, test.expectation)
 		})
 	}
 }
@@ -424,22 +399,15 @@ func TestApplication_handleWs(t *testing.T) {
 			if test.expectedError != nil {
 				var got map[string]string
 				json.NewDecoder(response.Body).Decode(&got)
-				if !reflect.DeepEqual(test.expectedError, got) {
-					t.Errorf("expected response error %v, got %v", test.expectedError, got)
-				}
+				assert.DeepEqual(t, got, test.expectedError)
 				return
 			}
 
 			registeredClient := <-app.rooms[RoomId(test.expectedRoomId)].join
 			broadcastedMsg := <-app.rooms[RoomId(test.expectedRoomId)].broadcast
 
-			if registeredClient.Role != test.expectedRole {
-				t.Errorf("expected to register client with role %s, got %v", test.expectedRole, registeredClient.Role)
-			}
-
-			if !reflect.DeepEqual(expectedMsg, broadcastedMsg) {
-				t.Errorf("expected msg %v to broadcast, got %v", expectedMsg, broadcastedMsg)
-			}
+			assert.DeepEqual(t, broadcastedMsg, expectedMsg)
+			assert.Equal(t, registeredClient.Role, test.expectedRole)
 		})
 	}
 }
@@ -467,9 +435,7 @@ func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
 	got := app.rooms[RoomId(roomId)]
 	app.roomMu.Unlock()
 
-	if expectedRoom.id != got.id {
-		t.Errorf("want room with id %v, got %v", expectedRoom.id, got.id)
-	}
+	assert.Equal(t, got.id, expectedRoom.id)
 }
 
 func TestApplication_handleFetchActiveRooms(t *testing.T) {
@@ -513,9 +479,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 			var got []string
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
-			if !reflect.DeepEqual(test.want, got) {
-				t.Errorf("want %v, got %v", test.want, got)
-			}
+			assert.DeepEqual(t, got, test.want)
 		})
 	}
 }
@@ -589,9 +553,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 			var got []map[string]interface{}
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
-			if !reflect.DeepEqual(test.want, got) {
-				t.Errorf("want %v, got %v", test.want, got)
-			}
+			assert.DeepEqual(t, got, test.want)
 		})
 	}
 }
@@ -626,7 +588,6 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 }
 
 func TestApplication_handleRoomAuthenticate(t *testing.T) {
-
 	tests := []struct {
 		name     string
 		wantCode int
@@ -723,13 +684,8 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 
 			gotCode := recorder.Code
 
-			if gotCode != test.wantCode {
-				t.Errorf("want %v, got %v", test.wantCode, gotCode)
-			}
-
-			if !reflect.DeepEqual(test.wantBody, got) {
-				t.Errorf("want %v, got %v", test.wantBody, got)
-			}
+			assert.Equal(t, gotCode, test.wantCode)
+			assert.DeepEqual(t, got, test.wantBody)
 		})
 	}
 }
@@ -798,13 +754,8 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 
 			gotCode := recorder.Code
 
-			if gotCode != test.wantCode {
-				t.Errorf("want %v, got %v", test.wantCode, gotCode)
-			}
-
-			if !reflect.DeepEqual(test.wantBody, got) {
-				t.Errorf("want %#v, got %#v", test.wantBody, got)
-			}
+			assert.Equal(t, gotCode, test.wantCode)
+			assert.DeepEqual(t, got, test.wantBody)
 		})
 	}
 }

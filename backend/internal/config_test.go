@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
 func TestNewGuessConfig(t *testing.T) {
@@ -35,13 +36,8 @@ func TestNewGuessConfig(t *testing.T) {
 
 	got, err := NewGuessConfig(possibleGuesses, possibleGuessesDesc)
 
-	if err != nil {
-		t.Error("expected error to be nil")
-	}
-
-	if !reflect.DeepEqual(want, got) {
-		t.Errorf("want %v, got %v", want, got)
-	}
+	assert.NilError(t, err)
+	assert.DeepEqual(t, got, want)
 }
 
 func TestNewGuessConfig_WhenLengthDiffers(t *testing.T) {
@@ -69,9 +65,7 @@ func TestNewGuessConfig_WhenLengthDiffers(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := NewGuessConfig(test.possibleGuesses, test.possibleGuessesDesc)
 
-			if err.Error() != test.expectedErr {
-				t.Errorf("expected error %v", test.expectedErr)
-			}
+			assert.DeepEqual(t, err.Error(), test.expectedErr)
 		})
 	}
 }
@@ -83,7 +77,5 @@ func TestNewGuessConfig_WhenGuessIsNotNumeric(t *testing.T) {
 	expectedErr := "error can not convert guess P to int"
 
 	_, err := NewGuessConfig(possibleGuesses, possibleGuessesDesc)
-	if err.Error() != expectedErr {
-		t.Errorf("expected error %v", expectedErr)
-	}
+	assert.DeepEqual(t, err.Error(), expectedErr)
 }

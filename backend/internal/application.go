@@ -162,33 +162,27 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
 
-	var usersInRoom = map[string][]userDTO{
-		"productOwnerList": {},
-		"developerList":    {},
-	}
-	var clients []*Client
-
-	if _, ok := app.rooms[RoomId(roomId)]; !ok {
-		app.writeJson(writer, http.StatusOK, usersInRoom, nil)
+	room, ok := app.rooms[RoomId(roomId)]
+	if !ok {
+		app.writeJson(writer, http.StatusOK, []map[string]any{}, nil)
 		return
 	}
 
-	for client := range app.rooms[RoomId(roomId)].clients {
+	var clients []*Client
+	for client := range room.clients {
 		clients = append(clients, client)
 	}
+
 	sort.Slice(clients, func(i, j int) bool {
 		return clients[i].Name < clients[j].Name
 	})
 
-	for _, c := range clients {
-		switch c.Role {
-		case Developer:
-			usersInRoom["developerList"] = append(usersInRoom["developerList"], c.toJson())
-		case ProductOwner:
-			usersInRoom["productOwnerList"] = append(usersInRoom["productOwnerList"], c.toJson())
-		}
+	var out []map[string]any
+	for _, client := range clients {
+		out = append(out, client.toJson())
 	}
-	app.writeJson(writer, http.StatusOK, usersInRoom, nil)
+
+	app.writeJson(writer, http.StatusOK, out, nil)
 }
 
 func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {

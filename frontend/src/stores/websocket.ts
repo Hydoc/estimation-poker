@@ -74,10 +74,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const userRole: Ref<Role> = ref(Role.Empty);
   const userRoomId = ref("");
   const websocket: Ref<WebSocket | null> = ref(null);
-  const usersInRoom: Ref<UserOverview> = ref({
-    developerList: [],
-    productOwnerList: [],
-  });
+  const usersInRoom: Ref<UserOverview> = ref([]);
   const roundState: Ref<RoundState> = ref(RoundState.Waiting);
   const ticketToGuess = ref("");
   const guess = ref(0);
@@ -218,10 +215,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   async function fetchUsersInRoom() {
     const response = await fetch(`/api/estimation/room/${userRoomId.value}/users`);
     if (!response.ok) {
-      usersInRoom.value = {
-        productOwnerList: [],
-        developerList: [],
-      };
+      usersInRoom.value = [];
       return;
     }
 

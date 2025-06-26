@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -13,6 +12,8 @@ import (
 	"github.com/coder/websocket/wsjson"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
 func TestClient_NewProductOwner(t *testing.T) {
@@ -35,33 +36,19 @@ func TestClient_NewProductOwner(t *testing.T) {
 
 	got := client.toJson()
 
-	if !reflect.DeepEqual(expectedJsonRepresentation, got) {
-		t.Errorf("expected %v, got %v", expectedJsonRepresentation, got)
-	}
+	assert.DeepEqual(t, got, expectedJsonRepresentation)
 }
 
 func TestClient_NewClient(t *testing.T) {
 	expectedName := "Test Person"
 	expectedRole := Developer
 	expectedGuess := 0
-	expectedDoSkip := false
 	client := newClient(expectedName, expectedRole, &Room{}, &websocket.Conn{})
 
-	if expectedName != client.Name {
-		t.Errorf("expected name %v, got %v", expectedName, client.Name)
-	}
-
-	if expectedRole != client.Role {
-		t.Errorf("expected role %v, got %v", expectedRole, client.Role)
-	}
-
-	if expectedGuess != client.Guess {
-		t.Errorf("expected guess %v, got %v", expectedGuess, client.Guess)
-	}
-
-	if expectedDoSkip != client.DoSkip {
-		t.Errorf("expected do skip to be false, got %v", client.DoSkip)
-	}
+	assert.Equal(t, client.Name, expectedName)
+	assert.Equal(t, client.Role, expectedRole)
+	assert.Equal(t, client.Guess, expectedGuess)
+	assert.False(t, client.DoSkip)
 
 	expectedJsonRepresentation := userDTO{
 		"name":   expectedName,
@@ -71,9 +58,7 @@ func TestClient_NewClient(t *testing.T) {
 
 	got := client.toJson()
 
-	if !reflect.DeepEqual(expectedJsonRepresentation, got) {
-		t.Errorf("expected %v, got %v", expectedJsonRepresentation, got)
-	}
+	assert.DeepEqual(t, got, expectedJsonRepresentation)
 }
 
 func TestClient_Reset(t *testing.T) {
@@ -124,13 +109,8 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 	expectedClientMsg := newYouGuessed(2)
 	gotClientMsg := <-clientChannel
 
-	if !reflect.DeepEqual(expectedClientMsg, gotClientMsg) {
-		t.Errorf("expected client msg %v, got %v", expectedClientMsg, gotClientMsg)
-	}
-
-	if client.Guess != 2 {
-		t.Errorf("expected client to have guess 2, got %v", client.Guess)
-	}
+	assert.DeepEqual(t, gotClientMsg, expectedClientMsg)
+	assert.Equal(t, client.Guess, 2)
 }
 
 func TestClient_websocketReaderRevealMessage(t *testing.T) {
@@ -165,9 +145,7 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 
 	got := <-broadcastChannel
 
-	if !reflect.DeepEqual(expectedMessage, got) {
-		t.Errorf("expected message %#v, got %#v", expectedMessage, got)
-	}
+	assert.DeepEqual(t, got, expectedMessage)
 }
 
 func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner(t *testing.T) {
@@ -196,9 +174,7 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 
 	got := <-broadcastChannel
 
-	if !reflect.DeepEqual(expectedMsg, got) {
-		t.Errorf("expected %v, got %v", expectedMsg, got)
-	}
+	assert.DeepEqual(t, got, expectedMsg)
 }
 
 func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(t *testing.T) {
@@ -238,12 +214,8 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 	got := <-broadcastChannel
 	gotClientMessage := <-clientChannel
 
-	if !reflect.DeepEqual(expectedMsg, got) {
-		t.Errorf("expected %v, got %v", expectedMsg, got)
-	}
-	if !reflect.DeepEqual(expectedClientMsg, gotClientMessage) {
-		t.Errorf("expected %v, got %v", expectedClientMsg, gotClientMessage)
-	}
+	assert.DeepEqual(t, got, expectedMsg)
+	assert.DeepEqual(t, gotClientMessage, expectedClientMsg)
 }
 
 func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *testing.T) {
@@ -289,9 +261,7 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 	expectedMsg := newRoomLocked()
 	got := <-broadcastChannel
 
-	if !reflect.DeepEqual(expectedMsg, got) {
-		t.Errorf("expected %v, got %v", expectedMsg, got)
-	}
+	assert.DeepEqual(t, got, expectedMsg)
 }
 
 func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
@@ -336,9 +306,7 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 	expectedMsg := newRoomOpened()
 	got := <-broadcastChannel
 
-	if !reflect.DeepEqual(expectedMsg, got) {
-		t.Errorf("expected %v, got %v", expectedMsg, got)
-	}
+	assert.DeepEqual(t, got, expectedMsg)
 }
 
 func TestClient_WebsocketWriter(t *testing.T) {
@@ -378,9 +346,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 
 	got := <-broadcastChannel
 
-	if !reflect.DeepEqual(expectedMsg, got) {
-		t.Errorf("expected %v, got %v", expectedMsg, got)
-	}
+	assert.DeepEqual(t, got, expectedMsg)
 }
 
 func echo(w http.ResponseWriter, r *http.Request) {
