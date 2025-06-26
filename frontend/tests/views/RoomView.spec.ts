@@ -49,10 +49,10 @@ beforeEach(() => {
       key: "abc",
     },
   };
-  websocketStore.usersInRoom = {
-    productOwnerList: [{ name: "test po", role: "product-owner" }],
-    developerList: [{ name: "test dev", role: "developer", guess: 0 }],
-  };
+  websocketStore.usersInRoom = [
+    { name: "test po", role: "product-owner" },
+    { name: "test dev", role: "developer", guess: 0 },
+  ];
   websocketStore.possibleGuesses = [
     { guess: 1, description: "Bis zu 4 Std." },
     { guess: 2, description: "Bis zu 8 Std." },

@@ -33,7 +33,10 @@ describe("TableOverview", () => {
   describe("rendering", () => {
     it("should render as product owner", () => {
       const wrapper = createWrapper(
-        [{ name: "Test PO", role: "product-owner" } as ProductOwner, { name: "Test Dev", isDone: false, role: "developer" } as Developer],
+        [
+          { name: "Test PO", role: "product-owner" } as ProductOwner,
+          { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+        ],
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
@@ -87,7 +90,10 @@ describe("TableOverview", () => {
   describe("functionality", () => {
     it("should emit estimate when product owner command center emits estimate", () => {
       const wrapper = createWrapper(
-        [{ name: "Test PO", role: "product-owner" } as ProductOwner, { name: "Test Dev", isDone: false, role: "developer" } as Developer],
+        [
+          { name: "Test PO", role: "product-owner" } as ProductOwner,
+          { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+        ],
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
@@ -101,7 +107,10 @@ describe("TableOverview", () => {
 
     it("should emit reveal when product owner command center emits reveal", () => {
       const wrapper = createWrapper(
-        [{ name: "Test PO", role: "product-owner" } as ProductOwner, { name: "Test Dev", isDone: false, role: "developer" } as Developer],
+        [
+          { name: "Test PO", role: "product-owner" } as ProductOwner,
+          { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+        ],
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
@@ -115,7 +124,10 @@ describe("TableOverview", () => {
 
     it("should emit new-round when product owner command center emits new-round", () => {
       const wrapper = createWrapper(
-        [{ name: "Test PO", role: "product-owner" } as ProductOwner, { name: "Test Dev", isDone: false, role: "developer" } as Developer],
+        [
+          { name: "Test PO", role: "product-owner" } as ProductOwner,
+          { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+        ],
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
@@ -130,7 +142,10 @@ describe("TableOverview", () => {
 });
 
 function createWrapper(
-  usersInRoom = [{ name: "Test PO", role: "product-owner" } as ProductOwner, { name: "Test Dev", isDone: false, role: "developer" } as Developer],
+  usersInRoom = [
+    { name: "Test PO", role: "product-owner" } as ProductOwner,
+    { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+  ],
   roundState = RoundState.Waiting,
   developerDone = [] as DeveloperDone[],
   showAllGuesses = false,

@@ -88,7 +88,10 @@ describe("Websocket Store", () => {
   });
 
   it("should fetch users in room when join message appeared", async () => {
-    const usersInRoom = [{ name: "C", role: Role.Developer, guess: 0 }, { name: "ABC", role: Role.ProductOwner, guess: 0 }];
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -105,7 +108,10 @@ describe("Websocket Store", () => {
   });
 
   it("should fetch users in room when leave message appeared", async () => {
-    const usersInRoom = [{ name: "C", role: Role.Developer, guess: 0 }, { name: "ABC", role: Role.ProductOwner, guess: 0 }];
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -122,7 +128,10 @@ describe("Websocket Store", () => {
   });
 
   it("should fetch users in room when developer-guessed message appeared", async () => {
-    const usersInRoom = [{ name: "C", role: Role.Developer, guess: 0 }, { name: "ABC", role: Role.ProductOwner, guess: 0 }];
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -170,7 +179,10 @@ describe("Websocket Store", () => {
   });
 
   it("should fetch users in room and end round when everyone-guessed message appeared", async () => {
-    const usersInRoom = [{ name: "C", role: Role.Developer, guess: 0 }, { name: "ABC", role: Role.ProductOwner, guess: 0 }];
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -224,7 +236,10 @@ describe("Websocket Store", () => {
   });
 
   it("should reset round and fetch users in room when new-round message appeared", async () => {
-    const usersInRoom = [{ name: "C", role: Role.Developer, guess: 0 }, { name: "ABC", role: Role.ProductOwner, guess: 0 }];
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -268,7 +283,10 @@ describe("Websocket Store", () => {
   });
 
   it("should reset usersInRoom when response is not ok", async () => {
-    const usersInRoom = [{ name: "C", role: Role.Developer, guess: 0 }, { name: "ABC", role: Role.ProductOwner, guess: 0 }];
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
     });

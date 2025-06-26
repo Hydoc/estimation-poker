@@ -28,15 +28,14 @@ beforeEach(() => {
 describe("RoomDetail", () => {
   describe("rendering", () => {
     it("should render", () => {
-      const productOwnerList = [{ name: "Product Owner Test", role: Role.ProductOwner }];
       const currentUsername = "Test";
-      const developerList = [{ name: currentUsername, isDone: false, role: Role.Developer }];
+      const usersInRoom = [
+        { name: currentUsername, isDone: false, role: Role.Developer },
+        { name: "Product Owner Test", role: Role.ProductOwner },
+      ];
       const wrapper = mount(RoomDetail, {
         props: {
-          usersInRoom: {
-            developerList,
-            productOwnerList,
-          },
+          usersInRoom,
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
@@ -59,21 +58,17 @@ describe("RoomDetail", () => {
 
       expect(wrapper.findComponent(TableOverview).exists()).to.be.true;
       expect(wrapper.findComponent(TableOverview).props("showAllGuesses")).to.be.false;
-      expect(wrapper.findComponent(TableOverview).props("usersInRoom")).deep.equal({
-        developerList: [
-          {
-            isDone: false,
-            name: "Test",
-            role: "developer",
-          },
-        ],
-        productOwnerList: [
-          {
-            name: "Product Owner Test",
-            role: "product-owner",
-          },
-        ],
-      });
+      expect(wrapper.findComponent(TableOverview).props("usersInRoom")).deep.equal([
+        {
+          isDone: false,
+          name: "Test",
+          role: "developer",
+        },
+        {
+          name: "Product Owner Test",
+          role: "product-owner",
+        },
+      ]);
       expect(wrapper.findComponent(TableOverview).props("ticketToGuess")).equal("");
       expect(wrapper.findComponent(TableOverview).props("roundState")).equal(RoundState.Waiting);
 
@@ -97,10 +92,10 @@ describe("RoomDetail", () => {
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
-          usersInRoom: {
-            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
-            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
-          },
+          usersInRoom: [
+            { name: "Test", guess: 0, role: Role.Developer },
+            { name: "Product Owner Test", role: Role.ProductOwner },
+          ],
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
@@ -128,10 +123,10 @@ describe("RoomDetail", () => {
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
-          usersInRoom: {
-            developerList: [{ name: "Test", isDone: false, role: Role.Developer }],
-            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
-          },
+          usersInRoom: [
+            { name: "Test", isDone: false, role: Role.Developer },
+            { name: "Product Owner Test", role: Role.ProductOwner },
+          ],
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
@@ -159,10 +154,10 @@ describe("RoomDetail", () => {
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
-          usersInRoom: {
-            developerList: [{ name: "Test", isDone: false, role: Role.Developer }],
-            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
-          },
+          usersInRoom: [
+            { name: "Test", isDone: false, role: Role.Developer },
+            { name: "Product Owner Test", role: Role.ProductOwner },
+          ],
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "",
@@ -190,10 +185,10 @@ describe("RoomDetail", () => {
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
-          usersInRoom: {
-            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
-            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
-          },
+          usersInRoom: [
+            { name: "Test", guess: 0, role: Role.Developer },
+            { name: "Product Owner Test", role: Role.ProductOwner },
+          ],
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
@@ -221,10 +216,10 @@ describe("RoomDetail", () => {
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
-          usersInRoom: {
-            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
-            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
-          },
+          usersInRoom: [
+            { name: "Test", guess: 0, role: Role.Developer },
+            { name: "Product Owner Test", role: Role.ProductOwner },
+          ],
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
@@ -253,10 +248,10 @@ describe("RoomDetail", () => {
       const wrapper = mount(RoomDetail, {
         props: {
           developerDone: [],
-          usersInRoom: {
-            developerList: [{ name: "Test", guess: 0, role: Role.Developer }],
-            productOwnerList: [{ name: "Product Owner Test", role: Role.ProductOwner }],
-          },
+          usersInRoom: [
+            { name: "Test", guess: 0, role: Role.Developer },
+            { name: "Product Owner Test", role: Role.ProductOwner },
+          ],
           userRole: Role.Developer,
           roundState: RoundState.Waiting,
           ticketToGuess: "CC-1",
