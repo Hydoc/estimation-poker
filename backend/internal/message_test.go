@@ -9,13 +9,13 @@ import (
 func TestMessage(t *testing.T) {
 	tests := []struct {
 		name         string
-		msg          *message
+		msg          *Message
 		expectedType string
 		expectedData any
 	}{
 		{
-			name:         "newJoin",
-			msg:          newJoin(),
+			name:         "NewJoin",
+			msg:          NewJoin(),
 			expectedType: join,
 			expectedData: nil,
 		},

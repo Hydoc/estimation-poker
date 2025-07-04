@@ -1,8 +1,8 @@
-package internal
+package main
 
 import "net/http"
 
-func (app *Application) Routes() *http.ServeMux {
+func (app *application) Routes() *http.ServeMux {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /api/estimation/room/{id}/product-owner", app.withRequiredQueryParam("name", app.handleWs))
 	router.HandleFunc("GET /api/estimation/room/{id}/developer", app.withRequiredQueryParam("name", app.handleWs))

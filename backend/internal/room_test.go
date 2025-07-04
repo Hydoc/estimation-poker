@@ -14,9 +14,9 @@ import (
 
 func TestNewRoom(t *testing.T) {
 	expectedRoomId := RoomId("Test")
-	room := newRoom(expectedRoomId, make(chan<- RoomId), "")
-	assert.Equal(t, room.id, expectedRoomId)
-	assert.False(t, room.inProgress)
+	room := NewRoom(expectedRoomId, make(chan<- RoomId), "")
+	assert.Equal(t, room.Id, expectedRoomId)
+	assert.False(t, room.InProgress)
 }
 
 func TestRoom_everyDevGuessed(t *testing.T) {
@@ -80,11 +80,11 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_RegisteringAClient(t *testing.T) {
-	room := newRoom("Test", make(chan<- RoomId), "")
+	room := NewRoom("Test", make(chan<- RoomId), "")
 	client := &Client{}
 	go room.Run()
 
-	room.join <- client
+	room.Join <- client
 
 	room.clientMu.Lock()
 	if _, ok := room.clients[client]; !ok {
@@ -98,14 +98,14 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 	roomId := RoomId("Test")
 	client := &Client{}
 	room := &Room{
-		id:         roomId,
-		inProgress: false,
+		Id:         roomId,
+		InProgress: false,
 		leave:      make(chan *Client),
-		join:       nil,
+		Join:       nil,
 		clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: nil,
+		Broadcast: nil,
 		destroy:   destroyChannel,
 	}
 	go room.Run()
@@ -124,55 +124,55 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastEstimate(t *testing.T) {
-	clientSendChannel := make(chan *message)
+	clientSendChannel := make(chan *Message)
 	client := &Client{
 		send: clientSendChannel,
 	}
 	room := &Room{
-		id:         "Test",
-		inProgress: false,
+		Id:         "Test",
+		InProgress: false,
 		leave:      nil,
-		join:       nil,
+		Join:       nil,
 		clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: make(chan *message),
+		Broadcast: make(chan *Message),
 		destroy:   nil,
 	}
 	go room.Run()
 
-	msg := &message{
+	msg := &Message{
 		Type: estimate,
 		Data: nil,
 	}
-	room.broadcast <- msg
+	room.Broadcast <- msg
 
 	gotClientMsg := <-clientSendChannel
 
 	assert.DeepEqual(t, gotClientMsg, msg)
-	assert.True(t, room.inProgress)
+	assert.True(t, room.InProgress)
 }
 
 func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) {
-	clientSendChannel := make(chan *message)
+	clientSendChannel := make(chan *Message)
 	client := &Client{
 		send:  clientSendChannel,
 		Role:  Developer,
 		Guess: 1,
 	}
 	room := &Room{
-		id:         "Test",
-		inProgress: false,
+		Id:         "Test",
+		InProgress: false,
 		leave:      nil,
-		join:       nil,
+		Join:       nil,
 		clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: make(chan *message),
+		Broadcast: make(chan *Message),
 		destroy:   nil,
 	}
 	go room.Run()
-	room.broadcast <- newDeveloperGuessed()
+	room.Broadcast <- newDeveloperGuessed()
 
 	gotClientMsg := <-clientSendChannel
 
@@ -181,16 +181,16 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 
 // sometimes stuck, why
 func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
-	clientSendChannel := make(chan *message)
+	clientSendChannel := make(chan *Message)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
 	}
 	room := &Room{
-		id:         "Test",
-		inProgress: false,
+		Id:         "Test",
+		InProgress: false,
 		leave:      make(chan *Client),
-		join:       make(chan *Client),
+		Join:       make(chan *Client),
 		clients: map[*Client]bool{
 			client: true,
 			{
@@ -198,13 +198,13 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 				Guess: 0,
 			}: true,
 		},
-		broadcast: make(chan *message),
+		Broadcast: make(chan *Message),
 		destroy:   make(chan<- RoomId),
 	}
 	msg := newDeveloperGuessed()
 	go room.Run()
 	go func() {
-		room.broadcast <- msg
+		room.Broadcast <- msg
 	}()
 
 	select {
@@ -216,7 +216,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastNewRound(t *testing.T) {
-	clientSendChannel := make(chan *message)
+	clientSendChannel := make(chan *Message)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -227,33 +227,33 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 		Guess: 2,
 	}
 	room := &Room{
-		id:         "Test",
-		inProgress: true,
+		Id:         "Test",
+		InProgress: true,
 		leave:      nil,
-		join:       nil,
+		Join:       nil,
 		clients: map[*Client]bool{
 			client:           true,
 			developerToReset: true,
 		},
-		broadcast: make(chan *message),
+		Broadcast: make(chan *Message),
 		destroy:   nil,
 	}
 	go room.Run()
 
 	msg := newNewRound()
-	room.broadcast <- msg
+	room.Broadcast <- msg
 
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
 	assert.DeepEqual(t, gotClientMsg, msg)
-	assert.False(t, room.inProgress)
+	assert.False(t, room.InProgress)
 	assert.Equal(t, developerToReset.Guess, 0)
 }
 
 func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
-	clientSendChannel := make(chan *message)
-	broadcastChannel := make(chan *message)
+	clientSendChannel := make(chan *Message)
+	broadcastChannel := make(chan *Message)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -264,65 +264,65 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 		Guess: 2,
 	}
 	room := &Room{
-		id:         "Test",
-		inProgress: true,
+		Id:         "Test",
+		InProgress: true,
 		leave:      nil,
-		join:       nil,
+		Join:       nil,
 		clients: map[*Client]bool{
 			client:           true,
 			developerToReset: true,
 		},
-		broadcast: broadcastChannel,
+		Broadcast: broadcastChannel,
 		destroy:   nil,
 	}
 	go room.Run()
 
 	msg := newLeave()
-	room.broadcast <- msg
+	room.Broadcast <- msg
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
 	assert.DeepEqual(t, gotClientMsg, newNewRound())
-	assert.False(t, room.inProgress)
+	assert.False(t, room.InProgress)
 	assert.Equal(t, developerToReset.Guess, 0)
 }
 
 func TestRoom_lock(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
-		id:             "Test",
-		inProgress:     true,
+		Id:             "Test",
+		InProgress:     true,
 		leave:          nil,
-		join:           nil,
+		Join:           nil,
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan *message),
+		Broadcast:      make(chan *Message),
 		destroy:        nil,
-		isLocked:       false,
-		nameOfCreator:  "Bla",
-		key:            key,
+		IsLocked:       false,
+		NameOfCreator:  "Bla",
+		Key:            key,
 		hashedPassword: make([]byte, 0),
 	}
 
 	got := room.lock("Bla", "top secret", key.String())
 
 	assert.True(t, got)
-	assert.True(t, room.isLocked)
+	assert.True(t, room.IsLocked)
 	assert.False(t, len(room.hashedPassword) == 0)
 }
 
 func TestRoom_lock_WhenLockingFails(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
-		id:             "Test",
-		inProgress:     true,
+		Id:             "Test",
+		InProgress:     true,
 		leave:          nil,
-		join:           nil,
+		Join:           nil,
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan *message),
+		Broadcast:      make(chan *Message),
 		destroy:        nil,
-		isLocked:       false,
-		nameOfCreator:  "Bla",
-		key:            key,
+		IsLocked:       false,
+		NameOfCreator:  "Bla",
+		Key:            key,
 		hashedPassword: make([]byte, 0),
 	}
 
@@ -334,11 +334,11 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 	id := uuid.New()
 	room := &Room{
-		id:            "Test",
-		inProgress:    false,
-		nameOfCreator: "some user",
-		isLocked:      false,
-		key:           id,
+		Id:            "Test",
+		InProgress:    false,
+		NameOfCreator: "some user",
+		IsLocked:      false,
+		Key:           id,
 	}
 	got := room.open("invalid user", id.String())
 
@@ -347,14 +347,14 @@ func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 
 func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
 	room := &Room{
-		id:            "Test",
-		inProgress:    false,
-		nameOfCreator: "some user",
-		isLocked:      false,
-		key:           uuid.New(),
+		Id:            "Test",
+		InProgress:    false,
+		NameOfCreator: "some user",
+		IsLocked:      false,
+		Key:           uuid.New(),
 	}
 
-	got := room.open("some user", "incorrect key")
+	got := room.open("some user", "incorrect Key")
 
 	assert.False(t, got)
 }
@@ -368,16 +368,16 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 
 	key := uuid.New()
 	room := &Room{
-		id:             "Test",
-		inProgress:     true,
+		Id:             "Test",
+		InProgress:     true,
 		leave:          nil,
-		join:           nil,
+		Join:           nil,
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan *message),
+		Broadcast:      make(chan *Message),
 		destroy:        nil,
-		isLocked:       false,
-		nameOfCreator:  "Bla",
-		key:            key,
+		IsLocked:       false,
+		NameOfCreator:  "Bla",
+		Key:            key,
 		hashedPassword: make([]byte, 0),
 	}
 

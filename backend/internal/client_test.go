@@ -19,7 +19,7 @@ import (
 func TestClient_NewProductOwner(t *testing.T) {
 	expectedName := "Test Person"
 	expectedRole := ProductOwner
-	client := newClient(expectedName, expectedRole, &Room{}, &websocket.Conn{})
+	client := NewClient(expectedName, expectedRole, &Room{}, &websocket.Conn{})
 
 	if expectedName != client.Name {
 		t.Errorf("expected %v, got %v", expectedName, client.Name)
@@ -29,12 +29,12 @@ func TestClient_NewProductOwner(t *testing.T) {
 		t.Errorf("expected role %v, got %v", expectedRole, client.Role)
 	}
 
-	expectedJsonRepresentation := userDTO{
+	expectedJsonRepresentation := UserDTO{
 		"name": expectedName,
 		"role": expectedRole,
 	}
 
-	got := client.toJson()
+	got := client.ToJson()
 
 	assert.DeepEqual(t, got, expectedJsonRepresentation)
 }
@@ -43,26 +43,26 @@ func TestClient_NewClient(t *testing.T) {
 	expectedName := "Test Person"
 	expectedRole := Developer
 	expectedGuess := 0
-	client := newClient(expectedName, expectedRole, &Room{}, &websocket.Conn{})
+	client := NewClient(expectedName, expectedRole, &Room{}, &websocket.Conn{})
 
 	assert.Equal(t, client.Name, expectedName)
 	assert.Equal(t, client.Role, expectedRole)
 	assert.Equal(t, client.Guess, expectedGuess)
 	assert.False(t, client.DoSkip)
 
-	expectedJsonRepresentation := userDTO{
+	expectedJsonRepresentation := UserDTO{
 		"name":   expectedName,
 		"role":   expectedRole,
 		"isDone": false,
 	}
 
-	got := client.toJson()
+	got := client.ToJson()
 
 	assert.DeepEqual(t, got, expectedJsonRepresentation)
 }
 
 func TestClient_Reset(t *testing.T) {
-	client := newClient("Any", Developer, &Room{}, &websocket.Conn{})
+	client := NewClient("Any", Developer, &Room{}, &websocket.Conn{})
 	client.Guess = 2
 	client.reset()
 
@@ -72,10 +72,10 @@ func TestClient_Reset(t *testing.T) {
 }
 
 func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *testing.T) {
-	broadcastChannel := make(chan *message)
+	broadcastChannel := make(chan *Message)
 	room := &Room{
-		broadcast: broadcastChannel,
-		join:      make(chan *Client),
+		Broadcast: broadcastChannel,
+		Join:      make(chan *Client),
 		leave:     make(chan *Client),
 		clients:   make(map[*Client]bool),
 	}
@@ -89,7 +89,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 		t.Fatalf("%v", err)
 	}
 
-	clientChannel := make(chan *message)
+	clientChannel := make(chan *Message)
 	client := &Client{
 		connection: connection,
 		Role:       Developer,
@@ -97,9 +97,9 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 		Name:       "Test",
 		room:       room,
 	}
-	go client.websocketReader()
+	go client.WebsocketReader()
 
-	wsjson.Write(context.Background(), connection, message{
+	wsjson.Write(context.Background(), connection, Message{
 		Type: "guess",
 		Data: 2,
 	})
@@ -114,10 +114,10 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 }
 
 func TestClient_websocketReaderRevealMessage(t *testing.T) {
-	broadcastChannel := make(chan *message)
+	broadcastChannel := make(chan *Message)
 	room := &Room{
-		broadcast: broadcastChannel,
-		join:      make(chan *Client),
+		Broadcast: broadcastChannel,
+		Join:      make(chan *Client),
 		leave:     make(chan *Client),
 		clients:   make(map[*Client]bool),
 	}
@@ -132,14 +132,14 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	client := newClient("Test", ProductOwner, room, connection)
-	go client.websocketReader()
-	go client.websocketWriter()
-	expectedMessage := &message{
+	client := NewClient("Test", ProductOwner, room, connection)
+	go client.WebsocketReader()
+	go client.WebsocketWriter()
+	expectedMessage := &Message{
 		Type: reveal,
 		Data: []map[string]any{},
 	}
-	client.send <- &message{
+	client.send <- &Message{
 		Type: reveal,
 	}
 
@@ -149,10 +149,10 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 }
 
 func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner(t *testing.T) {
-	broadcastChannel := make(chan *message)
+	broadcastChannel := make(chan *Message)
 	room := &Room{
-		broadcast: broadcastChannel,
-		join:      make(chan *Client),
+		Broadcast: broadcastChannel,
+		Join:      make(chan *Client),
 		leave:     make(chan *Client),
 		clients:   make(map[*Client]bool),
 	}
@@ -166,8 +166,8 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 		t.Fatalf("%v", err)
 	}
 
-	client := newClient("Test", ProductOwner, room, connection)
-	go client.websocketReader()
+	client := NewClient("Test", ProductOwner, room, connection)
+	go client.WebsocketReader()
 
 	expectedMsg := newNewRound()
 	wsjson.Write(context.Background(), connection, expectedMsg)
@@ -178,10 +178,10 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 }
 
 func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(t *testing.T) {
-	broadcastChannel := make(chan *message)
+	broadcastChannel := make(chan *Message)
 	room := &Room{
-		broadcast: broadcastChannel,
-		join:      make(chan *Client),
+		Broadcast: broadcastChannel,
+		Join:      make(chan *Client),
 		leave:     make(chan *Client),
 		clients:   make(map[*Client]bool),
 	}
@@ -195,7 +195,7 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 		t.Fatalf("%v", err)
 	}
 
-	clientChannel := make(chan *message)
+	clientChannel := make(chan *Message)
 	client := &Client{
 		connection: connection,
 		room:       room,
@@ -203,9 +203,9 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 		Role:       Developer,
 		send:       clientChannel,
 	}
-	go client.websocketReader()
+	go client.WebsocketReader()
 
-	wsjson.Write(context.Background(), connection, message{
+	wsjson.Write(context.Background(), connection, Message{
 		Type: skipRound,
 	})
 
@@ -219,16 +219,16 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 }
 
 func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *testing.T) {
-	broadcastChannel := make(chan *message)
+	broadcastChannel := make(chan *Message)
 	id := uuid.New()
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
 	room := &Room{
-		broadcast:      broadcastChannel,
-		join:           make(chan *Client),
+		Broadcast:      broadcastChannel,
+		Join:           make(chan *Client),
 		leave:          make(chan *Client),
 		clients:        make(map[*Client]bool),
-		nameOfCreator:  "Test",
-		key:            id,
+		NameOfCreator:  "Test",
+		Key:            id,
 		hashedPassword: hashedPassword,
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
@@ -248,13 +248,13 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 		Role:       Developer,
 		send:       nil,
 	}
-	go client.websocketReader()
+	go client.WebsocketReader()
 
-	wsjson.Write(context.Background(), connection, message{
+	wsjson.Write(context.Background(), connection, Message{
 		Type: lockRoom,
 		Data: map[string]any{
 			"password": "my cool pw",
-			"key":      id.String(),
+			"Key":      id.String(),
 		},
 	})
 
@@ -265,16 +265,16 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 }
 
 func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
-	broadcastChannel := make(chan *message)
+	broadcastChannel := make(chan *Message)
 	id := uuid.New()
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
 	room := &Room{
-		broadcast:      broadcastChannel,
-		join:           make(chan *Client),
+		Broadcast:      broadcastChannel,
+		Join:           make(chan *Client),
 		leave:          make(chan *Client),
 		clients:        make(map[*Client]bool),
-		nameOfCreator:  "Test",
-		key:            id,
+		NameOfCreator:  "Test",
+		Key:            id,
 		hashedPassword: hashedPassword,
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
@@ -294,12 +294,12 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 		Role:       Developer,
 		send:       nil,
 	}
-	go client.websocketReader()
+	go client.WebsocketReader()
 
-	wsjson.Write(context.Background(), connection, message{
+	wsjson.Write(context.Background(), connection, Message{
 		Type: openRoom,
 		Data: map[string]any{
-			"key": id.String(),
+			"Key": id.String(),
 		},
 	})
 
@@ -310,10 +310,10 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 }
 
 func TestClient_WebsocketWriter(t *testing.T) {
-	broadcastChannel := make(chan *message)
+	broadcastChannel := make(chan *Message)
 	room := &Room{
-		broadcast: broadcastChannel,
-		join:      make(chan *Client),
+		Broadcast: broadcastChannel,
+		Join:      make(chan *Client),
 		leave:     make(chan *Client),
 		clients:   make(map[*Client]bool),
 	}
@@ -327,7 +327,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	clientChannel := make(chan *message)
+	clientChannel := make(chan *Message)
 	client := &Client{
 		connection: connection,
 		Role:       ProductOwner,
@@ -335,11 +335,11 @@ func TestClient_WebsocketWriter(t *testing.T) {
 		Name:       "Test",
 		room:       room,
 	}
-	go client.websocketWriter()
-	go client.websocketReader()
+	go client.WebsocketWriter()
+	go client.WebsocketReader()
 
 	// due to the echo websocket it writes to itself
-	expectedMsg := &message{
+	expectedMsg := &Message{
 		Type: estimate,
 	}
 	clientChannel <- expectedMsg

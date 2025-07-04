@@ -13,31 +13,31 @@ type RoomId string
 type Room struct {
 	clientMu sync.Mutex
 
-	id             RoomId
-	inProgress     bool
+	Id             RoomId
+	InProgress     bool
 	leave          chan *Client
-	join           chan *Client
-	clients        map[*Client]bool
-	broadcast      chan *message
+	Join           chan *Client
+	Clients        map[*Client]bool
+	Broadcast      chan *Message
 	destroy        chan<- RoomId
-	nameOfCreator  string
-	isLocked       bool
-	key            uuid.UUID
+	NameOfCreator  string
+	IsLocked       bool
+	Key            uuid.UUID
 	hashedPassword []byte
 }
 
-func newRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
+func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 	return &Room{
-		id:             name,
-		inProgress:     false,
+		Id:             name,
+		InProgress:     false,
 		leave:          make(chan *Client),
-		join:           make(chan *Client),
-		clients:        make(map[*Client]bool),
-		broadcast:      make(chan *message),
+		Join:           make(chan *Client),
+		Clients:        make(map[*Client]bool),
+		Broadcast:      make(chan *Message),
 		destroy:        destroy,
-		nameOfCreator:  nameOfCreator,
-		isLocked:       false,
-		key:            uuid.New(),
+		NameOfCreator:  nameOfCreator,
+		IsLocked:       false,
+		Key:            uuid.New(),
 		hashedPassword: make([]byte, 0),
 	}
 }
@@ -48,8 +48,8 @@ func (room *Room) lock(username, password, key string) bool {
 		log.Printf("could not hash password %s\n", password)
 		return false
 	}
-	if username == room.nameOfCreator && key == room.key.String() {
-		room.isLocked = true
+	if username == room.NameOfCreator && key == room.Key.String() {
+		room.IsLocked = true
 		room.hashedPassword = hashed
 		return true
 	}
@@ -58,21 +58,21 @@ func (room *Room) lock(username, password, key string) bool {
 }
 
 func (room *Room) open(username, key string) bool {
-	if username == room.nameOfCreator && key == room.key.String() {
-		room.isLocked = false
+	if username == room.NameOfCreator && key == room.Key.String() {
+		room.IsLocked = false
 		room.hashedPassword = make([]byte, 0)
 		return true
 	}
 	return false
 }
 
-func (room *Room) verify(password string) bool {
+func (room *Room) Verify(password string) bool {
 	err := bcrypt.CompareHashAndPassword(room.hashedPassword, []byte(password))
 	return err == nil
 }
 
 func (room *Room) everyDevIsDone() bool {
-	for client := range room.clients {
+	for client := range room.Clients {
 		if client.Role == Developer && (client.Guess == 0 && !client.DoSkip) {
 			return false
 		}
@@ -81,7 +81,7 @@ func (room *Room) everyDevIsDone() bool {
 }
 
 func (room *Room) newRound(client *Client) {
-	room.inProgress = false
+	room.InProgress = false
 	if client.Role == Developer {
 		client.reset()
 	}
@@ -91,22 +91,22 @@ func (room *Room) newRound(client *Client) {
 func (room *Room) Run() {
 	for {
 		select {
-		case client := <-room.join:
+		case client := <-room.Join:
 			room.clientMu.Lock()
-			room.clients[client] = true
+			room.Clients[client] = true
 			room.clientMu.Unlock()
 		case client := <-room.leave:
-			if _, ok := room.clients[client]; ok {
-				delete(room.clients, client)
+			if _, ok := room.Clients[client]; ok {
+				delete(room.Clients, client)
 			}
-			if len(room.clients) == 0 {
-				room.destroy <- room.id
+			if len(room.Clients) == 0 {
+				room.destroy <- room.Id
 			}
-		case msg := <-room.broadcast:
-			for client := range room.clients {
+		case msg := <-room.Broadcast:
+			for client := range room.Clients {
 				switch msg.Type {
 				case estimate:
-					room.inProgress = true
+					room.InProgress = true
 					client.send <- msg
 				case developerGuessed, skipRound, developerSkipped:
 					if room.everyDevIsDone() {
@@ -117,8 +117,8 @@ func (room *Room) Run() {
 				case newRound:
 					room.newRound(client)
 				case leave:
-					if room.inProgress {
-						for c := range room.clients {
+					if room.InProgress {
+						for c := range room.Clients {
 							room.newRound(c)
 						}
 						continue
@@ -127,7 +127,7 @@ func (room *Room) Run() {
 				case join, reveal:
 					client.send <- msg
 				default:
-					log.Printf("unexpected message %#v", msg)
+					log.Printf("unexpected Message %#v", msg)
 				}
 			}
 		}

@@ -1,7 +1,7 @@
 package internal
 
 const (
-	join             = "join"
+	join             = "Join"
 	leave            = "leave"
 	guess            = "guess"
 	newRound         = "new-round"
@@ -19,48 +19,48 @@ const (
 	youGuessed       = "you-guessed"
 )
 
-type message struct {
+type Message struct {
 	Type string `json:"type"`
 	Data any    `json:"data"`
 }
 
-func newJoin() *message {
-	return &message{
+func NewJoin() *Message {
+	return &Message{
 		Type: join,
 	}
 }
 
-func newLeave() *message {
-	return &message{
+func newLeave() *Message {
+	return &Message{
 		Type: leave,
 	}
 }
 
-func newRoomLocked() *message {
-	return &message{
+func newRoomLocked() *Message {
+	return &Message{
 		Type: roomLocked,
 	}
 }
 
-func newRoomOpened() *message {
-	return &message{
+func newRoomOpened() *Message {
+	return &Message{
 		Type: roomOpened,
 	}
 }
 
-func newDeveloperGuessed() *message {
-	return &message{
+func newDeveloperGuessed() *Message {
+	return &Message{
 		Type: developerGuessed,
 	}
 }
 
-func newEveryoneIsDone() *message {
-	return &message{
+func newEveryoneIsDone() *Message {
+	return &Message{
 		Type: everyoneDone,
 	}
 }
 
-func newReveal(clients map[*Client]bool) *message {
+func newReveal(clients map[*Client]bool) *Message {
 	out := []map[string]any{}
 	for client := range clients {
 		if client.Role == Developer {
@@ -68,32 +68,32 @@ func newReveal(clients map[*Client]bool) *message {
 		}
 	}
 
-	return &message{
+	return &Message{
 		Type: reveal,
 		Data: out,
 	}
 }
 
-func newNewRound() *message {
-	return &message{
+func newNewRound() *Message {
+	return &Message{
 		Type: newRound,
 	}
 }
 
-func newDeveloperSkipped() *message {
-	return &message{
+func newDeveloperSkipped() *Message {
+	return &Message{
 		Type: developerSkipped,
 	}
 }
 
-func newYouSkipped() *message {
-	return &message{
+func newYouSkipped() *Message {
+	return &Message{
 		Type: youSkipped,
 	}
 }
 
-func newYouGuessed(guess int) *message {
-	return &message{
+func newYouGuessed(guess int) *Message {
+	return &Message{
 		Type: youGuessed,
 		Data: guess,
 	}

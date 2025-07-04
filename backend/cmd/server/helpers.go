@@ -1,11 +1,11 @@
-package internal
+package main
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-func (app *Application) writeJson(writer http.ResponseWriter, status int, data any, headers http.Header) error {
+func (app *application) writeJson(writer http.ResponseWriter, status int, data any, headers http.Header) error {
 	jsonResponse, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		return err

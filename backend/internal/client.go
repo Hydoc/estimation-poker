@@ -18,7 +18,7 @@ const (
 	writeWait    = 10 * time.Second
 )
 
-type userDTO map[string]any
+type UserDTO map[string]any
 
 type Client struct {
 	connection *websocket.Conn
@@ -27,30 +27,30 @@ type Client struct {
 	Role       string
 	Guess      int
 	DoSkip     bool
-	send       chan *message
+	send       chan *Message
 }
 
-func newClient(name, role string, room *Room, connection *websocket.Conn) *Client {
+func NewClient(name, role string, room *Room, connection *websocket.Conn) *Client {
 	return &Client{
 		room:       room,
 		Name:       name,
 		connection: connection,
 		Role:       role,
-		send:       make(chan *message),
+		send:       make(chan *Message),
 	}
 }
 
-func (client *Client) websocketReader() {
+func (client *Client) WebsocketReader() {
 	defer func() {
 		client.room.leave <- client
-		client.room.broadcast <- newLeave()
+		client.room.Broadcast <- newLeave()
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {
-		var incMessage *message
+		var incMessage *Message
 		err := wsjson.Read(context.Background(), client.connection, &incMessage)
 		if err != nil {
-			log.Println("error reading incoming client message:", err)
+			log.Println("error reading incoming client Message:", err)
 			return
 		}
 
@@ -58,58 +58,58 @@ func (client *Client) websocketReader() {
 		case incMessage.Type == skipRound && client.Role == Developer:
 			client.DoSkip = true
 			client.Guess = 0
-			client.room.broadcast <- newDeveloperSkipped()
+			client.room.Broadcast <- newDeveloperSkipped()
 			client.send <- newYouSkipped()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
 			client.Guess = actualGuess
 			client.DoSkip = false
-			client.room.broadcast <- newDeveloperGuessed()
+			client.room.Broadcast <- newDeveloperGuessed()
 			client.send <- newYouGuessed(actualGuess)
 		case incMessage.Type == newRound && client.Role == ProductOwner:
-			client.room.broadcast <- incMessage
+			client.room.Broadcast <- incMessage
 		case incMessage.Type == reveal && client.Role == ProductOwner:
-			client.room.broadcast <- newReveal(client.room.clients)
+			client.room.Broadcast <- newReveal(client.room.clients)
 		case incMessage.Type == estimate && client.Role == ProductOwner:
-			client.room.broadcast <- incMessage
+			client.room.Broadcast <- incMessage
 		case incMessage.Type == lockRoom:
 			pw, pwOk := incMessage.Data.(map[string]any)["password"]
-			key, keyOk := incMessage.Data.(map[string]any)["key"]
+			key, keyOk := incMessage.Data.(map[string]any)["Key"]
 
 			if !keyOk {
-				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a key", client.Name, client.room.id))
+				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a Key", client.Name, client.room.Id))
 				break
 			}
 			if !pwOk {
-				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a password", client.Name, client.room.id))
+				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a password", client.Name, client.room.Id))
 				break
 			}
 
 			if client.room.lock(client.Name, pw.(string), key.(string)) {
-				client.room.broadcast <- newRoomLocked()
+				client.room.Broadcast <- newRoomLocked()
 				break
 			}
 			log.Println("was not able to lock room")
 		case incMessage.Type == openRoom:
-			key, keyOk := incMessage.Data.(map[string]any)["key"]
+			key, keyOk := incMessage.Data.(map[string]any)["Key"]
 
 			if !keyOk {
-				log.Println("client:", client.Name, "tried to open room", client.room.id, "without a key")
+				log.Println("client:", client.Name, "tried to open room", client.room.Id, "without a Key")
 				break
 			}
 
 			if client.room.open(client.Name, key.(string)) {
-				client.room.broadcast <- newRoomOpened()
+				client.room.Broadcast <- newRoomOpened()
 				break
 			}
 			log.Println("was not able to open room")
 		default:
-			log.Printf("unknown message %#v\n", incMessage)
+			log.Printf("unknown Message %#v\n", incMessage)
 		}
 	}
 }
 
-func (client *Client) websocketWriter() {
+func (client *Client) WebsocketWriter() {
 	for {
 		select {
 		case msg := <-client.send:
@@ -136,7 +136,7 @@ func (client *Client) asReveal() map[string]any {
 	}
 }
 
-func (client *Client) toJson() userDTO {
+func (client *Client) ToJson() UserDTO {
 	if client.Role == Developer {
 		return map[string]any{
 			"name":   client.Name,

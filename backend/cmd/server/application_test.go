@@ -1,4 +1,4 @@
-package internal
+package main
 
 import (
 	"bytes"
@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/Hydoc/guess-dev/backend/internal"
 	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
@@ -22,7 +23,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 	tests := []struct {
 		name        string
 		expectation map[string]bool
-		rooms       map[RoomId]*Room
+		rooms       map[internal.RoomId]*internal.Room
 		room        string
 	}{
 		{
@@ -31,7 +32,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 				"inProgress": false,
 				"isLocked":   false,
 			},
-			rooms: map[RoomId]*Room{},
+			rooms: map[internal.RoomId]*internal.Room{},
 			room:  "1",
 		},
 		{
@@ -40,9 +41,9 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 				"inProgress": true,
 				"isLocked":   false,
 			},
-			rooms: map[RoomId]*Room{
+			rooms: map[internal.RoomId]*internal.Room{
 				"1": {
-					inProgress: true,
+					InProgress: true,
 				},
 			},
 			room: "1",
@@ -50,7 +51,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		app := &Application{
+		app := &application{
 			rooms: test.rooms,
 		}
 
@@ -73,14 +74,14 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 }
 
 func TestApplication_handleUserInRoomExists(t *testing.T) {
-	client := &Client{
+	client := &internal.Client{
 		Name: "Test",
 	}
 	roomId := "1"
 	tests := []struct {
 		url               string
 		name              string
-		rooms             map[RoomId]*Room
+		rooms             map[internal.RoomId]*internal.Room
 		expectation       map[string]interface{}
 		expectedErrorBody map[string]interface{}
 		statusCode        int
@@ -91,9 +92,9 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			expectation: map[string]interface{}{
 				"exists": false,
 			},
-			rooms: map[RoomId]*Room{
-				RoomId(roomId): {
-					clients: make(map[*Client]bool),
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId(roomId): {
+					Clients: make(map[*internal.Client]bool),
 				},
 			},
 			statusCode: 200,
@@ -104,9 +105,9 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			expectation: map[string]interface{}{
 				"exists": true,
 			},
-			rooms: map[RoomId]*Room{
-				RoomId(roomId): {
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId(roomId): {
+					Clients: map[*internal.Client]bool{
 						client: true,
 					},
 				},
@@ -117,9 +118,9 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			name:        "error when trying to access without name",
 			url:         fmt.Sprintf("/api/estimation/room/%s/users/exists?name=", roomId),
 			expectation: nil,
-			rooms: map[RoomId]*Room{
-				RoomId(roomId): {
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId(roomId): {
+					clients: map[*internal.Client]bool{
 						client: true,
 					},
 				},
@@ -135,7 +136,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			expectation: map[string]interface{}{
 				"exists": false,
 			},
-			rooms:             map[RoomId]*Room{},
+			rooms:             map[internal.RoomId]*internal.Room{},
 			expectedErrorBody: nil,
 			statusCode:        200,
 		},
@@ -143,7 +144,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := &Application{
+			app := &application{
 				rooms: test.rooms,
 			}
 			router := app.Routes()
@@ -171,77 +172,73 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 }
 
 func TestApplication_handleFetchUsers(t *testing.T) {
-	room := newRoom("1", make(chan<- RoomId), "")
-	dev := newClient("B", Developer, room, nil)
-	otherDev := newClient("Another", Developer, room, nil)
-	devWithEqualLetter := newClient("Also a dev", Developer, room, nil)
-	productOwner := newClient("Another one", ProductOwner, room, nil)
-	otherProductOwner := newClient("Also a po", ProductOwner, room, nil)
+	room := internal.NewRoom("1", make(chan<- internal.RoomId), "")
+	dev := internal.NewClient("B", internal.Developer, room, nil)
+	otherDev := internal.NewClient("Another", internal.Developer, room, nil)
+	devWithEqualLetter := internal.NewClient("Also a dev", internal.Developer, room, nil)
+	productOwner := internal.NewClient("Another one", internal.ProductOwner, room, nil)
+	otherProductOwner := internal.NewClient("Also a po", internal.ProductOwner, room, nil)
 
 	tests := []struct {
 		name        string
 		roomId      string
-		rooms       map[RoomId]*Room
+		rooms       map[internal.RoomId]*internal.Room
 		expectation []map[string]any
 	}{
 		{
 			name:   "some users in the same room",
 			roomId: "1",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					id:         "1",
-					inProgress: false,
-					leave:      nil,
-					join:       nil,
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("1"): {
+					Id:         "1",
+					InProgress: false,
+					Clients: map[*internal.Client]bool{
 						dev:                true,
 						otherDev:           true,
 						devWithEqualLetter: true,
 						productOwner:       true,
 						otherProductOwner:  true,
 					},
-					broadcast: nil,
-					destroy:   nil,
 				},
 			},
 			expectation: []map[string]any{
 				{
 					"name":   "Also a dev",
 					"isDone": false,
-					"role":   Developer,
+					"role":   internal.Developer,
 				},
 				{
 					"name": "Also a po",
-					"role": ProductOwner,
+					"role": internal.ProductOwner,
 				},
 				{
 					"name":   "Another",
 					"isDone": false,
-					"role":   Developer,
+					"role":   internal.Developer,
 				},
 				{
 					"name": "Another one",
-					"role": ProductOwner,
+					"role": internal.ProductOwner,
 				},
 				{
 					"name":   "B",
 					"isDone": false,
-					"role":   Developer,
+					"role":   internal.Developer,
 				},
 			},
 		},
 		{
 			name:        "no clients",
 			roomId:      "1",
-			rooms:       make(map[RoomId]*Room),
+			rooms:       make(map[internal.RoomId]*internal.Room),
 			expectation: []map[string]any{},
 		},
 		{
 			name:   "one dev client",
 			roomId: "1",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("1"): {
+					Clients: map[*internal.Client]bool{
 						dev: true,
 					},
 				},
@@ -250,15 +247,15 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				{
 					"name":   "B",
 					"isDone": false,
-					"role":   Developer,
+					"role":   internal.Developer,
 				},
 			},
 		},
 		{
 			name: "one po client",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("1"): {
+					Clients: map[*internal.Client]bool{
 						productOwner: true,
 					},
 				},
@@ -267,7 +264,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 			expectation: []map[string]any{
 				{
 					"name": "Another one",
-					"role": ProductOwner,
+					"role": internal.ProductOwner,
 				},
 			},
 		},
@@ -275,8 +272,8 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := &Application{
-				guessConfig: &GuessConfig{},
+			app := &application{
+				guessConfig: &internal.GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
 			}
@@ -301,7 +298,7 @@ func TestApplication_handleWs(t *testing.T) {
 	tests := []struct {
 		name           string
 		url            string
-		rooms          map[RoomId]*Room
+		rooms          map[internal.RoomId]*internal.Room
 		expectedError  map[string]string
 		expectedRoomId string
 		expectedRole   string
@@ -310,9 +307,9 @@ func TestApplication_handleWs(t *testing.T) {
 		{
 			name: "register as developer",
 			url:  "/api/estimation/room/1/developer?name=Test",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					id:         "1",
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("1"): {
+					Id:         "1",
 					inProgress: false,
 					leave:      nil,
 					join:       make(chan *Client),
@@ -383,7 +380,7 @@ func TestApplication_handleWs(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			expectedMsg := newJoin()
-			app := &Application{
+			app := &application{
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: make(chan RoomId),
@@ -465,7 +462,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := &Application{
+			app := &application{
 				guessConfig: &GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
@@ -561,7 +558,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 func TestApplication_ListenForRoomDestroy(t *testing.T) {
 	destroyChannel := make(chan RoomId)
 	roomToDestroy := RoomId("Test")
-	app := &Application{
+	app := &application{
 		guessConfig: &GuessConfig{},
 		rooms: map[RoomId]*Room{
 			roomToDestroy: {
@@ -576,7 +573,7 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 		},
 		destroyRoom: destroyChannel,
 	}
-	go app.ListenForRoomDestroy()
+	go app.listenForRoomDestroy()
 
 	app.destroyRoom <- roomToDestroy
 
@@ -650,7 +647,7 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 	if err != nil {
 		t.Errorf("error hashing password: %v", err)
 	}
-	app := &Application{
+	app := &application{
 		guessConfig: &GuessConfig{},
 		rooms: map[RoomId]*Room{
 			"1": {
@@ -731,7 +728,7 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 		},
 	}
 
-	app := &Application{
+	app := &application{
 		guessConfig: &GuessConfig{},
 		rooms: map[RoomId]*Room{
 			"1": {

@@ -1,4 +1,4 @@
-package internal
+package main
 
 import (
 	"encoding/json"
@@ -12,20 +12,22 @@ import (
 	"unicode/utf8"
 
 	"github.com/coder/websocket"
+
+	"github.com/Hydoc/guess-dev/backend/internal"
 )
 
-type Application struct {
+type application struct {
 	roomMu sync.Mutex
 
 	logger      *slog.Logger
-	guessConfig *GuessConfig
-	rooms       map[RoomId]*Room
-	destroyRoom chan RoomId
+	guessConfig *internal.GuessConfig
+	rooms       map[internal.RoomId]*internal.Room
+	destroyRoom chan internal.RoomId
 }
 
 type envelope map[string]any
 
-func (app *Application) withRequiredQueryParam(param string, next http.HandlerFunc) http.HandlerFunc {
+func (app *application) withRequiredQueryParam(param string, next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		queryParam := request.URL.Query().Get(param)
 
@@ -38,13 +40,13 @@ func (app *Application) withRequiredQueryParam(param string, next http.HandlerFu
 	}
 }
 
-func (app *Application) handleRoomAuthenticate(writer http.ResponseWriter, request *http.Request) {
+func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, request *http.Request) {
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
 
 	defer request.Body.Close()
 	roomId := request.PathValue("id")
-	actualRoom, ok := app.rooms[RoomId(roomId)]
+	actualRoom, ok := app.rooms[internal.RoomId(roomId)]
 	if !ok {
 		writer.WriteHeader(http.StatusForbidden)
 		return
@@ -60,7 +62,7 @@ func (app *Application) handleRoomAuthenticate(writer http.ResponseWriter, reque
 		return
 	}
 
-	if actualRoom.verify(input.Password) {
+	if actualRoom.Verify(input.Password) {
 		app.writeJson(writer, http.StatusOK, envelope{"ok": true}, nil)
 		return
 	}
@@ -68,24 +70,24 @@ func (app *Application) handleRoomAuthenticate(writer http.ResponseWriter, reque
 	app.writeJson(writer, http.StatusOK, envelope{"ok": false}, nil)
 }
 
-func (app *Application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
+func (app *application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
 
 	roomId := request.PathValue("id")
 	username := request.PathValue("username")
-	actualRoom, ok := app.rooms[RoomId(roomId)]
+	actualRoom, ok := app.rooms[internal.RoomId(roomId)]
 	if !ok {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	if actualRoom.nameOfCreator == username {
+	if actualRoom.NameOfCreator == username {
 		app.writeJson(writer, http.StatusOK, map[string]map[string]map[string]any{
 			"permissions": {
 				"room": {
 					"canLock": true,
-					"key":     actualRoom.key.String(),
+					"key":     actualRoom.Key.String(),
 				},
 			},
 		}, nil)
@@ -101,16 +103,16 @@ func (app *Application) handleFetchPermissions(writer http.ResponseWriter, reque
 	}, nil)
 }
 
-func (app *Application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
+func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
 	app.writeJson(writer, http.StatusOK, app.guessConfig.Guesses, nil)
 }
 
-func (app *Application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
+func (app *application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
 
 	roomId := request.PathValue("id")
-	actualRoom, ok := app.rooms[RoomId(roomId)]
+	actualRoom, ok := app.rooms[internal.RoomId(roomId)]
 	if !ok {
 		app.writeJson(writer, http.StatusOK, envelope{
 			"inProgress": false,
@@ -119,24 +121,24 @@ func (app *Application) handleFetchRoomState(writer http.ResponseWriter, request
 		return
 	}
 	app.writeJson(writer, http.StatusOK, envelope{
-		"inProgress": actualRoom.inProgress,
-		"isLocked":   actualRoom.isLocked,
+		"inProgress": actualRoom.InProgress,
+		"isLocked":   actualRoom.IsLocked,
 	}, nil)
 }
 
-func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
+func (app *application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
 	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
 
-	if _, ok := app.rooms[RoomId(roomId)]; !ok {
+	if _, ok := app.rooms[internal.RoomId(roomId)]; !ok {
 		app.writeJson(writer, http.StatusOK, envelope{"exists": false}, nil)
 		return
 	}
 
-	for client := range app.rooms[RoomId(roomId)].clients {
+	for client := range app.rooms[internal.RoomId(roomId)].Clients {
 		if client.Name == name {
 			app.writeJson(writer, http.StatusConflict, envelope{"exists": true}, nil)
 			return
@@ -145,31 +147,31 @@ func (app *Application) handleUserInRoomExists(writer http.ResponseWriter, reque
 	app.writeJson(writer, http.StatusOK, envelope{"exists": false}, nil)
 }
 
-func (app *Application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
+func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
 	activeRooms := []string{}
 	for _, room := range app.rooms {
-		if !room.isLocked {
-			activeRooms = append(activeRooms, string(room.id))
+		if !room.IsLocked {
+			activeRooms = append(activeRooms, string(room.Id))
 		}
 	}
 	slices.Sort(activeRooms)
 	app.writeJson(writer, http.StatusOK, activeRooms, nil)
 }
 
-func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
+func (app *application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
 	roomId := request.PathValue("id")
 
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
 
-	room, ok := app.rooms[RoomId(roomId)]
+	room, ok := app.rooms[internal.RoomId(roomId)]
 	if !ok {
 		app.writeJson(writer, http.StatusOK, []map[string]any{}, nil)
 		return
 	}
 
-	var clients []*Client
-	for client := range room.clients {
+	var clients []*internal.Client
+	for client := range room.Clients {
 		clients = append(clients, client)
 	}
 
@@ -179,13 +181,13 @@ func (app *Application) handleFetchUsers(writer http.ResponseWriter, request *ht
 
 	var out []map[string]any
 	for _, client := range clients {
-		out = append(out, client.toJson())
+		out = append(out, client.ToJson())
 	}
 
 	app.writeJson(writer, http.StatusOK, out, nil)
 }
 
-func (app *Application) handleWs(writer http.ResponseWriter, request *http.Request) {
+func (app *application) handleWs(writer http.ResponseWriter, request *http.Request) {
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
 
@@ -204,29 +206,29 @@ func (app *Application) handleWs(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	var clientRoom *Room
-	if room, ok := app.rooms[RoomId(roomId)]; ok {
+	var clientRoom *internal.Room
+	if room, ok := app.rooms[internal.RoomId(roomId)]; ok {
 		// when there is a room, it's already running in a goroutine
 		clientRoom = room
 	} else {
-		clientRoom = newRoom(RoomId(roomId), app.destroyRoom, name)
-		app.rooms[clientRoom.id] = clientRoom
+		clientRoom = internal.NewRoom(internal.RoomId(roomId), app.destroyRoom, name)
+		app.rooms[clientRoom.Id] = clientRoom
 		go clientRoom.Run()
 	}
 
-	clientRole := Developer
+	clientRole := internal.Developer
 	if strings.Contains(request.URL.Path, "product-owner") {
-		clientRole = ProductOwner
+		clientRole = internal.ProductOwner
 	}
-	client := newClient(name, clientRole, clientRoom, connection)
-	clientRoom.join <- client
-	clientRoom.broadcast <- newJoin()
+	client := internal.NewClient(name, clientRole, clientRoom, connection)
+	clientRoom.Join <- client
+	clientRoom.Broadcast <- internal.NewJoin()
 
-	go client.websocketReader()
-	go client.websocketWriter()
+	go client.WebsocketReader()
+	go client.WebsocketWriter()
 }
 
-func (app *Application) ListenForRoomDestroy() {
+func (app *application) listenForRoomDestroy() {
 	for {
 		select {
 		case roomId := <-app.destroyRoom:
@@ -236,14 +238,5 @@ func (app *Application) ListenForRoomDestroy() {
 			}
 			app.roomMu.Unlock()
 		}
-	}
-}
-
-func NewApplication(config *GuessConfig, logger *slog.Logger) *Application {
-	return &Application{
-		logger:      logger,
-		guessConfig: config,
-		rooms:       make(map[RoomId]*Room),
-		destroyRoom: make(chan RoomId),
 	}
 }

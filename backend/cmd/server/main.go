@@ -37,8 +37,13 @@ func main() {
 		return
 	}
 
-	app := internal.NewApplication(config, logger)
-	go app.ListenForRoomDestroy()
+	app := &application{
+		logger:      logger,
+		guessConfig: config,
+		rooms:       make(map[internal.RoomId]*internal.Room),
+		destroyRoom: make(chan internal.RoomId),
+	}
+	go app.listenForRoomDestroy()
 	router := app.Routes()
 	logger.Error(http.ListenAndServe(":8080", router).Error())
 }
