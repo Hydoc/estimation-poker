@@ -10,7 +10,7 @@ func TestNewGuessConfig(t *testing.T) {
 	possibleGuesses := "1,2,3,4,5"
 	possibleGuessesDesc := "A,B,C,D,E"
 	want := &GuessConfig{
-		Guesses: []guessConfigEntry{
+		Guesses: []GuessConfigEntry{
 			{
 				Guess:       1,
 				Description: "A",

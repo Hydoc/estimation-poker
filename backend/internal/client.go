@@ -69,7 +69,7 @@ func (client *Client) WebsocketReader() {
 		case incMessage.Type == newRound && client.Role == ProductOwner:
 			client.room.Broadcast <- incMessage
 		case incMessage.Type == reveal && client.Role == ProductOwner:
-			client.room.Broadcast <- newReveal(client.room.clients)
+			client.room.Broadcast <- newReveal(client.room.Clients)
 		case incMessage.Type == estimate && client.Role == ProductOwner:
 			client.room.Broadcast <- incMessage
 		case incMessage.Type == lockRoom:

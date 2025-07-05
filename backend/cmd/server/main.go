@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -43,7 +44,9 @@ func main() {
 		rooms:       make(map[internal.RoomId]*internal.Room),
 		destroyRoom: make(chan internal.RoomId),
 	}
-	go app.listenForRoomDestroy()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go app.listenForRoomDestroy(ctx)
 	router := app.Routes()
 	logger.Error(http.ListenAndServe(":8080", router).Error())
 }

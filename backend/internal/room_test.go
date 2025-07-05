@@ -71,7 +71,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			room := &Room{
-				clients: test.clients,
+				Clients: test.clients,
 			}
 			got := room.everyDevIsDone()
 			assert.Equal(t, got, test.want)
@@ -87,7 +87,7 @@ func TestRoom_Run_RegisteringAClient(t *testing.T) {
 	room.Join <- client
 
 	room.clientMu.Lock()
-	if _, ok := room.clients[client]; !ok {
+	if _, ok := room.Clients[client]; !ok {
 		t.Error("expected room to have client")
 	}
 	room.clientMu.Unlock()
@@ -102,7 +102,7 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 		InProgress: false,
 		leave:      make(chan *Client),
 		Join:       nil,
-		clients: map[*Client]bool{
+		Clients: map[*Client]bool{
 			client: true,
 		},
 		Broadcast: nil,
@@ -117,7 +117,7 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 	assert.Equal(t, gotId, roomId)
 
 	room.clientMu.Lock()
-	if _, ok := room.clients[client]; ok {
+	if _, ok := room.Clients[client]; ok {
 		t.Error("expected room not to have client")
 	}
 	room.clientMu.Unlock()
@@ -133,7 +133,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 		InProgress: false,
 		leave:      nil,
 		Join:       nil,
-		clients: map[*Client]bool{
+		Clients: map[*Client]bool{
 			client: true,
 		},
 		Broadcast: make(chan *Message),
@@ -165,7 +165,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 		InProgress: false,
 		leave:      nil,
 		Join:       nil,
-		clients: map[*Client]bool{
+		Clients: map[*Client]bool{
 			client: true,
 		},
 		Broadcast: make(chan *Message),
@@ -191,7 +191,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 		InProgress: false,
 		leave:      make(chan *Client),
 		Join:       make(chan *Client),
-		clients: map[*Client]bool{
+		Clients: map[*Client]bool{
 			client: true,
 			{
 				Role:  Developer,
@@ -231,7 +231,7 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 		InProgress: true,
 		leave:      nil,
 		Join:       nil,
-		clients: map[*Client]bool{
+		Clients: map[*Client]bool{
 			client:           true,
 			developerToReset: true,
 		},
@@ -268,7 +268,7 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 		InProgress: true,
 		leave:      nil,
 		Join:       nil,
-		clients: map[*Client]bool{
+		Clients: map[*Client]bool{
 			client:           true,
 			developerToReset: true,
 		},
@@ -294,20 +294,20 @@ func TestRoom_lock(t *testing.T) {
 		InProgress:     true,
 		leave:          nil,
 		Join:           nil,
-		clients:        make(map[*Client]bool),
+		Clients:        make(map[*Client]bool),
 		Broadcast:      make(chan *Message),
 		destroy:        nil,
 		IsLocked:       false,
 		NameOfCreator:  "Bla",
 		Key:            key,
-		hashedPassword: make([]byte, 0),
+		HashedPassword: make([]byte, 0),
 	}
 
 	got := room.lock("Bla", "top secret", key.String())
 
 	assert.True(t, got)
 	assert.True(t, room.IsLocked)
-	assert.False(t, len(room.hashedPassword) == 0)
+	assert.False(t, len(room.HashedPassword) == 0)
 }
 
 func TestRoom_lock_WhenLockingFails(t *testing.T) {
@@ -317,13 +317,13 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 		InProgress:     true,
 		leave:          nil,
 		Join:           nil,
-		clients:        make(map[*Client]bool),
+		Clients:        make(map[*Client]bool),
 		Broadcast:      make(chan *Message),
 		destroy:        nil,
 		IsLocked:       false,
 		NameOfCreator:  "Bla",
 		Key:            key,
-		hashedPassword: make([]byte, 0),
+		HashedPassword: make([]byte, 0),
 	}
 
 	got := room.lock("ABC", "top secret", key.String())
@@ -372,13 +372,13 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 		InProgress:     true,
 		leave:          nil,
 		Join:           nil,
-		clients:        make(map[*Client]bool),
+		Clients:        make(map[*Client]bool),
 		Broadcast:      make(chan *Message),
 		destroy:        nil,
 		IsLocked:       false,
 		NameOfCreator:  "Bla",
 		Key:            key,
-		hashedPassword: make([]byte, 0),
+		HashedPassword: make([]byte, 0),
 	}
 
 	got := room.lock("ABC", strings.Repeat("bla", 90), key.String())

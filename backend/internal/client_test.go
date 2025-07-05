@@ -77,7 +77,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 		Broadcast: broadcastChannel,
 		Join:      make(chan *Client),
 		leave:     make(chan *Client),
-		clients:   make(map[*Client]bool),
+		Clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -119,7 +119,7 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 		Broadcast: broadcastChannel,
 		Join:      make(chan *Client),
 		leave:     make(chan *Client),
-		clients:   make(map[*Client]bool),
+		Clients:   make(map[*Client]bool),
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(echo))
@@ -154,7 +154,7 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 		Broadcast: broadcastChannel,
 		Join:      make(chan *Client),
 		leave:     make(chan *Client),
-		clients:   make(map[*Client]bool),
+		Clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -183,7 +183,7 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 		Broadcast: broadcastChannel,
 		Join:      make(chan *Client),
 		leave:     make(chan *Client),
-		clients:   make(map[*Client]bool),
+		Clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -226,10 +226,10 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 		Broadcast:      broadcastChannel,
 		Join:           make(chan *Client),
 		leave:          make(chan *Client),
-		clients:        make(map[*Client]bool),
+		Clients:        make(map[*Client]bool),
 		NameOfCreator:  "Test",
 		Key:            id,
-		hashedPassword: hashedPassword,
+		HashedPassword: hashedPassword,
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -272,10 +272,10 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 		Broadcast:      broadcastChannel,
 		Join:           make(chan *Client),
 		leave:          make(chan *Client),
-		clients:        make(map[*Client]bool),
+		Clients:        make(map[*Client]bool),
 		NameOfCreator:  "Test",
 		Key:            id,
-		hashedPassword: hashedPassword,
+		HashedPassword: hashedPassword,
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()
@@ -315,7 +315,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 		Broadcast: broadcastChannel,
 		Join:      make(chan *Client),
 		leave:     make(chan *Client),
-		clients:   make(map[*Client]bool),
+		Clients:   make(map[*Client]bool),
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
 	defer server.Close()

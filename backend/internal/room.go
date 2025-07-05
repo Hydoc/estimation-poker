@@ -23,7 +23,7 @@ type Room struct {
 	NameOfCreator  string
 	IsLocked       bool
 	Key            uuid.UUID
-	hashedPassword []byte
+	HashedPassword []byte
 }
 
 func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
@@ -38,7 +38,7 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 		NameOfCreator:  nameOfCreator,
 		IsLocked:       false,
 		Key:            uuid.New(),
-		hashedPassword: make([]byte, 0),
+		HashedPassword: make([]byte, 0),
 	}
 }
 
@@ -50,7 +50,7 @@ func (room *Room) lock(username, password, key string) bool {
 	}
 	if username == room.NameOfCreator && key == room.Key.String() {
 		room.IsLocked = true
-		room.hashedPassword = hashed
+		room.HashedPassword = hashed
 		return true
 	}
 
@@ -60,14 +60,14 @@ func (room *Room) lock(username, password, key string) bool {
 func (room *Room) open(username, key string) bool {
 	if username == room.NameOfCreator && key == room.Key.String() {
 		room.IsLocked = false
-		room.hashedPassword = make([]byte, 0)
+		room.HashedPassword = make([]byte, 0)
 		return true
 	}
 	return false
 }
 
 func (room *Room) Verify(password string) bool {
-	err := bcrypt.CompareHashAndPassword(room.hashedPassword, []byte(password))
+	err := bcrypt.CompareHashAndPassword(room.HashedPassword, []byte(password))
 	return err == nil
 }
 

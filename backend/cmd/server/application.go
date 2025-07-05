@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -228,9 +229,11 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 	go client.WebsocketWriter()
 }
 
-func (app *application) listenForRoomDestroy() {
+func (app *application) listenForRoomDestroy(ctx context.Context) {
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case roomId := <-app.destroyRoom:
 			app.roomMu.Lock()
 			if _, ok := app.rooms[roomId]; ok {

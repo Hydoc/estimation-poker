@@ -120,7 +120,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			expectation: nil,
 			rooms: map[internal.RoomId]*internal.Room{
 				internal.RoomId(roomId): {
-					clients: map[*internal.Client]bool{
+					Clients: map[*internal.Client]bool{
 						client: true,
 					},
 				},
@@ -310,80 +310,74 @@ func TestApplication_handleWs(t *testing.T) {
 			rooms: map[internal.RoomId]*internal.Room{
 				internal.RoomId("1"): {
 					Id:         "1",
-					inProgress: false,
-					leave:      nil,
-					join:       make(chan *Client),
-					clients:    nil,
-					broadcast:  make(chan *message),
-					destroy:    nil,
+					InProgress: false,
+					Join:       make(chan *internal.Client),
+					Broadcast:  make(chan *internal.Message),
 				},
 			},
 			expectedError:  nil,
 			expectedStatus: -1,
 			expectedRoomId: "1",
-			expectedRole:   Developer,
+			expectedRole:   internal.Developer,
 		},
 		{
 			name: "register as product owner",
 			url:  "/api/estimation/room/1/product-owner?name=Test",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					id:         "1",
-					inProgress: false,
-					leave:      nil,
-					join:       make(chan *Client),
-					clients:    nil,
-					broadcast:  make(chan *message),
-					destroy:    nil,
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("1"): {
+					Id:         "1",
+					InProgress: false,
+					Join:       make(chan *internal.Client),
+					Broadcast:  make(chan *internal.Message),
 				},
 			},
 			expectedError:  nil,
 			expectedStatus: -1,
 			expectedRoomId: "1",
-			expectedRole:   ProductOwner,
+			expectedRole:   internal.ProductOwner,
 		},
 		{
 			name:  "not registering due to missing name",
 			url:   "/api/estimation/room/1/product-owner?name=",
-			rooms: make(map[RoomId]*Room),
+			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"message": "name is missing in query",
 			},
 			expectedStatus: 400,
 			expectedRoomId: "1",
-			expectedRole:   ProductOwner,
+			expectedRole:   internal.ProductOwner,
 		},
 		{
 			name:  "not registering due to name too long",
 			url:   "/api/estimation/room/1/product-owner?name=mynameiswaytoolongitshouldnotbecreated",
-			rooms: make(map[RoomId]*Room),
+			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"message": "name and room must be smaller or equal to 15",
 			},
 			expectedStatus: 400,
 			expectedRoomId: "1",
-			expectedRole:   ProductOwner,
+			expectedRole:   internal.ProductOwner,
 		},
 		{
 			name:  "not registering due to roomId too long",
 			url:   "/api/estimation/room/whateverthatroomisitiswaytoolong/product-owner?name=nameok",
-			rooms: make(map[RoomId]*Room),
+			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"message": "name and room must be smaller or equal to 15",
 			},
 			expectedStatus: 400,
 			expectedRoomId: "1",
-			expectedRole:   ProductOwner,
+			expectedRole:   internal.ProductOwner,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			expectedMsg := newJoin()
+			expectedMsg := internal.NewJoin()
 			app := &application{
-				guessConfig: &GuessConfig{},
+				guessConfig: &internal.GuessConfig{},
 				rooms:       test.rooms,
-				destroyRoom: make(chan RoomId),
+				destroyRoom: make(chan internal.RoomId),
 			}
 			router := app.Routes()
 
@@ -400,8 +394,8 @@ func TestApplication_handleWs(t *testing.T) {
 				return
 			}
 
-			registeredClient := <-app.rooms[RoomId(test.expectedRoomId)].join
-			broadcastedMsg := <-app.rooms[RoomId(test.expectedRoomId)].broadcast
+			registeredClient := <-app.rooms[internal.RoomId(test.expectedRoomId)].Join
+			broadcastedMsg := <-app.rooms[internal.RoomId(test.expectedRoomId)].Broadcast
 
 			assert.DeepEqual(t, broadcastedMsg, expectedMsg)
 			assert.Equal(t, registeredClient.Role, test.expectedRole)
@@ -410,9 +404,12 @@ func TestApplication_handleWs(t *testing.T) {
 }
 
 func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
-	app := NewApplication(&GuessConfig{}, nil)
+	app := &application{
+		rooms:       make(map[internal.RoomId]*internal.Room),
+		destroyRoom: make(chan internal.RoomId),
+	}
 	roomId := "Test"
-	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom, "")
+	expectedRoom := internal.NewRoom(internal.RoomId(roomId), app.destroyRoom, "")
 	router := app.Routes()
 
 	server := httptest.NewServer(router)
@@ -429,33 +426,33 @@ func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
 	wg.Wait()
 
 	app.roomMu.Lock()
-	got := app.rooms[RoomId(roomId)]
+	got := app.rooms[internal.RoomId(roomId)]
 	app.roomMu.Unlock()
 
-	assert.Equal(t, got.id, expectedRoom.id)
+	assert.Equal(t, got.Id, expectedRoom.Id)
 }
 
 func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	tests := []struct {
 		name  string
-		rooms map[RoomId]*Room
+		rooms map[internal.RoomId]*internal.Room
 		want  []string
 	}{
 		{
 			name: "with multiple active rooms",
-			rooms: map[RoomId]*Room{
-				RoomId("Blub"): {
-					id: "Blub",
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("Blub"): {
+					Id: "Blub",
 				},
-				RoomId("Test"): {
-					id: "Test",
+				internal.RoomId("Test"): {
+					Id: "Test",
 				},
 			},
 			want: []string{"Blub", "Test"},
 		},
 		{
 			name:  "no rooms",
-			rooms: make(map[RoomId]*Room),
+			rooms: make(map[internal.RoomId]*internal.Room),
 			want:  []string{},
 		},
 	}
@@ -463,7 +460,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := &application{
-				guessConfig: &GuessConfig{},
+				guessConfig: &internal.GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
 			}
@@ -484,13 +481,13 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 func TestApplication_handlePossibleGuesses(t *testing.T) {
 	tests := []struct {
 		name   string
-		config *GuessConfig
+		config *internal.GuessConfig
 		want   []map[string]interface{}
 	}{
 		{
 			name: "multiple guesses",
-			config: &GuessConfig{
-				Guesses: []guessConfigEntry{
+			config: &internal.GuessConfig{
+				Guesses: []internal.GuessConfigEntry{
 					{
 						Guess:       1,
 						Description: "Test 1",
@@ -514,8 +511,8 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 		},
 		{
 			name: "one guess",
-			config: &GuessConfig{
-				Guesses: []guessConfigEntry{
+			config: &internal.GuessConfig{
+				Guesses: []internal.GuessConfigEntry{
 					{
 						Guess:       1,
 						Description: "Test 1",
@@ -531,8 +528,8 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 		},
 		{
 			name: "no guess",
-			config: &GuessConfig{
-				Guesses: make([]guessConfigEntry, 0),
+			config: &internal.GuessConfig{
+				Guesses: make([]internal.GuessConfigEntry, 0),
 			},
 			want: make([]map[string]interface{}, 0),
 		},
@@ -540,7 +537,9 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := NewApplication(test.config, nil)
+			app := &application{
+				guessConfig: test.config,
+			}
 			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
@@ -556,24 +555,19 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 }
 
 func TestApplication_ListenForRoomDestroy(t *testing.T) {
-	destroyChannel := make(chan RoomId)
-	roomToDestroy := RoomId("Test")
+	destroyChannel := make(chan internal.RoomId)
+	roomToDestroy := internal.RoomId("Test")
 	app := &application{
-		guessConfig: &GuessConfig{},
-		rooms: map[RoomId]*Room{
+		guessConfig: &internal.GuessConfig{},
+		rooms: map[internal.RoomId]*internal.Room{
 			roomToDestroy: {
-				id:         roomToDestroy,
-				inProgress: false,
-				leave:      nil,
-				join:       nil,
-				clients:    nil,
-				broadcast:  nil,
-				destroy:    nil,
+				Id:         roomToDestroy,
+				InProgress: false,
 			},
 		},
 		destroyRoom: destroyChannel,
 	}
-	go app.listenForRoomDestroy()
+	go app.listenForRoomDestroy(context.Background())
 
 	app.destroyRoom <- roomToDestroy
 
@@ -648,17 +642,11 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 		t.Errorf("error hashing password: %v", err)
 	}
 	app := &application{
-		guessConfig: &GuessConfig{},
-		rooms: map[RoomId]*Room{
+		guessConfig: &internal.GuessConfig{},
+		rooms: map[internal.RoomId]*internal.Room{
 			"1": {
-				id:             "1",
-				inProgress:     false,
-				leave:          nil,
-				join:           nil,
-				clients:        nil,
-				broadcast:      nil,
-				destroy:        nil,
-				hashedPassword: hashedPassword,
+				Id:             "1",
+				HashedPassword: hashedPassword,
 			},
 		},
 	}
@@ -729,12 +717,11 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 	}
 
 	app := &application{
-		guessConfig: &GuessConfig{},
-		rooms: map[RoomId]*Room{
+		rooms: map[internal.RoomId]*internal.Room{
 			"1": {
-				id:            "1",
-				nameOfCreator: "bla",
-				key:           id,
+				Id:            "1",
+				NameOfCreator: "bla",
+				Key:           id,
 			},
 		},
 	}
