@@ -47,8 +47,8 @@ func TestClient_NewClient(t *testing.T) {
 
 	assert.Equal(t, client.Name, expectedName)
 	assert.Equal(t, client.Role, expectedRole)
-	assert.Equal(t, client.Guess, expectedGuess)
-	assert.False(t, client.DoSkip)
+	assert.Equal(t, client.guess, expectedGuess)
+	assert.False(t, client.doSkip)
 
 	expectedJsonRepresentation := UserDTO{
 		"name":   expectedName,
@@ -63,11 +63,11 @@ func TestClient_NewClient(t *testing.T) {
 
 func TestClient_Reset(t *testing.T) {
 	client := NewClient("Any", Developer, &Room{}, &websocket.Conn{})
-	client.Guess = 2
+	client.guess = 2
 	client.reset()
 
-	if client.Guess > 0 {
-		t.Errorf("expected guess to be 0, got %v", client.Guess)
+	if client.guess > 0 {
+		t.Errorf("expected guess to be 0, got %v", client.guess)
 	}
 }
 
@@ -110,7 +110,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 	gotClientMsg := <-clientChannel
 
 	assert.DeepEqual(t, gotClientMsg, expectedClientMsg)
-	assert.Equal(t, client.Guess, 2)
+	assert.Equal(t, client.guess, 2)
 }
 
 func TestClient_websocketReaderRevealMessage(t *testing.T) {

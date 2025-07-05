@@ -25,8 +25,8 @@ type Client struct {
 	room       *Room
 	Name       string
 	Role       string
-	Guess      int
-	DoSkip     bool
+	guess      int
+	doSkip     bool
 	send       chan *Message
 }
 
@@ -56,14 +56,14 @@ func (client *Client) WebsocketReader() {
 
 		switch {
 		case incMessage.Type == skipRound && client.Role == Developer:
-			client.DoSkip = true
-			client.Guess = 0
+			client.doSkip = true
+			client.guess = 0
 			client.room.Broadcast <- newDeveloperSkipped()
 			client.send <- newYouSkipped()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
-			client.Guess = actualGuess
-			client.DoSkip = false
+			client.guess = actualGuess
+			client.doSkip = false
 			client.room.Broadcast <- newDeveloperGuessed()
 			client.send <- newYouGuessed(actualGuess)
 		case incMessage.Type == newRound && client.Role == ProductOwner:
@@ -123,16 +123,16 @@ func (client *Client) WebsocketWriter() {
 }
 
 func (client *Client) reset() {
-	client.Guess = 0
-	client.DoSkip = false
+	client.guess = 0
+	client.doSkip = false
 }
 
 func (client *Client) asReveal() map[string]any {
 	return map[string]any{
 		"name":   client.Name,
 		"role":   client.Role,
-		"guess":  client.Guess,
-		"doSkip": client.DoSkip,
+		"guess":  client.guess,
+		"doSkip": client.doSkip,
 	}
 }
 
@@ -141,7 +141,7 @@ func (client *Client) ToJson() UserDTO {
 		return map[string]any{
 			"name":   client.Name,
 			"role":   client.Role,
-			"isDone": client.Guess > 0 || client.DoSkip,
+			"isDone": client.guess > 0 || client.doSkip,
 		}
 	}
 	return map[string]any{

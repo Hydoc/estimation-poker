@@ -30,7 +30,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 			want: true,
 			clients: map[*Client]bool{
 				{
-					Guess: 1,
+					guess: 1,
 					Role:  Developer,
 				}: true,
 				{
@@ -43,8 +43,8 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 			want: true,
 			clients: map[*Client]bool{
 				{
-					Guess:  0,
-					DoSkip: true,
+					guess:  0,
+					doSkip: true,
 					Role:   Developer,
 				}: true,
 				{
@@ -57,8 +57,8 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 			want: false,
 			clients: map[*Client]bool{
 				{
-					Guess:  0,
-					DoSkip: false,
+					guess:  0,
+					doSkip: false,
 					Role:   Developer,
 				}: true,
 				{
@@ -158,7 +158,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 	client := &Client{
 		send:  clientSendChannel,
 		Role:  Developer,
-		Guess: 1,
+		guess: 1,
 	}
 	room := &Room{
 		Id:         "Test",
@@ -195,7 +195,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 			client: true,
 			{
 				Role:  Developer,
-				Guess: 0,
+				guess: 0,
 			}: true,
 		},
 		Broadcast: make(chan *Message),
@@ -224,7 +224,7 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 	developerToReset := &Client{
 		send:  clientSendChannel,
 		Role:  Developer,
-		Guess: 2,
+		guess: 2,
 	}
 	room := &Room{
 		Id:         "Test",
@@ -248,7 +248,7 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 
 	assert.DeepEqual(t, gotClientMsg, msg)
 	assert.False(t, room.InProgress)
-	assert.Equal(t, developerToReset.Guess, 0)
+	assert.Equal(t, developerToReset.guess, 0)
 }
 
 func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
@@ -261,7 +261,7 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 	developerToReset := &Client{
 		send:  clientSendChannel,
 		Role:  Developer,
-		Guess: 2,
+		guess: 2,
 	}
 	room := &Room{
 		Id:         "Test",
@@ -284,7 +284,7 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 
 	assert.DeepEqual(t, gotClientMsg, newNewRound())
 	assert.False(t, room.InProgress)
-	assert.Equal(t, developerToReset.Guess, 0)
+	assert.Equal(t, developerToReset.guess, 0)
 }
 
 func TestRoom_lock(t *testing.T) {
