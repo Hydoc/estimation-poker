@@ -80,12 +80,18 @@ func (room *Room) everyDevIsDone() bool {
 	return true
 }
 
-func (room *Room) newRound(client *Client) {
+func (room *Room) newRound() {
 	room.InProgress = false
-	if client.Role == Developer {
+	for client := range room.Clients {
 		client.reset()
+		client.send <- newNewRound()
 	}
-	client.send <- newNewRound()
+}
+
+func (room *Room) broadcastToClients(msg *Message) {
+	for client := range room.Clients {
+		client.send <- msg
+	}
 }
 
 func (room *Room) Run() {
@@ -103,32 +109,28 @@ func (room *Room) Run() {
 				room.destroy <- room.Id
 			}
 		case msg := <-room.Broadcast:
-			for client := range room.Clients {
-				switch msg.Type {
-				case estimate:
-					room.InProgress = true
-					client.send <- msg
-				case developerGuessed, skipRound, developerSkipped:
-					if room.everyDevIsDone() {
-						client.send <- newEveryoneIsDone()
-						continue
-					}
-					client.send <- msg
-				case newRound:
-					room.newRound(client)
-				case leave:
-					if room.InProgress {
-						for c := range room.Clients {
-							room.newRound(c)
-						}
-						continue
-					}
-					client.send <- msg
-				case join, reveal:
-					client.send <- msg
-				default:
-					log.Printf("unexpected Message %#v", msg)
+			switch msg.Type {
+			case estimate:
+				room.InProgress = true
+				room.broadcastToClients(msg)
+			case developerGuessed, skipRound, developerSkipped:
+				if room.everyDevIsDone() {
+					room.broadcastToClients(newEveryoneIsDone())
+					continue
 				}
+				room.broadcastToClients(msg)
+			case newRound:
+				room.newRound()
+			case leave:
+				if room.InProgress {
+					room.newRound()
+					continue
+				}
+				room.broadcastToClients(msg)
+			case join, reveal:
+				room.broadcastToClients(msg)
+			default:
+				log.Printf("unexpected Message %#v", msg)
 			}
 		}
 	}
