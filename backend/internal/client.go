@@ -122,7 +122,7 @@ func (client *Client) WebsocketWriter() {
 	}
 }
 
-func (client *Client) reset() {
+func (client *Client) newRound() {
 	client.guess = 0
 	client.doSkip = false
 }

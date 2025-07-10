@@ -83,7 +83,7 @@ func (room *Room) everyDevIsDone() bool {
 func (room *Room) newRound() {
 	room.InProgress = false
 	for client := range room.Clients {
-		client.reset()
+		client.newRound()
 		client.send <- newNewRound()
 	}
 }

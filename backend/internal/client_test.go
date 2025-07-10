@@ -64,7 +64,7 @@ func TestClient_NewClient(t *testing.T) {
 func TestClient_Reset(t *testing.T) {
 	client := NewClient("Any", Developer, &Room{}, &websocket.Conn{})
 	client.guess = 2
-	client.reset()
+	client.newRound()
 
 	if client.guess > 0 {
 		t.Errorf("expected guess to be 0, got %v", client.guess)
