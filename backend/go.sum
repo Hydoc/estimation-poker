@@ -1,3 +1,5 @@
+github.com/Hydoc/go-message v0.0.2 h1:mK/KsxL79gKBWy4+0T7E930nAXmI+tP7vrNXFK4iqjA=
+github.com/Hydoc/go-message v0.0.2/go.mod h1:rA/f4oH3H9e3Y3FoNHvC8DIhI90Ewe5qlaI6PgcC4kk=
 github.com/coder/websocket v1.8.13 h1:f3QZdXy7uGVz+4uCJy2nTZyM0yTBj8yANEHhqlXZ9FE=
 github.com/coder/websocket v1.8.13/go.mod h1:LNVeNrXQZfe5qhS9ALED3uA+l5pPqvwXg3CKoDBB2gs=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
