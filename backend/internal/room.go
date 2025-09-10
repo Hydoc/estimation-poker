@@ -102,9 +102,7 @@ func (room *Room) Run() {
 			room.Clients[client] = true
 			room.clientMu.Unlock()
 		case client := <-room.leave:
-			if _, ok := room.Clients[client]; ok {
-				delete(room.Clients, client)
-			}
+			delete(room.Clients, client)
 			if len(room.Clients) == 0 {
 				room.destroy <- room.Id
 			}

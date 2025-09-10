@@ -236,9 +236,7 @@ func (app *application) listenForRoomDestroy(ctx context.Context) {
 			return
 		case roomId := <-app.destroyRoom:
 			app.roomMu.Lock()
-			if _, ok := app.rooms[roomId]; ok {
-				delete(app.rooms, roomId)
-			}
+			delete(app.rooms, roomId)
 			app.roomMu.Unlock()
 		}
 	}

@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -77,11 +76,11 @@ func (client *Client) WebsocketReader() {
 			key, keyOk := incMessage.Data.(map[string]any)["Key"]
 
 			if !keyOk {
-				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a Key", client.Name, client.room.Id))
+				log.Printf("client: %s tried to lock room %s without a Key\n", client.Name, client.room.Id)
 				break
 			}
 			if !pwOk {
-				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a password", client.Name, client.room.Id))
+				log.Printf("client: %s tried to lock room %s without a password\n", client.Name, client.room.Id)
 				break
 			}
 
