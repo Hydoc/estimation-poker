@@ -2,11 +2,12 @@ import type { Ref } from "vue";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import {
-    type PossibleGuess,
-    type UserOverview,
-    type Permissions,
-    type DeveloperDone,
-    type ActiveRoom, type FetchActiveRoomsResponse,
+  type PossibleGuess,
+  type UserOverview,
+  type Permissions,
+  type DeveloperDone,
+  type ActiveRoom,
+  type FetchActiveRoomsResponse,
 } from "@/components/types";
 import { Role, RoundState } from "@/components/types";
 
@@ -168,13 +169,13 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
       }
     });
   }
-  
+
   async function createRoom(name: string): Promise<string> {
-      const response = await fetch(`/api/estimation/room/create?name=${name}`);
-      if (!response.ok) {
-          throw new Error("Could not create room");
-      }
-      return (await response.json()).id;
+    const response = await fetch(`/api/estimation/room/create?name=${name}`);
+    if (!response.ok) {
+      throw new Error("Could not create room");
+    }
+    return (await response.json()).id;
   }
 
   function send(message: SendableWebsocketMessage) {
@@ -235,10 +236,10 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   async function fetchActiveRooms(): Promise<ActiveRoom[]> {
     const response = await fetch("/api/estimation/room/rooms");
     if (!response.ok) {
-        throw new Error("Could not find active rooms");
+      throw new Error("Could not find active rooms");
     }
-      
-    const json = await response.json() as FetchActiveRoomsResponse;
+
+    const json = (await response.json()) as FetchActiveRoomsResponse;
     return json.rooms || [];
   }
 

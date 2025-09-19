@@ -9,7 +9,7 @@ import RoomForm from "../../src/components/RoomForm.vue";
 import { Role } from "../../src/components/types";
 
 let vuetify: ReturnType<typeof createVuetify>;
-
+vi.stubGlobal("visualViewport", new EventTarget());
 beforeEach(() => {
   vuetify = createVuetify({
     components,

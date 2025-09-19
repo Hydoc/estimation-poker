@@ -2,8 +2,8 @@
 import { useWebsocketStore } from "@/stores/websocket";
 import { onBeforeMount, type Ref, ref } from "vue";
 import RoomDialog from "@/components/RoomDialog.vue";
-import {type ActiveRoom, Role} from "@/components/types.ts";
-import {useRouter} from "vue-router";
+import { type ActiveRoom, Role } from "@/components/types.ts";
+import { useRouter } from "vue-router";
 const websocketStore = useWebsocketStore();
 websocketStore.disconnect();
 websocketStore.resetRound();
@@ -15,8 +15,8 @@ const role: Ref<Role> = ref(Role.Empty);
 const name: Ref<string> = ref("");
 
 async function connect(chosenRoomId: string | undefined) {
-  errorMessage.value = ""
-  
+  errorMessage.value = "";
+
   const actualRoomId = chosenRoomId ? chosenRoomId : await websocketStore.createRoom(name.value);
 
   // const isLocked = await websocketStore.isRoomLocked(actualRoomId);
@@ -47,7 +47,7 @@ async function connect(chosenRoomId: string | undefined) {
     errorMessage.value = "A user with this name already exists in the room";
     return;
   }
-  
+
   await websocketStore.connect(name.value, role.value, actualRoomId);
   await router.push(`/room/${actualRoomId}`);
 }
@@ -78,10 +78,13 @@ onBeforeMount(async () => {
             Room #{{ index + 1 }}
           </template>
           <v-card-subtitle>{{ room.id }}</v-card-subtitle>
-          <v-card-text><v-icon icon="mdi-account" /> {{ playerCountAsStringForRoom(room.playerCount) }}</v-card-text>
+          <v-card-text>
+            <v-icon icon="mdi-account" />
+            {{ playerCountAsStringForRoom(room.playerCount) }}
+          </v-card-text>
           <v-card-actions>
             <v-spacer />
-            
+
             <room-dialog
               v-model:role="role"
               v-model:name="name"
@@ -94,7 +97,7 @@ onBeforeMount(async () => {
           </v-card-actions>
         </v-card>
       </div>
-      
+
       <div
         v-else
         class="d-flex align-center flex-column ga-7"
@@ -104,9 +107,9 @@ onBeforeMount(async () => {
           class="opacity-50"
           size="80"
         />
-        
+
         <span class="text-h4 opacity-90">There are currently no rooms</span>
-        
+
         <room-dialog
           v-model:role="role"
           v-model:name="name"

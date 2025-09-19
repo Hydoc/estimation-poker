@@ -16,6 +16,7 @@ const ResizeObserverMock = vi.fn(() => ({
 }));
 
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+vi.stubGlobal("visualViewport", new EventTarget());
 beforeEach(() => {
   vuetify = createVuetify({
     components,

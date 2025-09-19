@@ -45,10 +45,10 @@ export type Permissions = {
 };
 
 export type FetchActiveRoomsResponse = {
-    rooms: ActiveRoom[] | null;
+  rooms: ActiveRoom[] | null;
 };
 
 export type ActiveRoom = {
-    id: string;
-    playerCount: number;
-}
+  id: string;
+  playerCount: number;
+};

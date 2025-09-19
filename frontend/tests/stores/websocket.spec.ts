@@ -348,11 +348,24 @@ describe("Websocket Store", () => {
 
   it("should fetch active rooms", async () => {
     global.fetch = vi.fn().mockResolvedValue({
-      json: () => ["Test room"],
+      ok: true,
+      json: () => ({
+        rooms: [
+          {
+            id: "any-id",
+            playerCount: 1,
+          },
+        ],
+      }),
     });
     const websocketStore = useWebsocketStore();
     const actual = await websocketStore.fetchActiveRooms();
-    expect(actual).deep.equal(["Test room"]);
+    expect(actual).deep.equal([
+      {
+        id: "any-id",
+        playerCount: 1,
+      },
+    ]);
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/rooms");
   });
 

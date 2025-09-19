@@ -7,7 +7,7 @@ type Props = {
   activatorText: string;
   cardTitle: string;
   errorMessage?: string;
-}
+};
 const props = defineProps<Props>();
 const emits = defineEmits<{
   (e: "submit"): void;
@@ -21,8 +21,8 @@ const formIsValid = ref(false);
 const textFieldRules = computed(() => [
   (value: string) => !!value || "Can not be empty",
   (value: string) =>
-      (value && value.length <= props.maxAllowedChars) ||
-      `Only ${props.maxAllowedChars} chars allowed`,
+    (value && value.length <= props.maxAllowedChars) ||
+    `Only ${props.maxAllowedChars} chars allowed`,
 ]);
 </script>
 
@@ -38,7 +38,7 @@ const textFieldRules = computed(() => [
         :text="props.activatorText"
       />
     </template>
-    
+
     <v-card :title="props.cardTitle">
       <v-card-text>
         <v-form
@@ -90,6 +90,4 @@ const textFieldRules = computed(() => [
   </v-dialog>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

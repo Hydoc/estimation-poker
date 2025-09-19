@@ -1,9 +1,10 @@
-import { beforeEach, describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import HomeView from "../../src/views/HomeView.vue";
 import { createTestingPinia, TestingPinia } from "@pinia/testing";
 import { useWebsocketStore } from "../../src/stores/websocket";
-import TheRoomChoice from "../../src/components/TheRoomChoice.vue";
+
+vi.mock("vue-router");
 
 let pinia: TestingPinia;
 let websocketStore: ReturnType<typeof useWebsocketStore>;
@@ -20,8 +21,6 @@ describe("HomeView", () => {
           plugins: [pinia],
         },
       });
-
-      expect(wrapper.findComponent(TheRoomChoice).exists()).to.be.true;
     });
   });
 
