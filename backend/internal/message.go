@@ -1,7 +1,7 @@
 package internal
 
 const (
-	join             = "Join"
+	join             = "join"
 	leave            = "leave"
 	guess            = "guess"
 	newRound         = "new-round"
