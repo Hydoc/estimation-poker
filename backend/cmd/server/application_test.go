@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/coder/websocket"
@@ -69,6 +68,37 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 
 			assert.Equal(t, gotContentType, "application/json")
 			assert.DeepEqual(t, got, test.expectation)
+		})
+	}
+}
+
+func TestApplication_createNewRoom(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+	}{
+		{
+			name:       "create new room",
+			statusCode: http.StatusCreated,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := &application{
+				rooms: make(map[internal.RoomId]*internal.Room),
+			}
+
+			router := app.Routes()
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/api/estimation/room/create?name=test", nil)
+
+			router.ServeHTTP(recorder, request)
+
+			gotContentType := recorder.Header().Get("Content-Type")
+
+			assert.Equal(t, test.statusCode, recorder.Code)
+			assert.Equal(t, gotContentType, "application/json")
 		})
 	}
 }
@@ -305,11 +335,11 @@ func TestApplication_handleWs(t *testing.T) {
 		expectedStatus int
 	}{
 		{
-			name: "register as developer",
-			url:  "/api/estimation/room/1/developer?name=Test",
+			name: "connect as developer",
+			url:  "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/developer?name=Test",
 			rooms: map[internal.RoomId]*internal.Room{
-				internal.RoomId("1"): {
-					Id:         "1",
+				internal.RoomId("ffb25a3d-a5db-42b7-9733-345f61167077"): {
+					Id:         "ffb25a3d-a5db-42b7-9733-345f61167077",
 					InProgress: false,
 					Join:       make(chan *internal.Client),
 					Broadcast:  make(chan *internal.Message),
@@ -317,15 +347,15 @@ func TestApplication_handleWs(t *testing.T) {
 			},
 			expectedError:  nil,
 			expectedStatus: -1,
-			expectedRoomId: "1",
+			expectedRoomId: "ffb25a3d-a5db-42b7-9733-345f61167077",
 			expectedRole:   internal.Developer,
 		},
 		{
-			name: "register as product owner",
-			url:  "/api/estimation/room/1/product-owner?name=Test",
+			name: "connect as product owner",
+			url:  "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=Test",
 			rooms: map[internal.RoomId]*internal.Room{
-				internal.RoomId("1"): {
-					Id:         "1",
+				internal.RoomId("ffb25a3d-a5db-42b7-9733-345f61167077"): {
+					Id:         "ffb25a3d-a5db-42b7-9733-345f61167077",
 					InProgress: false,
 					Join:       make(chan *internal.Client),
 					Broadcast:  make(chan *internal.Message),
@@ -333,41 +363,46 @@ func TestApplication_handleWs(t *testing.T) {
 			},
 			expectedError:  nil,
 			expectedStatus: -1,
-			expectedRoomId: "1",
+			expectedRoomId: "ffb25a3d-a5db-42b7-9733-345f61167077",
 			expectedRole:   internal.ProductOwner,
 		},
 		{
-			name:  "not registering due to missing name",
-			url:   "/api/estimation/room/1/product-owner?name=",
+			name:  "not connecting due to name too long",
+			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=whateverthisisitiswaytoooooooooooolong",
+			rooms: make(map[internal.RoomId]*internal.Room),
+			expectedError: map[string]string{
+				"message": "name must be smaller or equal to 15",
+			},
+			expectedStatus: 400,
+		},
+		{
+			name:  "not connecting due to missing name",
+			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=",
 			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"message": "name is missing in query",
 			},
 			expectedStatus: 400,
-			expectedRoomId: "1",
+			expectedRoomId: "ffb25a3d-a5db-42b7-9733-345f61167077",
 			expectedRole:   internal.ProductOwner,
 		},
 		{
-			name:  "not registering due to name too long",
-			url:   "/api/estimation/room/1/product-owner?name=mynameiswaytoolongitshouldnotbecreated",
+			name:  "not connecting due to invalid roomId not found",
+			url:   "/api/estimation/room/invalid/product-owner?name=test",
 			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
-				"message": "name and room must be smaller or equal to 15",
+				"message": "roomId is invalid",
 			},
 			expectedStatus: 400,
-			expectedRoomId: "1",
-			expectedRole:   internal.ProductOwner,
 		},
 		{
-			name:  "not registering due to roomId too long",
-			url:   "/api/estimation/room/whateverthatroomisitiswaytoolong/product-owner?name=nameok",
+			name:  "not connecting because room not found",
+			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=test",
 			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
-				"message": "name and room must be smaller or equal to 15",
+				"message": "room not found",
 			},
-			expectedStatus: 400,
-			expectedRoomId: "1",
-			expectedRole:   internal.ProductOwner,
+			expectedStatus: 404,
 		},
 	}
 
@@ -403,40 +438,11 @@ func TestApplication_handleWs(t *testing.T) {
 	}
 }
 
-func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
-	app := &application{
-		rooms:       make(map[internal.RoomId]*internal.Room),
-		destroyRoom: make(chan internal.RoomId),
-	}
-	roomId := "Test"
-	expectedRoom := internal.NewRoom(internal.RoomId(roomId), app.destroyRoom, "")
-	router := app.Routes()
-
-	server := httptest.NewServer(router)
-	defer server.Close()
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		url := "ws" + strings.TrimPrefix(server.URL, "http") + fmt.Sprintf("/api/estimation/room/%s/developer?name=Test", roomId)
-		websocket.Dial(context.Background(), url, nil)
-	}()
-
-	wg.Wait()
-
-	app.roomMu.Lock()
-	got := app.rooms[internal.RoomId(roomId)]
-	app.roomMu.Unlock()
-
-	assert.Equal(t, got.Id, expectedRoom.Id)
-}
-
 func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	tests := []struct {
 		name  string
 		rooms map[internal.RoomId]*internal.Room
-		want  []string
+		want  map[string][]map[string]any
 	}{
 		{
 			name: "with multiple active rooms",
@@ -448,12 +454,25 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 					Id: "Test",
 				},
 			},
-			want: []string{"Blub", "Test"},
+			want: map[string][]map[string]any{
+				"rooms": {
+					{
+						"id":          "Blub",
+						"playerCount": float64(0),
+					},
+					{
+						"id":          "Test",
+						"playerCount": float64(0),
+					},
+				},
+			},
 		},
 		{
 			name:  "no rooms",
 			rooms: make(map[internal.RoomId]*internal.Room),
-			want:  []string{},
+			want: map[string][]map[string]any{
+				"rooms": nil,
+			},
 		},
 	}
 
@@ -470,7 +489,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 
 			router.ServeHTTP(recorder, request)
 
-			var got []string
+			var got map[string][]map[string]any
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			assert.DeepEqual(t, got, test.want)

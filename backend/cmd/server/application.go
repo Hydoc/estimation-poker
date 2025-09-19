@@ -115,7 +115,7 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	app.rooms[room.Id] = room
 	go room.Run()
 
-	app.writeJson(writer, http.StatusOK, envelope{"id": roomId.String()}, nil)
+	app.writeJson(writer, http.StatusCreated, envelope{"id": roomId.String()}, nil)
 }
 
 func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
@@ -221,15 +221,15 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	connection, err := websocket.Accept(writer, request, nil)
-	if err != nil {
-		app.logger.Info(fmt.Sprintf("upgrade: %s", err))
-		return
-	}
-
 	clientRoom, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
 		app.writeJson(writer, http.StatusNotFound, envelope{"message": "room not found"}, nil)
+		return
+	}
+
+	connection, err := websocket.Accept(writer, request, nil)
+	if err != nil {
+		app.logger.Info(fmt.Sprintf("upgrade: %s", err))
 		return
 	}
 
