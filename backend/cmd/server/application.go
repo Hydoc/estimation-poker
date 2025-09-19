@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"slices"
 	"sort"
 	"strings"
 	"sync"
 	"unicode/utf8"
 
 	"github.com/coder/websocket"
+	"github.com/google/uuid"
 
 	"github.com/Hydoc/guess-dev/backend/internal"
 )
@@ -104,6 +104,20 @@ func (app *application) handleFetchPermissions(writer http.ResponseWriter, reque
 	}, nil)
 }
 
+func (app *application) createNewRoom(writer http.ResponseWriter, request *http.Request) {
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
+
+	name := request.URL.Query().Get("name")
+
+	roomId := uuid.New()
+	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, name)
+	app.rooms[room.Id] = room
+	go room.Run()
+
+	app.writeJson(writer, http.StatusOK, envelope{"id": roomId.String()}, nil)
+}
+
 func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
 	app.writeJson(writer, http.StatusOK, app.guessConfig.Guesses, nil)
 }
@@ -149,14 +163,16 @@ func (app *application) handleUserInRoomExists(writer http.ResponseWriter, reque
 }
 
 func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
-	activeRooms := []string{}
+	var activeRooms []*internal.Room
 	for _, room := range app.rooms {
 		if !room.IsLocked {
-			activeRooms = append(activeRooms, string(room.Id))
+			activeRooms = append(activeRooms, room)
 		}
 	}
-	slices.Sort(activeRooms)
-	app.writeJson(writer, http.StatusOK, activeRooms, nil)
+	sort.Slice(activeRooms, func(i, j int) bool {
+		return activeRooms[i].Created.Before(activeRooms[j].Created)
+	})
+	app.writeJson(writer, http.StatusOK, envelope{"rooms": activeRooms}, nil)
 }
 
 func (app *application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
@@ -192,12 +208,16 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()
 
-	roomId := request.PathValue("id")
+	roomId, err := uuid.Parse(request.PathValue("id"))
+	if err != nil {
+		app.writeJson(writer, http.StatusBadRequest, envelope{"message": "roomId is invalid"}, nil)
+		return
+	}
 
 	name := request.URL.Query().Get("name")
 
-	if utf8.RuneCountInString(name) > 15 || utf8.RuneCountInString(roomId) > 15 {
-		app.writeJson(writer, http.StatusBadRequest, envelope{"message": "name and room must be smaller or equal to 15"}, nil)
+	if utf8.RuneCountInString(name) > 15 {
+		app.writeJson(writer, http.StatusBadRequest, envelope{"message": "name must be smaller or equal to 15"}, nil)
 		return
 	}
 
@@ -207,14 +227,10 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	var clientRoom *internal.Room
-	if room, ok := app.rooms[internal.RoomId(roomId)]; ok {
-		// when there is a room, it's already running in a goroutine
-		clientRoom = room
-	} else {
-		clientRoom = internal.NewRoom(internal.RoomId(roomId), app.destroyRoom, name)
-		app.rooms[clientRoom.Id] = clientRoom
-		go clientRoom.Run()
+	clientRoom, ok := app.rooms[internal.RoomId(roomId.String())]
+	if !ok {
+		app.writeJson(writer, http.StatusNotFound, envelope{"message": "room not found"}, nil)
+		return
 	}
 
 	clientRole := internal.Developer

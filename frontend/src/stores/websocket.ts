@@ -2,19 +2,21 @@ import type { Ref } from "vue";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import {
-  type PossibleGuess,
-  type UserOverview,
-  type Permissions,
-  type DeveloperDone,
+    type PossibleGuess,
+    type UserOverview,
+    type Permissions,
+    type DeveloperDone,
+    type ActiveRoom, type FetchActiveRoomsResponse,
 } from "@/components/types";
 import { Role, RoundState } from "@/components/types";
 
 type WebsocketStore = {
   connect(name: string, role: string, roomId: string): Promise<void>;
+  createRoom(name: string): Promise<string>;
   disconnect(): void;
   resetRound(): void;
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
-  fetchActiveRooms(): Promise<string[]>;
+  fetchActiveRooms(): Promise<ActiveRoom[]>;
   send(message: SendableWebsocketMessage): void;
   isRoundInRoomInProgress(roomId: string): Promise<boolean>;
   isRoomLocked(roomId: string): Promise<boolean>;
@@ -166,6 +168,14 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
       }
     });
   }
+  
+  async function createRoom(name: string): Promise<string> {
+      const response = await fetch(`/api/estimation/room/create?name=${name}`);
+      if (!response.ok) {
+          throw new Error("Could not create room");
+      }
+      return (await response.json()).id;
+  }
 
   function send(message: SendableWebsocketMessage) {
     if (!websocket.value) {
@@ -222,8 +232,14 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     usersInRoom.value = await response.json();
   }
 
-  async function fetchActiveRooms(): Promise<string[]> {
-    return (await fetch("/api/estimation/room/rooms")).json();
+  async function fetchActiveRooms(): Promise<ActiveRoom[]> {
+    const response = await fetch("/api/estimation/room/rooms");
+    if (!response.ok) {
+        throw new Error("Could not find active rooms");
+    }
+      
+    const json = await response.json() as FetchActiveRoomsResponse;
+    return json.rooms || [];
   }
 
   async function fetchPossibleGuesses() {
@@ -290,5 +306,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     permissions,
     roomIsLocked,
     developerDone,
+    createRoom,
   };
 });

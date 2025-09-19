@@ -1,8 +1,10 @@
 package internal
 
 import (
+	"encoding/json"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -24,6 +26,18 @@ type Room struct {
 	IsLocked       bool
 	Key            uuid.UUID
 	HashedPassword []byte
+	Created        time.Time
+}
+
+func (room *Room) MarshalJSON() ([]byte, error) {
+	out := struct {
+		Id          RoomId `json:"id"`
+		PlayerCount int    `json:"playerCount"`
+	}{
+		Id:          room.Id,
+		PlayerCount: len(room.Clients),
+	}
+	return json.Marshal(&out)
 }
 
 func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
@@ -39,6 +53,7 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 		IsLocked:       false,
 		Key:            uuid.New(),
 		HashedPassword: make([]byte, 0),
+		Created:        time.Now(),
 	}
 }
 
