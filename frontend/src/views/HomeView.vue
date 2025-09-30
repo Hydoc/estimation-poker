@@ -66,38 +66,54 @@ onBeforeMount(async () => {
     <v-container>
       <div
         v-if="activeRooms.length > 0"
-        class="d-flex ga-5 flex-wrap"
+        class="d-flex flex-column"
       >
-        <v-card
-          v-for="(room, index) in activeRooms"
-          :key="room.id"
-          prepend-icon="mdi-poker-chip"
-          max-width="450"
+        <div class="align-self-end">
+          <room-dialog
+            v-if="activeRooms"
+            v-model:role="role"
+            v-model:name="name"
+            :max-allowed-chars="15"
+            activator-text="Create a new room"
+            card-title="Create room"
+            :error-message="errorMessage"
+            @submit="connect(undefined)"
+          />
+        </div>
+        <div
+          class="d-flex ga-5 flex-wrap"
         >
-          <template #title>
-            Room #{{ index + 1 }}
-          </template>
-          <v-card-subtitle>{{ room.id }}</v-card-subtitle>
-          <v-card-text>
-            <v-icon icon="mdi-account" />
-            {{ playerCountAsStringForRoom(room.playerCount) }}
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
+          <v-card
+            v-for="(room, index) in activeRooms"
+            :key="room.id"
+            prepend-icon="mdi-poker-chip"
+            max-width="450"
+          >
+            <template #title>
+              Room #{{ index + 1 }}
+            </template>
+            <v-card-subtitle>{{ room.id }}</v-card-subtitle>
+            <v-card-text>
+              <v-icon icon="mdi-account" />
+              {{ playerCountAsStringForRoom(room.playerCount) }}
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
 
-            <room-dialog
-              v-model:role="role"
-              v-model:name="name"
-              :max-allowed-chars="15"
-              activator-text="Join"
-              card-title="Join"
-              :error-message="errorMessage"
-              @submit="connect(room.id)"
-            />
-          </v-card-actions>
-        </v-card>
+              <room-dialog
+                v-model:role="role"
+                v-model:name="name"
+                :max-allowed-chars="15"
+                activator-text="Join"
+                card-title="Join"
+                :error-message="errorMessage"
+                @submit="connect(room.id)"
+              />
+            </v-card-actions>
+          </v-card>
+        </div>
       </div>
-
+      
       <div
         v-else
         class="d-flex align-center flex-column ga-7"
