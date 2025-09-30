@@ -17,7 +17,7 @@ const formIsValid = ref(false);
 const props = withDefaults(defineProps<Props>(), {
   errorMessage: null,
   showPasswordInput: false,
-  maxAllowedChars: 15
+  maxAllowedChars: 15,
 });
 const emits = defineEmits<{
   (e: "submit"): void;

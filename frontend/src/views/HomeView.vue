@@ -28,11 +28,11 @@ async function connect(chosenRoomId: string | undefined) {
   }
 
   const passwordMatches = isLocked
-      ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
-      : true;
+    ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
+    : true;
   if (isLocked && !passwordMatches) {
     showPasswordInput.value = true;
-    errorMessage.value = "The provided password is wrong"
+    errorMessage.value = "The provided password is wrong";
     return;
   }
 
@@ -81,9 +81,7 @@ onBeforeMount(async () => {
             @submit="connect(undefined)"
           />
         </div>
-        <div
-          class="d-flex ga-5 flex-wrap"
-        >
+        <div class="d-flex ga-5 flex-wrap">
           <v-card
             v-for="(room, index) in activeRooms"
             :key="room.id"
@@ -115,7 +113,7 @@ onBeforeMount(async () => {
           </v-card>
         </div>
       </div>
-      
+
       <div
         v-else
         class="d-flex align-center flex-column ga-7"

@@ -210,10 +210,10 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     const response = await fetch(`/api/estimation/room/${roomId}/state`);
     return ((await response.json()) as { isLocked: boolean }).isLocked;
   }
-  
+
   async function roomExists(roomId: string): Promise<boolean> {
-      const response = await fetch(`/api/estimation/room/${roomId}/exists`);
-      return ((await response.json()) as { exists: boolean }).exists;
+    const response = await fetch(`/api/estimation/room/${roomId}/exists`);
+    return ((await response.json()) as { exists: boolean }).exists;
   }
 
   async function passwordMatchesRoom(roomId: string, password: string): Promise<boolean> {

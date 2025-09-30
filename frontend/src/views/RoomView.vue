@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type SendableWebsocketMessageType, useWebsocketStore } from "@/stores/websocket";
-import {useRoute, useRouter} from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
 import { ref, computed, onMounted } from "vue";
 import { Role, RoundState } from "@/components/types.ts";
@@ -18,7 +18,7 @@ const name = ref("");
 const role = ref(Role.Empty);
 const passwordForRoom = ref("");
 const errorMessage = ref("");
-const roomIsLocked = computed(() => websocketStore.roomIsLocked)
+const roomIsLocked = computed(() => websocketStore.roomIsLocked);
 const usersInRoom = computed(() => websocketStore.usersInRoom);
 const roomId = computed(() => websocketStore.roomId);
 const queryRoomId = computed((): string => {
@@ -84,14 +84,14 @@ async function copyPassword() {
 
 async function tryJoin() {
   errorMessage.value = "";
-  
+
   const actualRoomId = queryRoomId.value;
 
   const passwordMatches = roomIsLocked.value
-      ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
-      : true;
+    ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
+    : true;
   if (roomIsLocked.value && !passwordMatches) {
-    errorMessage.value = "The provided password is wrong"
+    errorMessage.value = "The provided password is wrong";
     return;
   }
 
@@ -108,10 +108,7 @@ async function tryJoin() {
   }
 
   await websocketStore.connect(name.value, role.value, actualRoomId);
-  await Promise.all([
-    websocketStore.fetchPossibleGuesses(),
-    websocketStore.fetchPermissions(),
-  ]);
+  await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);
 }
 
 onMounted(async () => {
@@ -120,14 +117,11 @@ onMounted(async () => {
     await router.push("/");
     return;
   }
-  
+
   await websocketStore.fetchRoomIsLocked();
-  
+
   if (isConnected.value) {
-    await Promise.all([
-      websocketStore.fetchPossibleGuesses(),
-      websocketStore.fetchPermissions(),
-    ]);
+    await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);
   }
 });
 </script>
@@ -148,7 +142,7 @@ onMounted(async () => {
       </template>
     </room-form>
   </div>
-  
+
   <div v-else>
     <v-dialog
       v-model="showSetRoomPasswordDialog"
