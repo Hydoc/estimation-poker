@@ -18,6 +18,54 @@ import (
 	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
+func TestApplication_handleRoomExists(t *testing.T) {
+	tests := []struct {
+		name        string
+		expectation bool
+		rooms       map[internal.RoomId]*internal.Room
+		roomId      string
+	}{
+		{
+			name:        "not exists for empty rooms",
+			expectation: false,
+			rooms:       map[internal.RoomId]*internal.Room{},
+			roomId:      "any-id",
+		},
+		{
+			name:        "exists for existing rooms",
+			expectation: true,
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("any-id"): {},
+			},
+			roomId: "any-id",
+		},
+	}
+
+	for _, test := range tests {
+		app := &application{
+			rooms: test.rooms,
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			router := app.Routes()
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/exists", test.roomId), nil)
+
+			router.ServeHTTP(recorder, request)
+
+			var got map[string]bool
+			json.Unmarshal(recorder.Body.Bytes(), &got)
+
+			gotContentType := recorder.Header().Get("Content-Type")
+
+			assert.Equal(t, gotContentType, "application/json")
+			assert.DeepEqual(t, got, map[string]bool{
+				"exists": test.expectation,
+			})
+		})
+	}
+}
+
 func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 	tests := []struct {
 		name        string

@@ -11,6 +11,7 @@ func (app *application) Routes() *http.ServeMux {
 	router.HandleFunc("GET /api/estimation/room/{id}/users", app.handleFetchUsers)
 	router.HandleFunc("GET /api/estimation/room/{id}/{username}/permissions", app.handleFetchPermissions)
 	router.HandleFunc("GET /api/estimation/room/{id}/state", app.handleFetchRoomState)
+	router.HandleFunc("GET /api/estimation/room/{id}/exists", app.handleRoomExists)
 	router.HandleFunc("GET /api/estimation/room/rooms", app.handleFetchActiveRooms)
 	router.HandleFunc("GET /api/estimation/possible-guesses", app.handlePossibleGuesses)
 	router.HandleFunc("POST /api/estimation/room/{id}/authenticate", app.handleRoomAuthenticate)

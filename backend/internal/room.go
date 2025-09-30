@@ -140,7 +140,7 @@ func (room *Room) Run() {
 					continue
 				}
 				room.broadcastToClients(msg)
-			case join, reveal, roomLocked:
+			case join, reveal, roomLocked, roomOpened:
 				room.broadcastToClients(msg)
 			default:
 				log.Printf("unexpected Message %#v", msg)

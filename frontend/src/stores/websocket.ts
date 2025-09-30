@@ -25,6 +25,7 @@ type WebsocketStore = {
   fetchPermissions(): Promise<void>;
   fetchRoomIsLocked(): Promise<boolean>;
   passwordMatchesRoom(roomId: string, password: string): Promise<boolean>;
+  roomExists(roomId: string): Promise<boolean>;
   username: Ref<string>;
   isConnected: Ref<boolean>;
   usersInRoom: Ref<UserOverview>;
@@ -209,6 +210,11 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     const response = await fetch(`/api/estimation/room/${roomId}/state`);
     return ((await response.json()) as { isLocked: boolean }).isLocked;
   }
+  
+  async function roomExists(roomId: string): Promise<boolean> {
+      const response = await fetch(`/api/estimation/room/${roomId}/exists`);
+      return ((await response.json()) as { exists: boolean }).exists;
+  }
 
   async function passwordMatchesRoom(roomId: string, password: string): Promise<boolean> {
     const response = await fetch(`/api/estimation/room/${roomId}/authenticate`, {
@@ -308,5 +314,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     roomIsLocked,
     developerDone,
     createRoom,
+    roomExists,
   };
 });

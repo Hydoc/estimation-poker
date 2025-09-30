@@ -122,6 +122,14 @@ func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *htt
 	app.writeJson(writer, http.StatusOK, app.guessConfig.Guesses, nil)
 }
 
+func (app *application) handleRoomExists(writer http.ResponseWriter, request *http.Request) {
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
+	roomId := request.PathValue("id")
+	_, ok := app.rooms[internal.RoomId(roomId)]
+	app.writeJson(writer, http.StatusOK, envelope{"exists": ok}, nil)
+}
+
 func (app *application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
 	app.roomMu.Lock()
 	defer app.roomMu.Unlock()

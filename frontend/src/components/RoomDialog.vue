@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { Role } from "@/components/types.ts";
+import RoomForm from "./RoomForm.vue";
 
 type Props = {
-  maxAllowedChars: number;
   activatorText: string;
   cardTitle: string;
   showPasswordInput?: boolean;
@@ -16,19 +15,10 @@ const props = withDefaults(defineProps<Props>(), {
 const emits = defineEmits<{
   (e: "submit"): void;
 }>();
-const role = defineModel("role", { type: String, default: Role.Empty, required: true });
-const name = defineModel("name", { type: String, default: "", required: true });
+const name = defineModel("name", { required: true, type: String, default: "" });
+const role = defineModel("role", { required: true, type: String, default: Role.Empty });
 const password = defineModel("password", { type: String, default: "", required: false });
-
-const showDialog = ref(false);
-const formIsValid = ref(false);
-
-const textFieldRules = computed(() => [
-  (value: string) => !!value || "Can not be empty",
-  (value: string) =>
-    (value && value.length <= props.maxAllowedChars) ||
-    `Only ${props.maxAllowedChars} chars allowed`,
-]);
+const showDialog = defineModel("showDialog", { type: Boolean, default: false, required: false });
 </script>
 
 <template>
@@ -44,63 +34,15 @@ const textFieldRules = computed(() => [
       />
     </template>
 
-    <v-card :title="props.cardTitle">
-      <v-card-text>
-        <v-form
-          v-model="formIsValid"
-          fast-fail
-          validate-on="input"
-          @submit.prevent="emits('submit')"
-        >
-          <v-text-field
-            v-model="name"
-            label="Name"
-            required
-            :rules="textFieldRules"
-          />
-
-          <v-radio-group
-            v-model="role"
-            label="Your role"
-            :rules="[(value) => !!value || 'Can not be empty']"
-          >
-            <v-radio
-              label="Product Owner"
-              :value="Role.ProductOwner"
-            />
-            <v-radio
-              label="Developer"
-              :value="Role.Developer"
-            />
-          </v-radio-group>
-          
-          <v-text-field
-            v-if="props.showPasswordInput"
-            v-model="password"
-            type="password"
-            label="Password"
-            required
-            :rules="textFieldRules"
-          />
-
-          <v-alert
-            v-if="props.errorMessage"
-            color="error"
-            :text="props.errorMessage"
-          />
-
-          <v-btn
-            class="float-right"
-            type="submit"
-            color="primary"
-            prepend-icon="mdi-connection"
-            :disabled="!formIsValid"
-          >
-            Connect
-          </v-btn>
-        </v-form>
-      </v-card-text>
-    </v-card>
+    <room-form
+      v-model:name="name"
+      v-model:role="role"
+      v-model:password="password"
+      :error-message="props.errorMessage"
+      :show-password-input="props.showPasswordInput"
+      :title="cardTitle"
+      @submit="emits('submit')"
+    />
   </v-dialog>
 </template>
 
