@@ -13,28 +13,30 @@ const activeRooms: Ref<ActiveRoom[]> = ref([]);
 const errorMessage: Ref<string | undefined> = ref();
 const role: Ref<Role> = ref(Role.Empty);
 const name: Ref<string> = ref("");
+const passwordForRoom: Ref<string> = ref("");
+const showPasswordInput: Ref<boolean> = ref(false);
 
 async function connect(chosenRoomId: string | undefined) {
   errorMessage.value = "";
 
   const actualRoomId = chosenRoomId ? chosenRoomId : await websocketStore.createRoom(name.value);
 
-  // const isLocked = await websocketStore.isRoomLocked(actualRoomId);
-  // if (isLocked && passwordForRoom.value === "") {
-  //   showPasswordDialog.value = true;
-  //   return;
-  // }
-  //
-  // const passwordMatches = isLocked
-  //     ? await websocketStore.passwordMatchesRoom(roomId.value, passwordForRoom.value)
-  //     : true;
-  // if (isLocked && !passwordMatches) {
-  //   showPasswordDialog.value = true;
-  //   showPasswordDoesNotMatch.value = true;
-  //   return;
-  // }
-  //
-  // showPasswordDialog.value = false;
+  const isLocked = await websocketStore.isRoomLocked(actualRoomId);
+  if (isLocked && passwordForRoom.value === "") {
+    showPasswordInput.value = true;
+    return;
+  }
+
+  const passwordMatches = isLocked
+      ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
+      : true;
+  if (isLocked && !passwordMatches) {
+    showPasswordInput.value = true;
+    errorMessage.value = "The provided password is wrong"
+    return;
+  }
+
+  showPasswordInput.value = false;
 
   const roundInRoomInProgress = await websocketStore.isRoundInRoomInProgress(actualRoomId);
   if (roundInRoomInProgress) {
@@ -103,6 +105,8 @@ onBeforeMount(async () => {
               <room-dialog
                 v-model:role="role"
                 v-model:name="name"
+                v-model:password="passwordForRoom"
+                :show-password-input="showPasswordInput"
                 :max-allowed-chars="15"
                 activator-text="Join"
                 card-title="Join"

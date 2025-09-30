@@ -73,10 +73,10 @@ func (client *Client) WebsocketReader() {
 			client.room.Broadcast <- incMessage
 		case incMessage.Type == lockRoom:
 			pw, pwOk := incMessage.Data.(map[string]any)["password"]
-			key, keyOk := incMessage.Data.(map[string]any)["Key"]
+			key, keyOk := incMessage.Data.(map[string]any)["key"]
 
 			if !keyOk {
-				log.Printf("client: %s tried to lock room %s without a Key\n", client.Name, client.room.Id)
+				log.Printf("client: %s tried to lock room %s without a key\n", client.Name, client.room.Id)
 				break
 			}
 			if !pwOk {
@@ -90,10 +90,10 @@ func (client *Client) WebsocketReader() {
 			}
 			log.Println("was not able to lock room")
 		case incMessage.Type == openRoom:
-			key, keyOk := incMessage.Data.(map[string]any)["Key"]
+			key, keyOk := incMessage.Data.(map[string]any)["key"]
 
 			if !keyOk {
-				log.Println("client:", client.Name, "tried to open room", client.room.Id, "without a Key")
+				log.Println("client:", client.Name, "tried to open room", client.room.Id, "without a key")
 				break
 			}
 

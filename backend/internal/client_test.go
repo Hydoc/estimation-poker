@@ -254,7 +254,7 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 		Type: lockRoom,
 		Data: map[string]any{
 			"password": "my cool pw",
-			"Key":      id.String(),
+			"key":      id.String(),
 		},
 	})
 
@@ -299,7 +299,7 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 	wsjson.Write(context.Background(), connection, Message{
 		Type: openRoom,
 		Data: map[string]any{
-			"Key": id.String(),
+			"key": id.String(),
 		},
 	})
 

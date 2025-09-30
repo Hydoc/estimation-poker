@@ -6,14 +6,19 @@ type Props = {
   maxAllowedChars: number;
   activatorText: string;
   cardTitle: string;
+  showPasswordInput?: boolean;
   errorMessage?: string;
 };
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  showPasswordInput: false,
+  errorMessage: undefined,
+});
 const emits = defineEmits<{
   (e: "submit"): void;
 }>();
 const role = defineModel("role", { type: String, default: Role.Empty, required: true });
 const name = defineModel("name", { type: String, default: "", required: true });
+const password = defineModel("password", { type: String, default: "", required: false });
 
 const showDialog = ref(false);
 const formIsValid = ref(false);
@@ -68,6 +73,15 @@ const textFieldRules = computed(() => [
               :value="Role.Developer"
             />
           </v-radio-group>
+          
+          <v-text-field
+            v-if="props.showPasswordInput"
+            v-model="password"
+            type="password"
+            label="Password"
+            required
+            :rules="textFieldRules"
+          />
 
           <v-alert
             v-if="props.errorMessage"
