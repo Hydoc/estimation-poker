@@ -7,5 +7,3 @@ require (
 	github.com/google/uuid v1.6.0
 	golang.org/x/crypto v0.42.0
 )
-
-require github.com/Hydoc/go-message v0.0.2 // indirect
