@@ -118,7 +118,7 @@ onMounted(async () => {
     return;
   }
 
-  await websocketStore.fetchRoomIsLocked();
+  await websocketStore.fetchRoomIsLocked(queryRoomId.value);
 
   if (isConnected.value) {
     await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);
