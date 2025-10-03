@@ -23,7 +23,7 @@ type WebsocketStore = {
   isRoomLocked(roomId: string): Promise<boolean>;
   fetchPossibleGuesses(): Promise<void>;
   fetchPermissions(): Promise<void>;
-  fetchRoomIsLocked(): Promise<boolean>;
+  fetchRoomIsLocked(roomId: string): Promise<boolean>;
   passwordMatchesRoom(roomId: string, password: string): Promise<boolean>;
   roomExists(roomId: string): Promise<boolean>;
   username: Ref<string>;
@@ -149,7 +149,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           break;
         case "room-locked":
         case "room-opened":
-          await fetchRoomIsLocked();
+          await fetchRoomIsLocked(userRoomId.value);
           break;
         case "new-round":
           resetRound();
@@ -275,8 +275,8 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     return;
   }
 
-  async function fetchRoomIsLocked(): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${userRoomId.value}/state`);
+  async function fetchRoomIsLocked(roomId: string): Promise<boolean> {
+    const response = await fetch(`/api/estimation/room/${roomId}/state`);
     if (!response.ok) {
       roomIsLocked.value = false;
       return roomIsLocked.value;
