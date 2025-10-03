@@ -34,9 +34,7 @@ const textFieldRules = computed(() => [
 </script>
 
 <template>
-  <v-card
-    :title="props.title"
-  >
+  <v-card :title="props.title">
     <v-card-subtitle v-if="props.subtitle">
       {{ props.subtitle }}
     </v-card-subtitle>
