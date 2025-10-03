@@ -85,6 +85,7 @@ onBeforeMount(async () => {
           <v-card
             v-for="(room, index) in activeRooms"
             :key="room.id"
+            variant="outlined"
             prepend-icon="mdi-poker-chip"
             max-width="450"
           >

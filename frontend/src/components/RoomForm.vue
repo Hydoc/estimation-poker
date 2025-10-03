@@ -32,14 +32,16 @@ const textFieldRules = computed(() => [
 </script>
 
 <template>
-  <v-card :title="props.title">
+  <v-card
+    :title="props.title"
+  >
     <v-card-text>
       <slot name="teaser" />
       <v-form
         v-model="formIsValid"
         fast-fail
         validate-on="input"
-        @submit.prevent="emits('submit')"
+        @submit.prevent
       >
         <v-text-field
           v-model="name"
@@ -77,18 +79,19 @@ const textFieldRules = computed(() => [
           color="error"
           :text="props.errorMessage"
         />
-
-        <v-btn
-          class="float-right"
-          type="submit"
-          color="primary"
-          prepend-icon="mdi-connection"
-          :disabled="!formIsValid"
-        >
-          Connect
-        </v-btn>
       </v-form>
     </v-card-text>
+    <v-card-actions>
+      <v-spacer />
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-connection"
+        :disabled="!formIsValid"
+        @click="emits('submit')"
+      >
+        Connect
+      </v-btn>
+    </v-card-actions>
   </v-card>
 </template>
 
