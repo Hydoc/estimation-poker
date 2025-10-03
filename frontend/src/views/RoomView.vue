@@ -135,12 +135,9 @@ onMounted(async () => {
       :show-password-input="roomIsLocked"
       :error-message="errorMessage"
       title="Join room"
+      subtitle="You are currently not connected to this room"
       @submit="tryJoin"
-    >
-      <template #teaser>
-        <p>You are currently not connected to this room.</p>
-      </template>
-    </room-form>
+    />
   </div>
 
   <div v-else>

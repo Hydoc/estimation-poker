@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 
 type Props = {
   title: string;
+  subtitle?: string;
   maxAllowedChars?: number;
   errorMessage?: string | null;
   showPasswordInput?: boolean;
@@ -15,6 +16,7 @@ const password = defineModel("password", { type: String, default: "", required: 
 const formIsValid = ref(false);
 
 const props = withDefaults(defineProps<Props>(), {
+  subtitle: undefined,
   errorMessage: null,
   showPasswordInput: false,
   maxAllowedChars: 15,
@@ -35,8 +37,10 @@ const textFieldRules = computed(() => [
   <v-card
     :title="props.title"
   >
+    <v-card-subtitle v-if="props.subtitle">
+      {{ props.subtitle }}
+    </v-card-subtitle>
     <v-card-text>
-      <slot name="teaser" />
       <v-form
         v-model="formIsValid"
         fast-fail
