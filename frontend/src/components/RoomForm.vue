@@ -17,7 +17,7 @@ const formIsValid = ref(false);
 
 const props = withDefaults(defineProps<Props>(), {
   subtitle: undefined,
-  errorMessage: null,
+  errorMessage: undefined,
   showPasswordInput: false,
   maxAllowedChars: 15,
 });

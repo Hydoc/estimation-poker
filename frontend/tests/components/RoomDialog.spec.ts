@@ -50,7 +50,7 @@ describe("RoomDialog", () => {
       expect(wrapper.findComponent(RoomForm).props("name")).equal("");
       expect(wrapper.findComponent(RoomForm).props("role")).equal(Role.Empty);
       expect(wrapper.findComponent(RoomForm).props("password")).equal("");
-      expect(wrapper.findComponent(RoomForm).props("errorMessage")).to.be.null;
+      expect(wrapper.findComponent(RoomForm).props("errorMessage")).to.be.undefined;
       expect(wrapper.findComponent(RoomForm).props("showPasswordInput")).to.be.true;
       expect(wrapper.findComponent(RoomForm).props("title")).equal("Title");
     });

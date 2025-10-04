@@ -72,7 +72,7 @@ onBeforeMount(async () => {
       >
         <div class="align-self-end">
           <room-dialog
-            v-if="activeRooms"
+            v-if="activeRooms.length > 0"
             v-model:role="role"
             v-model:name="name"
             activator-text="Create a new room"
@@ -88,11 +88,9 @@ onBeforeMount(async () => {
             variant="outlined"
             prepend-icon="mdi-poker-chip"
             max-width="450"
+            :title="`Room #${index + 1}`"
+            :subtitle="room.id"
           >
-            <template #title>
-              Room #{{ index + 1 }}
-            </template>
-            <v-card-subtitle>{{ room.id }}</v-card-subtitle>
             <v-card-text>
               <v-icon icon="mdi-account" />
               {{ playerCountAsStringForRoom(room.playerCount) }}
