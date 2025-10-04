@@ -475,7 +475,7 @@ describe("Websocket Store", () => {
 
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
-    const actual = await websocketStore.fetchRoomIsLocked();
+    const actual = await websocketStore.fetchRoomIsLocked("Test");
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
     expect(actual).to.be.true;
   });
@@ -487,7 +487,7 @@ describe("Websocket Store", () => {
 
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
-    const actual = await websocketStore.fetchRoomIsLocked();
+    const actual = await websocketStore.fetchRoomIsLocked("Test");
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
     expect(actual).to.be.false;
   });

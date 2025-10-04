@@ -1,23 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { mount } from "@vue/test-utils";
+import { describe, expect, it } from "vitest";
 import DeveloperCommandCenter from "../../src/components/DeveloperCommandCenter.vue";
-import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
-import { VBtn, VIcon } from "vuetify/components";
-import * as directives from "vuetify/directives";
+import { VIcon } from "vuetify/components";
+import { vuetifyMount } from "../vuetifyMount";
 
-let vuetify: ReturnType<typeof createVuetify>;
-
-beforeEach(() => {
-  vuetify = createVuetify({
-    components,
-    directives,
-  });
-});
 describe("DeveloperCommandCenter", () => {
   describe("rendering", () => {
     it("should render", () => {
-      const wrapper = mount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperCommandCenter, {
         props: {
           guess: 0,
           showAllGuesses: false,
@@ -30,9 +19,6 @@ describe("DeveloperCommandCenter", () => {
             { guess: 4, description: "Bis zu 5 Tagen" },
             { guess: 5, description: "Mehr als 5 Tage" },
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -59,7 +45,7 @@ describe("DeveloperCommandCenter", () => {
     });
 
     it("should render with correct guess when developer did guess", async () => {
-      const wrapper = mount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperCommandCenter, {
         props: {
           guess: 2,
           showAllGuesses: false,
@@ -73,9 +59,6 @@ describe("DeveloperCommandCenter", () => {
             { guess: 5, description: "Mehr als 5 Tage" },
           ],
         },
-        global: {
-          plugins: [vuetify],
-        },
       });
 
       expect(wrapper.find(".active-guess").find("h2").text()).equal("2");
@@ -83,7 +66,7 @@ describe("DeveloperCommandCenter", () => {
     });
 
     it("should render with correct color when developer didSkip", () => {
-      const wrapper = mount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperCommandCenter, {
         props: {
           guess: 0,
           showAllGuesses: false,
@@ -97,9 +80,6 @@ describe("DeveloperCommandCenter", () => {
             { guess: 5, description: "Mehr als 5 Tage" },
           ],
         },
-        global: {
-          plugins: [vuetify],
-        },
       });
 
       expect(wrapper.find(".active-guess").findComponent(VIcon).find("i").classes()).contains(
@@ -111,7 +91,7 @@ describe("DeveloperCommandCenter", () => {
 
   describe("functionality", () => {
     it("should emit guess on card click submit", async () => {
-      const wrapper = mount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperCommandCenter, {
         props: {
           guess: 0,
           showAllGuesses: false,
@@ -124,9 +104,6 @@ describe("DeveloperCommandCenter", () => {
             { guess: 4, description: "Bis zu 5 Tagen" },
             { guess: 5, description: "Mehr als 5 Tage" },
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -138,7 +115,7 @@ describe("DeveloperCommandCenter", () => {
     });
 
     it("should emit skip on skip card press", async () => {
-      const wrapper = mount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperCommandCenter, {
         props: {
           guess: 0,
           showAllGuesses: false,
@@ -151,9 +128,6 @@ describe("DeveloperCommandCenter", () => {
             { guess: 4, description: "Bis zu 5 Tagen" },
             { guess: 5, description: "Mehr als 5 Tage" },
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 

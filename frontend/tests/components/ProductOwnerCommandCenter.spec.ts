@@ -1,14 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 import ProductOwnerCommandCenter from "../../src/components/ProductOwnerCommandCenter.vue";
-import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
 import { VBtn, VForm, VProgressCircular, VTextField } from "vuetify/components";
-import * as directives from "vuetify/directives";
 import { nextTick } from "vue";
 import { Developer, RoundState } from "../../src/components/types";
-
-let vuetify: ReturnType<typeof createVuetify>;
+import { vuetifyMount } from "../vuetifyMount";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
@@ -17,25 +12,16 @@ const ResizeObserverMock = vi.fn(() => ({
 }));
 
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
-beforeEach(() => {
-  vuetify = createVuetify({
-    components,
-    directives,
-  });
-});
 describe("ProductOwnerCommandCenter", () => {
   describe("rendering", () => {
     it("should render", () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
           actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [{ name: "Test", isDone: false, role: "developer" } as Developer],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -55,16 +41,13 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should render without developers in room", () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
           actualTicketToGuess: "",
           showAllGuesses: false,
           developerList: [],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -73,7 +56,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should render button with progress bar when round is in progress but not every dev is done", () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.InProgress,
           hasTicketToGuess: true,
@@ -83,9 +66,6 @@ describe("ProductOwnerCommandCenter", () => {
             { name: "Test", isDone: false, role: "developer" } as Developer,
             { name: "Test 2", isDone: true, role: "developer" } as Developer,
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -101,7 +81,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should render button without progress bar when round is finished", () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.End,
           hasTicketToGuess: true,
@@ -111,9 +91,6 @@ describe("ProductOwnerCommandCenter", () => {
             { name: "Test", isDone: true, role: "developer" } as Developer,
             { name: "Test 2", isDone: true, role: "developer" } as Developer,
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -127,7 +104,7 @@ describe("ProductOwnerCommandCenter", () => {
 
   describe("functionality", () => {
     it("should enable button when everything is valid", async () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -137,10 +114,6 @@ describe("ProductOwnerCommandCenter", () => {
             { name: "Test", isDone: false, role: "developer" } as Developer,
             { name: "Test 2", isDone: false, role: "developer" } as Developer,
           ],
-        },
-
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -151,7 +124,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should show validation message when ticket is cleared", async () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -161,9 +134,6 @@ describe("ProductOwnerCommandCenter", () => {
             { name: "Test", isDone: false, role: "developer" } as Developer,
             { name: "Test 2", isDone: false, role: "developer" } as Developer,
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -176,7 +146,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should show validation message when ticket does not match regex", async () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -186,9 +156,6 @@ describe("ProductOwnerCommandCenter", () => {
             { name: "Test", isDone: false, role: "developer" } as Developer,
             { name: "Test 2", isDone: false, role: "developer" } as Developer,
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -201,7 +168,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should emit estimate on form submit", async () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -211,9 +178,6 @@ describe("ProductOwnerCommandCenter", () => {
             { name: "Test", isDone: false, role: "developer" } as Developer,
             { name: "Test 2", isDone: false, role: "developer" } as Developer,
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 
@@ -226,7 +190,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should not emit estimate when product owner can not estimate due to form invalid", async () => {
-      const wrapper = mount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -236,9 +200,6 @@ describe("ProductOwnerCommandCenter", () => {
             { name: "Test", isDone: false, role: "developer" } as Developer,
             { name: "Test 2", isDone: false, role: "developer" } as Developer,
           ],
-        },
-        global: {
-          plugins: [vuetify],
         },
       });
 

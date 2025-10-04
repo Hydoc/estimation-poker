@@ -135,7 +135,7 @@ describe("RoomForm", () => {
       await wrapper.findComponent(VRadioGroup).setValue(Role.Developer);
 
       expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
-        
+
       await wrapper.findAllComponents(VTextField).at(1).setValue("top secret");
 
       await nextTick();

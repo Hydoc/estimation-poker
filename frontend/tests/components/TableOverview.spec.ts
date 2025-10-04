@@ -1,8 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
-import * as directives from "vuetify/directives";
-import { mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 import TableOverview from "../../src/components/TableOverview.vue";
 import {
   Developer,
@@ -13,8 +9,7 @@ import {
 } from "../../src/components/types";
 import ProductOwnerCommandCenter from "../../src/components/ProductOwnerCommandCenter.vue";
 import DeveloperCard from "../../src/components/DeveloperCard.vue";
-
-let vuetify: ReturnType<typeof createVuetify>;
+import { vuetifyMount } from "../vuetifyMount";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
@@ -23,12 +18,6 @@ const ResizeObserverMock = vi.fn(() => ({
 }));
 
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
-beforeEach(() => {
-  vuetify = createVuetify({
-    components,
-    directives,
-  });
-});
 describe("TableOverview", () => {
   describe("rendering", () => {
     it("should render as product owner", () => {
@@ -152,7 +141,7 @@ function createWrapper(
   role = Role.Developer,
   ticketToGuess = "",
 ) {
-  return mount(TableOverview, {
+  return vuetifyMount(TableOverview, {
     props: {
       usersInRoom,
       roundState,
@@ -160,9 +149,6 @@ function createWrapper(
       showAllGuesses,
       userRole: role,
       ticketToGuess,
-    },
-    global: {
-      plugins: [vuetify],
     },
   });
 }
