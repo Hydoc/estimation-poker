@@ -20,7 +20,6 @@ type WebsocketStore = {
   fetchActiveRooms(): Promise<ActiveRoom[]>;
   send(message: SendableWebsocketMessage): void;
   isRoundInRoomInProgress(roomId: string): Promise<boolean>;
-  isRoomLocked(roomId: string): Promise<boolean>;
   fetchPossibleGuesses(): Promise<void>;
   fetchPermissions(): Promise<void>;
   fetchRoomIsLocked(roomId: string): Promise<boolean>;
@@ -206,11 +205,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     return ((await response.json()) as { inProgress: boolean }).inProgress;
   }
 
-  async function isRoomLocked(roomId: string): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${roomId}/state`);
-    return ((await response.json()) as { isLocked: boolean }).isLocked;
-  }
-
   async function roomExists(roomId: string): Promise<boolean> {
     const response = await fetch(`/api/estimation/room/${roomId}/exists`);
     return ((await response.json()) as { exists: boolean }).exists;
@@ -292,7 +286,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     isConnected,
     usersInRoom,
     isRoundInRoomInProgress,
-    isRoomLocked,
     roomId: userRoomId,
     possibleGuesses,
     username,

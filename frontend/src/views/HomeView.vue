@@ -21,7 +21,7 @@ async function connect(chosenRoomId: string | undefined) {
 
   const actualRoomId = chosenRoomId ? chosenRoomId : await websocketStore.createRoom(name.value);
 
-  const isLocked = await websocketStore.isRoomLocked(actualRoomId);
+  const isLocked = await websocketStore.fetchRoomIsLocked(actualRoomId);
   if (isLocked && passwordForRoom.value === "") {
     showPasswordInput.value = true;
     return;

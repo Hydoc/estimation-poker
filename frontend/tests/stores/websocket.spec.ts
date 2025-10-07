@@ -369,18 +369,6 @@ describe("Websocket Store", () => {
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/rooms");
   });
 
-  it("should fetch isRoomLocked", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => ({ isLocked: false }),
-    });
-
-    const websocketStore = useWebsocketStore();
-    const isLocked = await websocketStore.isRoomLocked("abc");
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/state");
-    expect(isLocked).to.be.false;
-  });
-
   it("should fetch passwordMatchesRoom when password matches", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
