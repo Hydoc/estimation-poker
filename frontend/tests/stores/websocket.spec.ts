@@ -52,10 +52,7 @@ describe("Websocket Store", () => {
     expect(websocketStore.ticketToGuess).equal("");
     expect(websocketStore.guess).equal(0);
     expect(websocketStore.didSkip).false;
-    expect(websocketStore.usersInRoom).deep.equal({
-      developerList: [],
-      productOwnerList: [],
-    });
+    expect(websocketStore.usersInRoom).deep.equal([]);
   });
 
   it("should connect as developer", async () => {
@@ -91,10 +88,10 @@ describe("Websocket Store", () => {
   });
 
   it("should fetch users in room when join message appeared", async () => {
-    const usersInRoom = {
-      developerList: [{ name: "C", role: Role.Developer, guess: 0 }],
-      productOwnerList: [{ name: "ABC", role: Role.ProductOwner, guess: 0 }],
-    };
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -111,10 +108,10 @@ describe("Websocket Store", () => {
   });
 
   it("should fetch users in room when leave message appeared", async () => {
-    const usersInRoom = {
-      developerList: [{ name: "C", role: Role.Developer, guess: 0 }],
-      productOwnerList: [{ name: "ABC", role: Role.ProductOwner, guess: 0 }],
-    };
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -131,10 +128,10 @@ describe("Websocket Store", () => {
   });
 
   it("should fetch users in room when developer-guessed message appeared", async () => {
-    const usersInRoom = {
-      developerList: [{ name: "C", role: Role.Developer, guess: 0 }],
-      productOwnerList: [{ name: "ABC", role: Role.ProductOwner, guess: 0 }],
-    };
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -182,10 +179,10 @@ describe("Websocket Store", () => {
   });
 
   it("should fetch users in room and end round when everyone-guessed message appeared", async () => {
-    const usersInRoom = {
-      developerList: [{ name: "C", role: Role.Developer, guess: 0 }],
-      productOwnerList: [{ name: "ABC", role: Role.ProductOwner, guess: 0 }],
-    };
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -203,7 +200,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketOnMessage({
-      data: JSON.stringify({ type: "reveal-round", data: [] }),
+      data: JSON.stringify({ type: "reveal", data: [] }),
     });
     expect(websocketStore.showAllGuesses).to.be.true;
   });
@@ -238,11 +235,11 @@ describe("Websocket Store", () => {
     expect(websocketStore.roomIsLocked).to.be.false;
   });
 
-  it("should reset round and fetch users in room when reset-round message appeared", async () => {
-    const usersInRoom = {
-      developerList: [{ name: "C", role: Role.Developer, guess: 0 }],
-      productOwnerList: [{ name: "ABC", role: Role.ProductOwner, guess: 0 }],
-    };
+  it("should reset round and fetch users in room when new-round message appeared", async () => {
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => usersInRoom,
@@ -254,7 +251,7 @@ describe("Websocket Store", () => {
     websocketStore.roundState = RoundState.End;
     websocketStore.showAllGuesses = true;
     await websocketOnMessage({
-      data: JSON.stringify({ type: "reset-round" }),
+      data: JSON.stringify({ type: "new-round" }),
     });
 
     expect(websocketStore.ticketToGuess).equal("");
@@ -286,10 +283,10 @@ describe("Websocket Store", () => {
   });
 
   it("should reset usersInRoom when response is not ok", async () => {
-    const usersInRoom = {
-      developerList: [{ name: "C", role: Role.Developer, guess: 0 }],
-      productOwnerList: [{ name: "ABC", role: Role.ProductOwner, guess: 0 }],
-    };
+    const usersInRoom = [
+      { name: "C", role: Role.Developer, guess: 0 },
+      { name: "ABC", role: Role.ProductOwner, guess: 0 },
+    ];
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
     });
@@ -300,10 +297,7 @@ describe("Websocket Store", () => {
       data: JSON.stringify({ type: "leave" }),
     });
 
-    expect(websocketStore.usersInRoom).deep.equal({
-      developerList: [],
-      productOwnerList: [],
-    });
+    expect(websocketStore.usersInRoom).deep.equal([]);
   });
 
   it("should return true when user in room exists", async () => {
@@ -354,24 +348,25 @@ describe("Websocket Store", () => {
 
   it("should fetch active rooms", async () => {
     global.fetch = vi.fn().mockResolvedValue({
-      json: () => ["Test room"],
+      ok: true,
+      json: () => ({
+        rooms: [
+          {
+            id: "any-id",
+            playerCount: 1,
+          },
+        ],
+      }),
     });
     const websocketStore = useWebsocketStore();
     const actual = await websocketStore.fetchActiveRooms();
-    expect(actual).deep.equal(["Test room"]);
+    expect(actual).deep.equal([
+      {
+        id: "any-id",
+        playerCount: 1,
+      },
+    ]);
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/rooms");
-  });
-
-  it("should fetch isRoomLocked", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => ({ isLocked: false }),
-    });
-
-    const websocketStore = useWebsocketStore();
-    const isLocked = await websocketStore.isRoomLocked("abc");
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/state");
-    expect(isLocked).to.be.false;
   });
 
   it("should fetch passwordMatchesRoom when password matches", async () => {
@@ -468,7 +463,7 @@ describe("Websocket Store", () => {
 
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
-    const actual = await websocketStore.fetchRoomIsLocked();
+    const actual = await websocketStore.fetchRoomIsLocked("Test");
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
     expect(actual).to.be.true;
   });
@@ -480,7 +475,7 @@ describe("Websocket Store", () => {
 
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
-    const actual = await websocketStore.fetchRoomIsLocked();
+    const actual = await websocketStore.fetchRoomIsLocked("Test");
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
     expect(actual).to.be.false;
   });

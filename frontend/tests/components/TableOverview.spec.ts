@@ -1,8 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
-import * as directives from "vuetify/directives";
-import { mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 import TableOverview from "../../src/components/TableOverview.vue";
 import {
   Developer,
@@ -13,8 +9,7 @@ import {
 } from "../../src/components/types";
 import ProductOwnerCommandCenter from "../../src/components/ProductOwnerCommandCenter.vue";
 import DeveloperCard from "../../src/components/DeveloperCard.vue";
-
-let vuetify: ReturnType<typeof createVuetify>;
+import { vuetifyMount } from "../vuetifyMount";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
@@ -23,20 +18,14 @@ const ResizeObserverMock = vi.fn(() => ({
 }));
 
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
-beforeEach(() => {
-  vuetify = createVuetify({
-    components,
-    directives,
-  });
-});
 describe("TableOverview", () => {
   describe("rendering", () => {
     it("should render as product owner", () => {
       const wrapper = createWrapper(
-        {
-          productOwnerList: [{ name: "Test PO", role: "product-owner" } as ProductOwner],
-          developerList: [{ name: "Test Dev", isDone: false, role: "developer" } as Developer],
-        },
+        [
+          { name: "Test PO", role: "product-owner" } as ProductOwner,
+          { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+        ],
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
@@ -90,10 +79,10 @@ describe("TableOverview", () => {
   describe("functionality", () => {
     it("should emit estimate when product owner command center emits estimate", () => {
       const wrapper = createWrapper(
-        {
-          productOwnerList: [{ name: "Test PO", role: "product-owner" } as ProductOwner],
-          developerList: [{ name: "Test Dev", isDone: false, role: "developer" } as Developer],
-        },
+        [
+          { name: "Test PO", role: "product-owner" } as ProductOwner,
+          { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+        ],
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
@@ -107,10 +96,10 @@ describe("TableOverview", () => {
 
     it("should emit reveal when product owner command center emits reveal", () => {
       const wrapper = createWrapper(
-        {
-          productOwnerList: [{ name: "Test PO", role: "product-owner" } as ProductOwner],
-          developerList: [{ name: "Test Dev", isDone: false, role: "developer" } as Developer],
-        },
+        [
+          { name: "Test PO", role: "product-owner" } as ProductOwner,
+          { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+        ],
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
@@ -124,10 +113,10 @@ describe("TableOverview", () => {
 
     it("should emit new-round when product owner command center emits new-round", () => {
       const wrapper = createWrapper(
-        {
-          productOwnerList: [{ name: "Test PO", role: "product-owner" } as ProductOwner],
-          developerList: [{ name: "Test Dev", isDone: false, role: "developer" } as Developer],
-        },
+        [
+          { name: "Test PO", role: "product-owner" } as ProductOwner,
+          { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+        ],
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
@@ -142,17 +131,17 @@ describe("TableOverview", () => {
 });
 
 function createWrapper(
-  usersInRoom = {
-    productOwnerList: [{ name: "Test PO", role: "product-owner" } as ProductOwner],
-    developerList: [{ name: "Test Dev", isDone: false, role: "developer" } as Developer],
-  },
+  usersInRoom = [
+    { name: "Test PO", role: "product-owner" } as ProductOwner,
+    { name: "Test Dev", isDone: false, role: "developer" } as Developer,
+  ],
   roundState = RoundState.Waiting,
   developerDone = [] as DeveloperDone[],
   showAllGuesses = false,
   role = Role.Developer,
   ticketToGuess = "",
 ) {
-  return mount(TableOverview, {
+  return vuetifyMount(TableOverview, {
     props: {
       usersInRoom,
       roundState,
@@ -160,9 +149,6 @@ function createWrapper(
       showAllGuesses,
       userRole: role,
       ticketToGuess,
-    },
-    global: {
-      plugins: [vuetify],
     },
   });
 }

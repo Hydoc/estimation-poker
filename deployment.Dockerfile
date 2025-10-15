@@ -9,7 +9,7 @@ RUN npm i -g pnpm
 
 WORKDIR /opt/backend
 COPY ./backend /opt/backend
-COPY --from=golang:1.24-alpine /usr/local/go /usr/local/go
+COPY --from=golang:1.25-alpine /usr/local/go /usr/local/go
 ENV PATH="/usr/local/go/bin:${PATH}"
 RUN go mod download
 RUN go mod tidy

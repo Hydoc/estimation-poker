@@ -9,25 +9,22 @@ export type User = {
 };
 
 export type ProductOwner = User & {
-  role: "product-owner";
+  role: Role.ProductOwner;
 };
 
 export type Developer = User & {
   isDone: boolean;
-  role: "developer";
+  role: Role.Developer;
 };
 
 export type DeveloperDone = {
   doSkip: boolean;
   guess: number;
   name: string;
-  role: "developer";
+  role: Role.Developer;
 };
 
-export type UserOverview = {
-  productOwnerList: ProductOwner[];
-  developerList: Developer[];
-};
+export type UserOverview = (ProductOwner | Developer)[];
 
 export enum RoundState {
   Waiting,
@@ -45,4 +42,13 @@ export type Permissions = {
     canLock: boolean;
     key?: string;
   };
+};
+
+export type FetchActiveRoomsResponse = {
+  rooms: ActiveRoom[] | null;
+};
+
+export type ActiveRoom = {
+  id: string;
+  playerCount: number;
 };

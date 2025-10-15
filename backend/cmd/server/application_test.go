@@ -1,27 +1,76 @@
-package internal
+package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
-	"sync"
 	"testing"
 
+	"github.com/coder/websocket"
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/Hydoc/guess-dev/backend/internal"
+	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
+
+func TestApplication_handleRoomExists(t *testing.T) {
+	tests := []struct {
+		name        string
+		expectation bool
+		rooms       map[internal.RoomId]*internal.Room
+		roomId      string
+	}{
+		{
+			name:        "not exists for empty rooms",
+			expectation: false,
+			rooms:       map[internal.RoomId]*internal.Room{},
+			roomId:      "any-id",
+		},
+		{
+			name:        "exists for existing rooms",
+			expectation: true,
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("any-id"): {},
+			},
+			roomId: "any-id",
+		},
+	}
+
+	for _, test := range tests {
+		app := &application{
+			rooms: test.rooms,
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			router := app.Routes()
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/exists", test.roomId), nil)
+
+			router.ServeHTTP(recorder, request)
+
+			var got map[string]bool
+			json.Unmarshal(recorder.Body.Bytes(), &got)
+
+			gotContentType := recorder.Header().Get("Content-Type")
+
+			assert.Equal(t, gotContentType, "application/json")
+			assert.DeepEqual(t, got, map[string]bool{
+				"exists": test.expectation,
+			})
+		})
+	}
+}
 
 func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 	tests := []struct {
 		name        string
 		expectation map[string]bool
-		rooms       map[RoomId]*Room
+		rooms       map[internal.RoomId]*internal.Room
 		room        string
 	}{
 		{
@@ -30,7 +79,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 				"inProgress": false,
 				"isLocked":   false,
 			},
-			rooms: map[RoomId]*Room{},
+			rooms: map[internal.RoomId]*internal.Room{},
 			room:  "1",
 		},
 		{
@@ -39,9 +88,9 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 				"inProgress": true,
 				"isLocked":   false,
 			},
-			rooms: map[RoomId]*Room{
+			rooms: map[internal.RoomId]*internal.Room{
 				"1": {
-					inProgress: true,
+					InProgress: true,
 				},
 			},
 			room: "1",
@@ -49,7 +98,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		app := &Application{
+		app := &application{
 			rooms: test.rooms,
 		}
 
@@ -64,26 +113,53 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			gotContentType := recorder.Header().Get("Content-Type")
-			if gotContentType != "application/json" {
-				t.Errorf("expected content type application/json, got %v", gotContentType)
+
+			assert.Equal(t, gotContentType, "application/json")
+			assert.DeepEqual(t, got, test.expectation)
+		})
+	}
+}
+
+func TestApplication_createNewRoom(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+	}{
+		{
+			name:       "create new room",
+			statusCode: http.StatusCreated,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := &application{
+				rooms: make(map[internal.RoomId]*internal.Room),
 			}
 
-			if !reflect.DeepEqual(test.expectation, got) {
-				t.Errorf("expected %v, got %v", test.expectation, got)
-			}
+			router := app.Routes()
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/api/estimation/room/create?name=test", nil)
+
+			router.ServeHTTP(recorder, request)
+
+			gotContentType := recorder.Header().Get("Content-Type")
+
+			assert.Equal(t, test.statusCode, recorder.Code)
+			assert.Equal(t, gotContentType, "application/json")
 		})
 	}
 }
 
 func TestApplication_handleUserInRoomExists(t *testing.T) {
-	client := &Client{
+	client := &internal.Client{
 		Name: "Test",
 	}
 	roomId := "1"
 	tests := []struct {
 		url               string
 		name              string
-		rooms             map[RoomId]*Room
+		rooms             map[internal.RoomId]*internal.Room
 		expectation       map[string]interface{}
 		expectedErrorBody map[string]interface{}
 		statusCode        int
@@ -94,9 +170,9 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			expectation: map[string]interface{}{
 				"exists": false,
 			},
-			rooms: map[RoomId]*Room{
-				RoomId(roomId): {
-					clients: make(map[*Client]bool),
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId(roomId): {
+					Clients: make(map[*internal.Client]bool),
 				},
 			},
 			statusCode: 200,
@@ -107,9 +183,9 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			expectation: map[string]interface{}{
 				"exists": true,
 			},
-			rooms: map[RoomId]*Room{
-				RoomId(roomId): {
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId(roomId): {
+					Clients: map[*internal.Client]bool{
 						client: true,
 					},
 				},
@@ -120,9 +196,9 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			name:        "error when trying to access without name",
 			url:         fmt.Sprintf("/api/estimation/room/%s/users/exists?name=", roomId),
 			expectation: nil,
-			rooms: map[RoomId]*Room{
-				RoomId(roomId): {
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId(roomId): {
+					Clients: map[*internal.Client]bool{
 						client: true,
 					},
 				},
@@ -138,7 +214,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			expectation: map[string]interface{}{
 				"exists": false,
 			},
-			rooms:             map[RoomId]*Room{},
+			rooms:             map[internal.RoomId]*internal.Room{},
 			expectedErrorBody: nil,
 			statusCode:        200,
 		},
@@ -146,7 +222,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := &Application{
+			app := &application{
 				rooms: test.rooms,
 			}
 			router := app.Routes()
@@ -159,146 +235,123 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			gotContentType := recorder.Header().Get("Content-Type")
-			if gotContentType != "application/json" {
-				t.Errorf("expected content type application/json, got %v", gotContentType)
+
+			assert.Equal(t, test.statusCode, recorder.Code)
+			assert.Equal(t, gotContentType, "application/json")
+			if test.expectedErrorBody != nil {
+				assert.DeepEqual(t, got, test.expectedErrorBody)
 			}
 
-			if test.expectedErrorBody != nil && !reflect.DeepEqual(test.expectedErrorBody, got) {
-				t.Errorf("expected error body %v, got %v", test.expectedErrorBody, got)
-			}
-
-			if test.expectation != nil && !reflect.DeepEqual(test.expectation, got) {
-				t.Errorf("expected %v, got %v", test.expectation, got)
-			}
-
-			if recorder.Code != test.statusCode {
-				t.Errorf("expected status code %d, got %d", test.statusCode, recorder.Code)
+			if test.expectation != nil {
+				assert.DeepEqual(t, got, test.expectation)
 			}
 		})
 	}
 }
 
 func TestApplication_handleFetchUsers(t *testing.T) {
-	room := newRoom("1", make(chan<- RoomId), "")
-	dev := newClient("B", Developer, room, nil)
-	otherDev := newClient("Another", Developer, room, nil)
-	devWithEqualLetter := newClient("Also a dev", Developer, room, nil)
-	productOwner := newClient("Another one", ProductOwner, room, nil)
-	otherProductOwner := newClient("Also a po", ProductOwner, room, nil)
+	room := internal.NewRoom("1", make(chan<- internal.RoomId), "")
+	dev := internal.NewClient("B", internal.Developer, room, nil)
+	otherDev := internal.NewClient("Another", internal.Developer, room, nil)
+	devWithEqualLetter := internal.NewClient("Also a dev", internal.Developer, room, nil)
+	productOwner := internal.NewClient("Another one", internal.ProductOwner, room, nil)
+	otherProductOwner := internal.NewClient("Also a po", internal.ProductOwner, room, nil)
 
 	tests := []struct {
 		name        string
 		roomId      string
-		rooms       map[RoomId]*Room
-		expectation map[string][]userDTO
+		rooms       map[internal.RoomId]*internal.Room
+		expectation []map[string]any
 	}{
 		{
 			name:   "some users in the same room",
 			roomId: "1",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					id:         "1",
-					inProgress: false,
-					leave:      nil,
-					join:       nil,
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("1"): {
+					Id:         "1",
+					InProgress: false,
+					Clients: map[*internal.Client]bool{
 						dev:                true,
 						otherDev:           true,
 						devWithEqualLetter: true,
 						productOwner:       true,
 						otherProductOwner:  true,
 					},
-					broadcast: nil,
-					destroy:   nil,
 				},
 			},
-			expectation: map[string][]userDTO{
-				"productOwnerList": {
-					{
-						"name": "Also a po",
-						"role": ProductOwner,
-					},
-					{
-						"name": "Another one",
-						"role": ProductOwner,
-					},
+			expectation: []map[string]any{
+				{
+					"name":   "Also a dev",
+					"isDone": false,
+					"role":   internal.Developer,
 				},
-				"developerList": {
-					{
-						"name":   "Also a dev",
-						"isDone": false,
-						"role":   Developer,
-					},
-					{
-						"name":   "Another",
-						"isDone": false,
-						"role":   Developer,
-					},
-					{
-						"name":   "B",
-						"isDone": false,
-						"role":   Developer,
-					},
+				{
+					"name": "Also a po",
+					"role": internal.ProductOwner,
+				},
+				{
+					"name":   "Another",
+					"isDone": false,
+					"role":   internal.Developer,
+				},
+				{
+					"name": "Another one",
+					"role": internal.ProductOwner,
+				},
+				{
+					"name":   "B",
+					"isDone": false,
+					"role":   internal.Developer,
 				},
 			},
 		},
 		{
-			name:   "no clients",
-			roomId: "1",
-			rooms:  make(map[RoomId]*Room),
-			expectation: map[string][]userDTO{
-				"productOwnerList": {},
-				"developerList":    {},
-			},
+			name:        "no clients",
+			roomId:      "1",
+			rooms:       make(map[internal.RoomId]*internal.Room),
+			expectation: []map[string]any{},
 		},
 		{
 			name:   "one dev client",
 			roomId: "1",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("1"): {
+					Clients: map[*internal.Client]bool{
 						dev: true,
 					},
 				},
 			},
-			expectation: map[string][]userDTO{
-				"productOwnerList": {},
-				"developerList": {
-					{
-						"name":   "B",
-						"isDone": false,
-						"role":   Developer,
-					},
+			expectation: []map[string]any{
+				{
+					"name":   "B",
+					"isDone": false,
+					"role":   internal.Developer,
 				},
 			},
 		},
 		{
 			name: "one po client",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					clients: map[*Client]bool{
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("1"): {
+					Clients: map[*internal.Client]bool{
 						productOwner: true,
 					},
 				},
 			},
 			roomId: "1",
-			expectation: map[string][]userDTO{
-				"productOwnerList": {
-					{
-						"name": "Another one",
-						"role": ProductOwner,
-					},
+			expectation: []map[string]any{
+				{
+					"name": "Another one",
+					"role": internal.ProductOwner,
 				},
-				"developerList": {},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := &Application{
-				upgrader:    &websocket.Upgrader{},
-				guessConfig: &GuessConfig{},
+			app := &application{
+				guessConfig: &internal.GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
 			}
@@ -308,17 +361,13 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 
 			router.ServeHTTP(recorder, request)
 
-			var got map[string][]userDTO
+			var got []map[string]any
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			gotContentType := recorder.Header().Get("Content-Type")
-			if gotContentType != "application/json" {
-				t.Errorf("expected content type application/json, got %v", gotContentType)
-			}
 
-			if !reflect.DeepEqual(test.expectation, got) {
-				t.Errorf("expected %v, got %v", test.expectation, got)
-			}
+			assert.Equal(t, gotContentType, "application/json")
+			assert.DeepEqual(t, got, test.expectation)
 		})
 	}
 }
@@ -327,93 +376,91 @@ func TestApplication_handleWs(t *testing.T) {
 	tests := []struct {
 		name           string
 		url            string
-		rooms          map[RoomId]*Room
+		rooms          map[internal.RoomId]*internal.Room
 		expectedError  map[string]string
 		expectedRoomId string
 		expectedRole   string
 		expectedStatus int
 	}{
 		{
-			name: "register as developer",
-			url:  "/api/estimation/room/1/developer?name=Test",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					id:         "1",
-					inProgress: false,
-					leave:      nil,
-					join:       make(chan *Client),
-					clients:    nil,
-					broadcast:  make(chan message),
-					destroy:    nil,
+			name: "connect as developer",
+			url:  "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/developer?name=Test",
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("ffb25a3d-a5db-42b7-9733-345f61167077"): {
+					Id:         "ffb25a3d-a5db-42b7-9733-345f61167077",
+					InProgress: false,
+					Join:       make(chan *internal.Client),
+					Broadcast:  make(chan *internal.Message),
 				},
 			},
 			expectedError:  nil,
 			expectedStatus: -1,
-			expectedRoomId: "1",
-			expectedRole:   Developer,
+			expectedRoomId: "ffb25a3d-a5db-42b7-9733-345f61167077",
+			expectedRole:   internal.Developer,
 		},
 		{
-			name: "register as product owner",
-			url:  "/api/estimation/room/1/product-owner?name=Test",
-			rooms: map[RoomId]*Room{
-				RoomId("1"): {
-					id:         "1",
-					inProgress: false,
-					leave:      nil,
-					join:       make(chan *Client),
-					clients:    nil,
-					broadcast:  make(chan message),
-					destroy:    nil,
+			name: "connect as product owner",
+			url:  "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=Test",
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("ffb25a3d-a5db-42b7-9733-345f61167077"): {
+					Id:         "ffb25a3d-a5db-42b7-9733-345f61167077",
+					InProgress: false,
+					Join:       make(chan *internal.Client),
+					Broadcast:  make(chan *internal.Message),
 				},
 			},
 			expectedError:  nil,
 			expectedStatus: -1,
-			expectedRoomId: "1",
-			expectedRole:   ProductOwner,
+			expectedRoomId: "ffb25a3d-a5db-42b7-9733-345f61167077",
+			expectedRole:   internal.ProductOwner,
 		},
 		{
-			name:  "not registering due to missing name",
-			url:   "/api/estimation/room/1/product-owner?name=",
-			rooms: make(map[RoomId]*Room),
+			name:  "not connecting due to name too long",
+			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=whateverthisisitiswaytoooooooooooolong",
+			rooms: make(map[internal.RoomId]*internal.Room),
+			expectedError: map[string]string{
+				"message": "name must be smaller or equal to 15",
+			},
+			expectedStatus: 400,
+		},
+		{
+			name:  "not connecting due to missing name",
+			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=",
+			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"message": "name is missing in query",
 			},
 			expectedStatus: 400,
-			expectedRoomId: "1",
-			expectedRole:   ProductOwner,
+			expectedRoomId: "ffb25a3d-a5db-42b7-9733-345f61167077",
+			expectedRole:   internal.ProductOwner,
 		},
 		{
-			name:  "not registering due to name too long",
-			url:   "/api/estimation/room/1/product-owner?name=mynameiswaytoolongitshouldnotbecreated",
-			rooms: make(map[RoomId]*Room),
+			name:  "not connecting due to invalid roomId not found",
+			url:   "/api/estimation/room/invalid/product-owner?name=test",
+			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
-				"message": "name and room must be smaller or equal to 15",
+				"message": "roomId is invalid",
 			},
 			expectedStatus: 400,
-			expectedRoomId: "1",
-			expectedRole:   ProductOwner,
 		},
 		{
-			name:  "not registering due to roomId too long",
-			url:   "/api/estimation/room/whateverthatroomisitiswaytoolong/product-owner?name=nameok",
-			rooms: make(map[RoomId]*Room),
+			name:  "not connecting because room not found",
+			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=test",
+			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
-				"message": "name and room must be smaller or equal to 15",
+				"message": "room not found",
 			},
-			expectedStatus: 400,
-			expectedRoomId: "1",
-			expectedRole:   ProductOwner,
+			expectedStatus: 404,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			expectedMsg := newJoin()
-			app := &Application{
-				upgrader:    &websocket.Upgrader{},
-				guessConfig: &GuessConfig{},
+			expectedMsg := internal.NewJoin()
+			app := &application{
+				guessConfig: &internal.GuessConfig{},
 				rooms:       test.rooms,
-				destroyRoom: make(chan RoomId),
+				destroyRoom: make(chan internal.RoomId),
 			}
 			router := app.Routes()
 
@@ -421,107 +468,66 @@ func TestApplication_handleWs(t *testing.T) {
 			defer server.Close()
 
 			url := "ws" + strings.TrimPrefix(server.URL, "http") + test.url
-			_, response, _ := websocket.DefaultDialer.Dial(url, nil)
+			_, response, _ := websocket.Dial(context.Background(), url, nil)
 
 			if test.expectedError != nil {
 				var got map[string]string
 				json.NewDecoder(response.Body).Decode(&got)
-				if !reflect.DeepEqual(test.expectedError, got) {
-					t.Errorf("expected response error %v, got %v", test.expectedError, got)
-				}
+				assert.DeepEqual(t, got, test.expectedError)
 				return
 			}
 
-			registeredClient := <-app.rooms[RoomId(test.expectedRoomId)].join
-			broadcastedMsg := <-app.rooms[RoomId(test.expectedRoomId)].broadcast
+			registeredClient := <-app.rooms[internal.RoomId(test.expectedRoomId)].Join
+			broadcastedMsg := <-app.rooms[internal.RoomId(test.expectedRoomId)].Broadcast
 
-			if registeredClient.Role != test.expectedRole {
-				t.Errorf("expected to register client with role %s, got %v", test.expectedRole, registeredClient.Role)
-			}
-
-			if !reflect.DeepEqual(expectedMsg, broadcastedMsg) {
-				t.Errorf("expected msg %v to broadcast, got %v", expectedMsg, broadcastedMsg)
-			}
+			assert.DeepEqual(t, broadcastedMsg, expectedMsg)
+			assert.Equal(t, registeredClient.Role, test.expectedRole)
 		})
-	}
-}
-
-func TestApplication_handleWs_CreatingNewRoom(t *testing.T) {
-	app := NewApplication(&websocket.Upgrader{}, &GuessConfig{}, nil)
-	roomId := "Test"
-	expectedRoom := newRoom(RoomId(roomId), app.destroyRoom, "")
-	router := app.Routes()
-
-	server := httptest.NewServer(router)
-	defer server.Close()
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		url := "ws" + strings.TrimPrefix(server.URL, "http") + fmt.Sprintf("/api/estimation/room/%s/developer?name=Test", roomId)
-		websocket.DefaultDialer.Dial(url, nil)
-	}()
-
-	wg.Wait()
-
-	got := app.rooms[RoomId(roomId)]
-
-	if expectedRoom.id != got.id {
-		t.Errorf("want room with id %v, got %v", expectedRoom.id, got.id)
-	}
-}
-
-func TestApplication_handleWs_UpgradingConnectionFailed(t *testing.T) {
-	var logBuffer bytes.Buffer
-
-	app := NewApplication(&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
-		return false
-	}}, &GuessConfig{}, slog.New(slog.NewTextHandler(&logBuffer, nil)))
-	router := app.Routes()
-
-	server := httptest.NewServer(router)
-	defer server.Close()
-
-	url := "ws" + strings.TrimPrefix(server.URL, "http") + "/api/estimation/room/1/product-owner?name=Test"
-	websocket.DefaultDialer.Dial(url, nil)
-
-	wantLog := "upgrade: websocket: request origin not allowed"
-	if !strings.Contains(logBuffer.String(), wantLog) {
-		t.Errorf("expected to log %v, got %v", wantLog, logBuffer.String())
 	}
 }
 
 func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	tests := []struct {
 		name  string
-		rooms map[RoomId]*Room
-		want  []string
+		rooms map[internal.RoomId]*internal.Room
+		want  map[string][]map[string]any
 	}{
 		{
 			name: "with multiple active rooms",
-			rooms: map[RoomId]*Room{
-				RoomId("Blub"): {
-					id: "Blub",
+			rooms: map[internal.RoomId]*internal.Room{
+				internal.RoomId("Blub"): {
+					Id: "Blub",
 				},
-				RoomId("Test"): {
-					id: "Test",
+				internal.RoomId("Test"): {
+					Id: "Test",
 				},
 			},
-			want: []string{"Blub", "Test"},
+			want: map[string][]map[string]any{
+				"rooms": {
+					{
+						"id":          "Blub",
+						"playerCount": float64(0),
+					},
+					{
+						"id":          "Test",
+						"playerCount": float64(0),
+					},
+				},
+			},
 		},
 		{
 			name:  "no rooms",
-			rooms: make(map[RoomId]*Room),
-			want:  []string{},
+			rooms: make(map[internal.RoomId]*internal.Room),
+			want: map[string][]map[string]any{
+				"rooms": nil,
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := &Application{
-				upgrader:    &websocket.Upgrader{},
-				guessConfig: &GuessConfig{},
+			app := &application{
+				guessConfig: &internal.GuessConfig{},
 				rooms:       test.rooms,
 				destroyRoom: nil,
 			}
@@ -531,12 +537,10 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 
 			router.ServeHTTP(recorder, request)
 
-			var got []string
+			var got map[string][]map[string]any
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
-			if !reflect.DeepEqual(test.want, got) {
-				t.Errorf("want %v, got %v", test.want, got)
-			}
+			assert.DeepEqual(t, got, test.want)
 		})
 	}
 }
@@ -544,13 +548,13 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 func TestApplication_handlePossibleGuesses(t *testing.T) {
 	tests := []struct {
 		name   string
-		config *GuessConfig
+		config *internal.GuessConfig
 		want   []map[string]interface{}
 	}{
 		{
 			name: "multiple guesses",
-			config: &GuessConfig{
-				Guesses: []guessConfigEntry{
+			config: &internal.GuessConfig{
+				Guesses: []internal.GuessConfigEntry{
 					{
 						Guess:       1,
 						Description: "Test 1",
@@ -574,8 +578,8 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 		},
 		{
 			name: "one guess",
-			config: &GuessConfig{
-				Guesses: []guessConfigEntry{
+			config: &internal.GuessConfig{
+				Guesses: []internal.GuessConfigEntry{
 					{
 						Guess:       1,
 						Description: "Test 1",
@@ -591,8 +595,8 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 		},
 		{
 			name: "no guess",
-			config: &GuessConfig{
-				Guesses: make([]guessConfigEntry, 0),
+			config: &internal.GuessConfig{
+				Guesses: make([]internal.GuessConfigEntry, 0),
 			},
 			want: make([]map[string]interface{}, 0),
 		},
@@ -600,7 +604,9 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			app := NewApplication(&websocket.Upgrader{}, test.config, nil)
+			app := &application{
+				guessConfig: test.config,
+			}
 			router := app.Routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
@@ -610,50 +616,36 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 			var got []map[string]interface{}
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
-			if !reflect.DeepEqual(test.want, got) {
-				t.Errorf("want %v, got %v", test.want, got)
-			}
+			assert.DeepEqual(t, got, test.want)
 		})
 	}
 }
 
 func TestApplication_ListenForRoomDestroy(t *testing.T) {
-	destroyChannel := make(chan RoomId)
-	roomToDestroy := RoomId("Test")
-	app := &Application{
-		upgrader:    &websocket.Upgrader{},
-		guessConfig: &GuessConfig{},
-		rooms: map[RoomId]*Room{
+	destroyChannel := make(chan internal.RoomId)
+	roomToDestroy := internal.RoomId("Test")
+	app := &application{
+		guessConfig: &internal.GuessConfig{},
+		rooms: map[internal.RoomId]*internal.Room{
 			roomToDestroy: {
-				id:         roomToDestroy,
-				inProgress: false,
-				leave:      nil,
-				join:       nil,
-				clients:    nil,
-				broadcast:  nil,
-				destroy:    nil,
+				Id:         roomToDestroy,
+				InProgress: false,
 			},
 		},
 		destroyRoom: destroyChannel,
 	}
-	go app.ListenForRoomDestroy()
+	go app.listenForRoomDestroy(context.Background())
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.destroyRoom <- roomToDestroy
-	}()
+	app.destroyRoom <- roomToDestroy
 
-	wg.Wait()
-
+	app.roomMu.Lock()
+	defer app.roomMu.Unlock()
 	if _, ok := app.rooms[roomToDestroy]; ok {
 		t.Error("expected app to not have room")
 	}
 }
 
 func TestApplication_handleRoomAuthenticate(t *testing.T) {
-
 	tests := []struct {
 		name     string
 		wantCode int
@@ -716,19 +708,12 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 	if err != nil {
 		t.Errorf("error hashing password: %v", err)
 	}
-	app := &Application{
-		upgrader:    &websocket.Upgrader{},
-		guessConfig: &GuessConfig{},
-		rooms: map[RoomId]*Room{
+	app := &application{
+		guessConfig: &internal.GuessConfig{},
+		rooms: map[internal.RoomId]*internal.Room{
 			"1": {
-				id:             "1",
-				inProgress:     false,
-				leave:          nil,
-				join:           nil,
-				clients:        nil,
-				broadcast:      nil,
-				destroy:        nil,
-				hashedPassword: hashedPassword,
+				Id:             "1",
+				HashedPassword: hashedPassword,
 			},
 		},
 	}
@@ -751,13 +736,8 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 
 			gotCode := recorder.Code
 
-			if gotCode != test.wantCode {
-				t.Errorf("want %v, got %v", test.wantCode, gotCode)
-			}
-
-			if !reflect.DeepEqual(test.wantBody, got) {
-				t.Errorf("want %v, got %v", test.wantBody, got)
-			}
+			assert.Equal(t, gotCode, test.wantCode)
+			assert.DeepEqual(t, got, test.wantBody)
 		})
 	}
 }
@@ -803,14 +783,12 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 		},
 	}
 
-	app := &Application{
-		upgrader:    &websocket.Upgrader{},
-		guessConfig: &GuessConfig{},
-		rooms: map[RoomId]*Room{
+	app := &application{
+		rooms: map[internal.RoomId]*internal.Room{
 			"1": {
-				id:            "1",
-				nameOfCreator: "bla",
-				key:           id,
+				Id:            "1",
+				NameOfCreator: "bla",
+				Key:           id,
 			},
 		},
 	}
@@ -827,13 +805,8 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 
 			gotCode := recorder.Code
 
-			if gotCode != test.wantCode {
-				t.Errorf("want %v, got %v", test.wantCode, gotCode)
-			}
-
-			if !reflect.DeepEqual(test.wantBody, got) {
-				t.Errorf("want %#v, got %#v", test.wantBody, got)
-			}
+			assert.Equal(t, gotCode, test.wantCode)
+			assert.DeepEqual(t, got, test.wantBody)
 		})
 	}
 }

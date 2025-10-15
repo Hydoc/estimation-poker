@@ -28,9 +28,7 @@ const emit = defineEmits<{
 const radius = 250;
 const cy = 300;
 const cx = 300;
-const users = computed(() => {
-  return [...props.usersInRoom.productOwnerList, ...props.usersInRoom.developerList];
-});
+const developerList = computed(() => props.usersInRoom.filter((it) => it.role === "developer"));
 
 const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
 const userIsDeveloper = computed(() => props.userRole === Role.Developer);
@@ -45,13 +43,13 @@ function findDeveloperDone(developer: Developer): DeveloperDone | undefined {
 }
 
 function topForElement(index: number): string {
-  const theta = 2 * Math.PI * (index / users.value.length);
+  const theta = 2 * Math.PI * (index / props.usersInRoom.length);
   const top = cy - radius * Math.cos(theta);
   return `${top}px`;
 }
 
 function leftForElement(index: number, username: string): string {
-  const theta = 2 * Math.PI * (index / users.value.length);
+  const theta = 2 * Math.PI * (index / props.usersInRoom.length);
   const left = cx + radius * Math.sin(theta);
   return `${left - (username.length * 2 + 1)}px`;
 }
@@ -63,7 +61,7 @@ function leftForElement(index: number, username: string): string {
       <product-owner-command-center
         v-if="userIsProductOwner"
         :round-state="props.roundState"
-        :developer-list="props.usersInRoom.developerList"
+        :developer-list="developerList"
         :actual-ticket-to-guess="props.ticketToGuess"
         :has-ticket-to-guess="hasTicketToGuess"
         :show-all-guesses="props.showAllGuesses"
@@ -80,7 +78,7 @@ function leftForElement(index: number, username: string): string {
       }}</span>
     </div>
     <div
-      v-for="(user, index) in users"
+      v-for="(user, index) in props.usersInRoom"
       :key="user.name"
       class="seat"
       :style="`left:${leftForElement(index, user.name)};top:${topForElement(index)}`"

@@ -12,4 +12,4 @@ COPY --from=base /opt/frontend/dist /usr/share/caddy
 
 FROM base AS dev
 
-CMD ["pnpm", "dev"]
+CMD ["sh", "/opt/frontend/run.sh"]

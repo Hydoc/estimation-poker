@@ -1,20 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
-import * as directives from "vuetify/directives";
-import { mount } from "@vue/test-utils";
-import DeveloperCard from "../../src/components/DeveloperCard.vue";
-import { Developer, DeveloperDone } from "../../src/components/types";
+import { describe, expect, it } from "vitest";
 import { VIcon } from "vuetify/components";
+import DeveloperCard from "../../src/components/DeveloperCard.vue";
+import { Developer, DeveloperDone, Role } from "../../src/components/types";
+import { vuetifyMount } from "../vuetifyMount";
 
-let vuetify: ReturnType<typeof createVuetify>;
-
-beforeEach(() => {
-  vuetify = createVuetify({
-    components,
-    directives,
-  });
-});
 describe("DeveloperCard", () => {
   describe("rendering", () => {
     it("should render when developer not done", () => {
@@ -30,7 +19,7 @@ describe("DeveloperCard", () => {
       const wrapper = createWrapper({
         name: "Test Dev",
         isDone: true,
-        role: "developer",
+        role: Role.Developer,
       });
       expect(wrapper.find(".reveal").exists()).to.be.false;
       expect(wrapper.find(".waiting-for-guess").exists()).to.be.false;
@@ -42,7 +31,7 @@ describe("DeveloperCard", () => {
       const dev: Developer = {
         name: "Test Dev",
         isDone: true,
-        role: "developer",
+        role: Role.Developer,
       };
       const wrapper = createWrapper(dev, {
         ...dev,
@@ -60,7 +49,7 @@ describe("DeveloperCard", () => {
       const dev: Developer = {
         name: "Test Dev",
         isDone: true,
-        role: "developer",
+        role: Role.Developer,
       };
       const wrapper = createWrapper(dev, {
         ...dev,
@@ -77,16 +66,13 @@ describe("DeveloperCard", () => {
 });
 
 function createWrapper(
-  developer: Developer = { name: "Test Dev", isDone: false, role: "developer" },
+  developer: Developer = { name: "Test Dev", isDone: false, role: Role.Developer },
   developerDone: DeveloperDone | undefined = undefined,
 ) {
-  return mount(DeveloperCard, {
+  return vuetifyMount(DeveloperCard, {
     props: {
       developer,
       developerDone,
-    },
-    global: {
-      plugins: [vuetify],
     },
   });
 }

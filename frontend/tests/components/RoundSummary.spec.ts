@@ -1,13 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
-import * as directives from "vuetify/directives";
-import { mount } from "@vue/test-utils";
-import RoundSummary from "../../src/components/RoundSummary.vue";
-import { DeveloperDone } from "../../src/components/types";
+import { describe, expect, it, vi } from "vitest";
 import { VBottomSheet, VCard, VProgressCircular } from "vuetify/components";
-
-let vuetify: ReturnType<typeof createVuetify>;
+import RoundSummary from "../../src/components/RoundSummary.vue";
+import { DeveloperDone, Role } from "../../src/components/types";
+import { vuetifyMount } from "../vuetifyMount";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
@@ -16,12 +11,7 @@ const ResizeObserverMock = vi.fn(() => ({
 }));
 
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
-beforeEach(() => {
-  vuetify = createVuetify({
-    components,
-    directives,
-  });
-});
+vi.stubGlobal("visualViewport", new EventTarget());
 describe("RoundSummary", () => {
   describe("rendering", () => {
     it("should render for one card with multiple votes", () => {
@@ -44,9 +34,9 @@ describe("RoundSummary", () => {
 
     it("should render for multiple cards including the coffee", () => {
       const wrapper = createWrapper([
-        { guess: 1, role: "developer", name: "Test Dev 1", doSkip: false },
-        { guess: 2, role: "developer", name: "Test Dev 2", doSkip: false },
-        { guess: 0, role: "developer", name: "Test Dev 2", doSkip: true },
+        { guess: 1, role: Role.Developer, name: "Test Dev 1", doSkip: false },
+        { guess: 2, role: Role.Developer, name: "Test Dev 2", doSkip: false },
+        { guess: 0, role: Role.Developer, name: "Test Dev 2", doSkip: true },
       ]);
 
       expect(wrapper.findComponent(VCard).exists()).to.be.true;
@@ -66,16 +56,13 @@ describe("RoundSummary", () => {
 
 function createWrapper(
   developerDone: DeveloperDone[] = [
-    { guess: 2, role: "developer", name: "Test Dev 1", doSkip: false },
-    { guess: 2, role: "developer", name: "Test Dev 2", doSkip: false },
+    { guess: 2, role: Role.Developer, name: "Test Dev 1", doSkip: false },
+    { guess: 2, role: Role.Developer, name: "Test Dev 2", doSkip: false },
   ],
 ) {
-  return mount(RoundSummary, {
+  return vuetifyMount(RoundSummary, {
     props: {
       developerDone,
-    },
-    global: {
-      plugins: [vuetify],
     },
   });
 }

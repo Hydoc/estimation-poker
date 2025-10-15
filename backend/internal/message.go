@@ -1,181 +1,100 @@
 package internal
 
 const (
-	guess     = "guess"
-	newRound  = "new-round"
-	estimate  = "estimate"
-	lockRoom  = "lock-room"
-	openRoom  = "open-room"
-	skipRound = "skip"
-	reveal    = "reveal"
+	join             = "join"
+	leave            = "leave"
+	guess            = "guess"
+	newRound         = "new-round"
+	estimate         = "estimate"
+	lockRoom         = "lock-room"
+	openRoom         = "open-room"
+	skipRound        = "skip"
+	reveal           = "reveal"
+	roomLocked       = "room-locked"
+	roomOpened       = "room-opened"
+	developerGuessed = "developer-guessed"
+	everyoneDone     = "everyone-done"
+	developerSkipped = "developer-skipped"
+	youSkipped       = "you-skipped"
+	youGuessed       = "you-guessed"
 )
 
-type messageDTO map[string]interface{}
-
-type message interface {
-	ToJson() messageDTO
-}
-
-type clientMessage struct {
+type Message struct {
 	Type string `json:"type"`
 	Data any    `json:"data"`
 }
 
-type skip struct{}
-
-type join struct{}
-
-type leave struct{}
-
-type resetRound struct{}
-
-type revealRound struct {
-	clients map[*Client]bool
-}
-
-type developerGuessed struct{}
-
-type roomLocked struct{}
-
-type roomOpened struct{}
-
-type everyoneIsDone struct{}
-
-type youGuessed struct {
-	guess int
-}
-
-type youSkipped struct{}
-
-func (leave leave) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": "leave",
-	}
-}
-func (incMessage clientMessage) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": incMessage.Type,
-		"data": incMessage.Data,
+func NewJoin() *Message {
+	return &Message{
+		Type: join,
 	}
 }
 
-func (incMessage clientMessage) isEstimate() bool {
-	return incMessage.Type == estimate
-}
-
-func (join join) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": "join",
+func newLeave() *Message {
+	return &Message{
+		Type: leave,
 	}
 }
 
-func (devGuessed developerGuessed) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": "developer-guessed",
+func newRoomLocked() *Message {
+	return &Message{
+		Type: roomLocked,
 	}
 }
 
-func (s skip) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": "developer-skipped",
+func newRoomOpened() *Message {
+	return &Message{
+		Type: roomOpened,
 	}
 }
 
-func (rLocked roomLocked) ToJson() messageDTO {
-	return map[string]any{
-		"type": "room-locked",
+func newDeveloperGuessed() *Message {
+	return &Message{
+		Type: developerGuessed,
 	}
 }
 
-func (rOpened roomOpened) ToJson() messageDTO {
-	return map[string]any{
-		"type": "room-opened",
+func newEveryoneIsDone() *Message {
+	return &Message{
+		Type: everyoneDone,
 	}
 }
 
-func (everyOneGuessed everyoneIsDone) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": "everyone-done",
-	}
-}
-
-func (resetRound resetRound) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": "reset-round",
-	}
-}
-
-func (youGuessed youGuessed) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": "you-guessed",
-		"data": youGuessed.guess,
-	}
-}
-
-func (youSkipped youSkipped) ToJson() messageDTO {
-	return map[string]interface{}{
-		"type": "you-skipped",
-	}
-}
-
-func (revealRound revealRound) ToJson() messageDTO {
+func newReveal(clients map[*Client]bool) *Message {
 	out := []map[string]any{}
-	for client, _ := range revealRound.clients {
+	for client := range clients {
 		if client.Role == Developer {
-			out = append(out, client.AsReveal())
+			out = append(out, client.asReveal())
 		}
 	}
 
-	return map[string]interface{}{
-		"type": "reveal-round",
-		"data": out,
+	return &Message{
+		Type: reveal,
+		Data: out,
 	}
 }
 
-func newJoin() join {
-	return join{}
-}
-
-func newLeave() leave {
-	return leave{}
-}
-
-func newRoomLocked() roomLocked {
-	return roomLocked{}
-}
-
-func newRoomOpened() roomOpened {
-	return roomOpened{}
-}
-
-func newDeveloperGuessed() developerGuessed {
-	return developerGuessed{}
-}
-
-func newEveryoneIsDone() everyoneIsDone {
-	return everyoneIsDone{}
-}
-
-func newResetRound() resetRound {
-	return resetRound{}
-}
-
-func newRevealRound(clients map[*Client]bool) revealRound {
-	return revealRound{
-		clients: clients,
+func newNewRound() *Message {
+	return &Message{
+		Type: newRound,
 	}
 }
 
-func newSkipRound() skip {
-	return skip{}
+func newDeveloperSkipped() *Message {
+	return &Message{
+		Type: developerSkipped,
+	}
 }
 
-func newYouSkipped() youSkipped {
-	return youSkipped{}
+func newYouSkipped() *Message {
+	return &Message{
+		Type: youSkipped,
+	}
 }
 
-func newYouGuessed(guess int) youGuessed {
-	return youGuessed{
-		guess: guess,
+func newYouGuessed(guess int) *Message {
+	return &Message{
+		Type: youGuessed,
+		Data: guess,
 	}
 }

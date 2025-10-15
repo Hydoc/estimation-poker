@@ -1,11 +1,12 @@
 package internal
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 )
 
 const (
@@ -16,78 +17,75 @@ const (
 	writeWait    = 10 * time.Second
 )
 
-type userDTO map[string]any
+type UserDTO map[string]any
 
 type Client struct {
 	connection *websocket.Conn
 	room       *Room
 	Name       string
 	Role       string
-	Guess      int
-	DoSkip     bool
-	send       chan message
+	guess      int
+	doSkip     bool
+	send       chan *Message
 }
 
-func newClient(name, role string, room *Room, connection *websocket.Conn) *Client {
+func NewClient(name, role string, room *Room, connection *websocket.Conn) *Client {
 	return &Client{
 		room:       room,
 		Name:       name,
 		connection: connection,
 		Role:       role,
-		send:       make(chan message),
+		send:       make(chan *Message),
 	}
 }
 
-func (client *Client) websocketReader() {
+func (client *Client) WebsocketReader() {
 	defer func() {
 		client.room.leave <- client
-		client.room.broadcast <- newLeave()
-		client.connection.Close()
+		client.room.Broadcast <- newLeave()
+		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
-	client.connection.SetReadDeadline(time.Now().Add(pongWait))
-	client.connection.SetPongHandler(func(string) error {
-		client.connection.SetReadDeadline(time.Now().Add(pongWait))
-		return nil
-	})
 	for {
-		var incMessage clientMessage
-		err := client.connection.ReadJSON(&incMessage)
+		var incMessage *Message
+		err := wsjson.Read(context.Background(), client.connection, &incMessage)
 		if err != nil {
-			log.Println("error reading incoming client message:", err)
-			break
+			log.Println("error reading incoming client Message:", err)
+			return
 		}
 
 		switch {
 		case incMessage.Type == skipRound && client.Role == Developer:
-			client.DoSkip = true
-			client.Guess = 0
-			client.room.broadcast <- newSkipRound()
+			client.doSkip = true
+			client.guess = 0
+			client.room.Broadcast <- newDeveloperSkipped()
 			client.send <- newYouSkipped()
 		case incMessage.Type == guess && client.Role == Developer:
 			actualGuess := int(incMessage.Data.(float64))
-			client.Guess = actualGuess
-			client.DoSkip = false
-			client.room.broadcast <- newDeveloperGuessed()
+			client.guess = actualGuess
+			client.doSkip = false
+			client.room.Broadcast <- newDeveloperGuessed()
 			client.send <- newYouGuessed(actualGuess)
 		case incMessage.Type == newRound && client.Role == ProductOwner:
-			client.room.broadcast <- newResetRound()
+			client.room.Broadcast <- incMessage
 		case incMessage.Type == reveal && client.Role == ProductOwner:
-			client.room.broadcast <- newRevealRound(client.room.clients)
+			client.room.Broadcast <- newReveal(client.room.Clients)
+		case incMessage.Type == estimate && client.Role == ProductOwner:
+			client.room.Broadcast <- incMessage
 		case incMessage.Type == lockRoom:
 			pw, pwOk := incMessage.Data.(map[string]any)["password"]
 			key, keyOk := incMessage.Data.(map[string]any)["key"]
 
 			if !keyOk {
-				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a key", client.Name, client.room.id))
+				log.Printf("client: %s tried to lock room %s without a key\n", client.Name, client.room.Id)
 				break
 			}
 			if !pwOk {
-				log.Println(fmt.Sprintf("client: %s tried to lock room %s without a password", client.Name, client.room.id))
+				log.Printf("client: %s tried to lock room %s without a password\n", client.Name, client.room.Id)
 				break
 			}
 
 			if client.room.lock(client.Name, pw.(string), key.(string)) {
-				client.room.broadcast <- newRoomLocked()
+				client.room.Broadcast <- newRoomLocked()
 				break
 			}
 			log.Println("was not able to lock room")
@@ -95,68 +93,57 @@ func (client *Client) websocketReader() {
 			key, keyOk := incMessage.Data.(map[string]any)["key"]
 
 			if !keyOk {
-				log.Println("client:", client.Name, "tried to open room", client.room.id, "without a key")
+				log.Println("client:", client.Name, "tried to open room", client.room.Id, "without a key")
 				break
 			}
 
 			if client.room.open(client.Name, key.(string)) {
-				client.room.broadcast <- newRoomOpened()
+				client.room.Broadcast <- newRoomOpened()
 				break
 			}
 			log.Println("was not able to open room")
 		default:
-			client.room.broadcast <- incMessage
+			log.Printf("unknown Message %#v\n", incMessage)
 		}
 	}
 }
 
-func (client *Client) websocketWriter() {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		client.connection.Close()
-		ticker.Stop()
-	}()
+func (client *Client) WebsocketWriter() {
 	for {
 		select {
 		case msg := <-client.send:
-			client.connection.SetWriteDeadline(time.Now().Add(writeWait))
-			err := client.connection.WriteJSON(msg.ToJson())
+			err := wsjson.Write(context.Background(), client.connection, msg)
 			if err != nil {
 				log.Println("error writing to client:", err)
 				return
 			}
-		case <-ticker.C:
-			client.connection.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := client.connection.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
 		}
 	}
 }
 
-func (client *Client) reset() {
-	client.Guess = 0
-	client.DoSkip = false
+func (client *Client) newRound() {
+	client.guess = 0
+	client.doSkip = false
 }
 
-func (client *Client) AsReveal() map[string]any {
+func (client *Client) asReveal() map[string]any {
 	return map[string]any{
 		"name":   client.Name,
 		"role":   client.Role,
-		"guess":  client.Guess,
-		"doSkip": client.DoSkip,
+		"guess":  client.guess,
+		"doSkip": client.doSkip,
 	}
 }
 
-func (client *Client) toJson() userDTO {
+func (client *Client) ToJson() UserDTO {
 	if client.Role == Developer {
-		return map[string]interface{}{
+		return map[string]any{
 			"name":   client.Name,
 			"role":   client.Role,
-			"isDone": client.Guess > 0 || client.DoSkip,
+			"isDone": client.guess > 0 || client.doSkip,
 		}
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"name": client.Name,
 		"role": client.Role,
 	}

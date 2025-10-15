@@ -1,11 +1,12 @@
-package internal
+package main
 
 import (
 	"encoding/json"
+	"maps"
 	"net/http"
 )
 
-func (app *Application) writeJson(writer http.ResponseWriter, status int, data any, headers http.Header) error {
+func (app *application) writeJson(writer http.ResponseWriter, status int, data any, headers http.Header) error {
 	jsonResponse, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		return err
@@ -14,9 +15,7 @@ func (app *Application) writeJson(writer http.ResponseWriter, status int, data a
 	// nicety for terminal apps
 	jsonResponse = append(jsonResponse, '\n')
 
-	for key, value := range headers {
-		writer.Header()[key] = value
-	}
+	maps.Copy(writer.Header(), headers)
 
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(status)

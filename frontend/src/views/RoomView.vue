@@ -1,22 +1,32 @@
 <script setup lang="ts">
 import { type SendableWebsocketMessageType, useWebsocketStore } from "@/stores/websocket";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
 import { ref, computed, onMounted } from "vue";
-import { RoundState } from "@/components/types.ts";
+import { Role, RoundState } from "@/components/types.ts";
+import RoomForm from "@/components/RoomForm.vue";
 
 const websocketStore = useWebsocketStore();
 const router = useRouter();
-if (!websocketStore.isConnected) {
-  router.push("/");
-}
+const route = useRoute();
 const showSetRoomPasswordDialog = ref(false);
 const showPassword = ref(false);
 const showSnackbar = ref(false);
 const roomPassword = ref("");
 const snackbarText = ref("");
+const name = ref("");
+const role = ref(Role.Empty);
+const passwordForRoom = ref("");
+const errorMessage = ref("");
+const roomIsLocked = computed(() => websocketStore.roomIsLocked);
 const usersInRoom = computed(() => websocketStore.usersInRoom);
 const roomId = computed(() => websocketStore.roomId);
+const queryRoomId = computed((): string => {
+  if (Array.isArray(route.params.id)) {
+    return route.params.id[0];
+  }
+  return route.params.id;
+});
 const userRole = computed(() => websocketStore.userRole);
 const roundState = computed(() => websocketStore.roundState);
 const ticketToGuess = computed(() => websocketStore.ticketToGuess);
@@ -25,8 +35,8 @@ const didSkip = computed(() => websocketStore.didSkip);
 const showAllGuesses = computed(() => websocketStore.showAllGuesses);
 const possibleGuesses = computed(() => websocketStore.possibleGuesses);
 const permissions = computed(() => websocketStore.permissions);
-const roomIsLocked = computed(() => websocketStore.roomIsLocked);
 const developerDone = computed(() => websocketStore.developerDone);
+const isConnected = computed(() => websocketStore.isConnected);
 
 const roundIsWaiting = computed(() => roundState.value === RoundState.Waiting);
 
@@ -61,9 +71,9 @@ async function writeToClipboard(text: string) {
   const clipboardPermission = await navigator.permissions.query({ name: "clipboard-write" });
   if (clipboardPermission.state === "granted") {
     await navigator.clipboard.writeText(text);
-    snackbarText.value = "Kopiert!";
+    snackbarText.value = "Copied!";
   } else {
-    snackbarText.value = "Konnte nicht kopiert werden";
+    snackbarText.value = "Could not copy";
   }
   showSnackbar.value = true;
 }
@@ -72,27 +82,75 @@ async function copyPassword() {
   await writeToClipboard(roomPassword.value);
 }
 
+async function tryJoin() {
+  errorMessage.value = "";
+
+  const actualRoomId = queryRoomId.value;
+
+  const passwordMatches = roomIsLocked.value
+    ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
+    : true;
+  if (roomIsLocked.value && !passwordMatches) {
+    errorMessage.value = "The provided password is wrong";
+    return;
+  }
+
+  const roundInRoomInProgress = await websocketStore.isRoundInRoomInProgress(actualRoomId);
+  if (roundInRoomInProgress) {
+    errorMessage.value = "The round has already started";
+    return;
+  }
+
+  const userAlreadyExistsInRoom = await websocketStore.userExistsInRoom(name.value, actualRoomId);
+  if (userAlreadyExistsInRoom) {
+    errorMessage.value = "A user with this name already exists in the room";
+    return;
+  }
+
+  await websocketStore.connect(name.value, role.value, actualRoomId);
+  await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);
+}
+
 onMounted(async () => {
-  await Promise.all([
-    websocketStore.fetchPossibleGuesses(),
-    websocketStore.fetchPermissions(),
-    websocketStore.fetchRoomIsLocked(),
-  ]);
+  const roomExists = await websocketStore.roomExists(queryRoomId.value);
+  if (!roomExists) {
+    await router.push("/");
+    return;
+  }
+
+  await websocketStore.fetchRoomIsLocked(queryRoomId.value);
+
+  if (isConnected.value) {
+    await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);
+  }
 });
 </script>
 
 <template>
-  <div>
+  <div v-if="!isConnected">
+    <room-form
+      v-model:name="name"
+      v-model:role="role"
+      v-model:password="passwordForRoom"
+      :show-password-input="roomIsLocked"
+      :error-message="errorMessage"
+      title="Join room"
+      subtitle="You are currently not connected to this room"
+      @submit="tryJoin"
+    />
+  </div>
+
+  <div v-else>
     <v-dialog
       v-model="showSetRoomPasswordDialog"
       max-width="500"
     >
       <v-card>
-        <v-card-title>Passwort setzen</v-card-title>
+        <v-card-title>Set password</v-card-title>
         <v-card-text>
           <v-text-field
             v-model="roomPassword"
-            placeholder="Passwort"
+            placeholder="Password"
             :type="showPassword ? 'text' : 'password'"
             :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             @click:append="showPassword = !showPassword"
@@ -104,14 +162,14 @@ onMounted(async () => {
             color="red"
             @click="showSetRoomPasswordDialog = false"
           >
-            Abbrechen
+            Cancel
           </v-btn>
           <v-btn
             :disabled="roomPassword.length === 0"
             color="green"
             @click="lockRoom"
           >
-            Abschließen
+            Lock
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -119,7 +177,7 @@ onMounted(async () => {
 
     <v-toolbar rounded>
       <v-toolbar-title>
-        {{ roomIsLocked ? "privater" : "öffentlicher" }} Raum: {{ roomId }}
+        {{ roomIsLocked ? "private" : "public" }} room: {{ roomId }}
       </v-toolbar-title>
       <div v-if="roundIsWaiting">
         <v-btn
@@ -130,7 +188,7 @@ onMounted(async () => {
             activator="parent"
             location="bottom"
           >
-            Passwort kopieren
+            Copy password
           </v-tooltip>
           <v-icon>mdi-content-copy</v-icon>
         </v-btn>
@@ -143,7 +201,7 @@ onMounted(async () => {
             activator="parent"
             location="bottom"
           >
-            Raum öffnen
+            Unlock room
           </v-tooltip>
           <v-icon>mdi-key</v-icon>
         </v-btn>
@@ -156,7 +214,7 @@ onMounted(async () => {
             activator="parent"
             location="bottom"
           >
-            Raum schließen
+            Lock room
           </v-tooltip>
           <v-icon>mdi-lock</v-icon>
         </v-btn>
@@ -166,7 +224,7 @@ onMounted(async () => {
             activator="parent"
             location="bottom"
           >
-            Raum verlassen
+            Leave room
           </v-tooltip>
           <v-icon>mdi-location-exit</v-icon>
         </v-btn>

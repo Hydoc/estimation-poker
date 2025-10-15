@@ -1,8 +1,10 @@
 package internal
 
 import (
+	"encoding/json"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -13,32 +15,45 @@ type RoomId string
 type Room struct {
 	clientMu sync.Mutex
 
-	id             RoomId
-	inProgress     bool
+	Id             RoomId
+	InProgress     bool
 	leave          chan *Client
-	join           chan *Client
-	clients        map[*Client]bool
-	broadcast      chan message
+	Join           chan *Client
+	Clients        map[*Client]bool
+	Broadcast      chan *Message
 	destroy        chan<- RoomId
-	nameOfCreator  string
-	isLocked       bool
-	key            uuid.UUID
-	hashedPassword []byte
+	NameOfCreator  string
+	IsLocked       bool
+	Key            uuid.UUID
+	HashedPassword []byte
+	Created        time.Time
 }
 
-func newRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
+func (room *Room) MarshalJSON() ([]byte, error) {
+	out := struct {
+		Id          RoomId `json:"id"`
+		PlayerCount int    `json:"playerCount"`
+	}{
+		Id:          room.Id,
+		PlayerCount: len(room.Clients),
+	}
+	return json.Marshal(&out)
+}
+
+func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 	return &Room{
-		id:             name,
-		inProgress:     false,
+		Id:             name,
+		InProgress:     false,
 		leave:          make(chan *Client),
-		join:           make(chan *Client),
-		clients:        make(map[*Client]bool),
-		broadcast:      make(chan message),
+		Join:           make(chan *Client),
+		Clients:        make(map[*Client]bool),
+		Broadcast:      make(chan *Message),
 		destroy:        destroy,
-		nameOfCreator:  nameOfCreator,
-		isLocked:       false,
-		key:            uuid.New(),
-		hashedPassword: make([]byte, 0),
+		NameOfCreator:  nameOfCreator,
+		IsLocked:       false,
+		Key:            uuid.New(),
+		HashedPassword: make([]byte, 0),
+		Created:        time.Now(),
 	}
 }
 
@@ -48,9 +63,9 @@ func (room *Room) lock(username, password, key string) bool {
 		log.Printf("could not hash password %s\n", password)
 		return false
 	}
-	if username == room.nameOfCreator && key == room.key.String() {
-		room.isLocked = true
-		room.hashedPassword = hashed
+	if username == room.NameOfCreator && key == room.Key.String() {
+		room.IsLocked = true
+		room.HashedPassword = hashed
 		return true
 	}
 
@@ -58,77 +73,77 @@ func (room *Room) lock(username, password, key string) bool {
 }
 
 func (room *Room) open(username, key string) bool {
-	if username == room.nameOfCreator && key == room.key.String() {
-		room.isLocked = false
-		room.hashedPassword = make([]byte, 0)
+	if username == room.NameOfCreator && key == room.Key.String() {
+		room.IsLocked = false
+		room.HashedPassword = make([]byte, 0)
 		return true
 	}
 	return false
 }
 
-func (room *Room) verify(password string) bool {
-	err := bcrypt.CompareHashAndPassword(room.hashedPassword, []byte(password))
+func (room *Room) Verify(password string) bool {
+	err := bcrypt.CompareHashAndPassword(room.HashedPassword, []byte(password))
 	return err == nil
 }
 
 func (room *Room) everyDevIsDone() bool {
-	for client := range room.clients {
-		if client.Role == Developer && (client.Guess == 0 && !client.DoSkip) {
+	for client := range room.Clients {
+		if client.Role == Developer && (client.guess == 0 && !client.doSkip) {
 			return false
 		}
 	}
 	return true
 }
 
-func (room *Room) resetRound(client *Client) {
-	room.inProgress = false
-	if client.Role == Developer {
-		client.reset()
+func (room *Room) newRound() {
+	room.InProgress = false
+	for client := range room.Clients {
+		client.newRound()
+		client.send <- newNewRound()
 	}
-	client.send <- newResetRound()
+}
+
+func (room *Room) broadcastToClients(msg *Message) {
+	for client := range room.Clients {
+		client.send <- msg
+	}
 }
 
 func (room *Room) Run() {
 	for {
 		select {
-		case client := <-room.join:
+		case client := <-room.Join:
 			room.clientMu.Lock()
-			room.clients[client] = true
+			room.Clients[client] = true
 			room.clientMu.Unlock()
 		case client := <-room.leave:
-			if _, ok := room.clients[client]; ok {
-				delete(room.clients, client)
+			delete(room.Clients, client)
+			if len(room.Clients) == 0 {
+				room.destroy <- room.Id
 			}
-			if len(room.clients) == 0 {
-				room.destroy <- room.id
-			}
-		case msg := <-room.broadcast:
-			for client := range room.clients {
-				switch msg.(type) {
-				case clientMessage:
-					if msg.(clientMessage).isEstimate() {
-						room.inProgress = true
-					}
-					client.send <- msg
-				case developerGuessed, skip:
-					if room.everyDevIsDone() {
-						client.send <- newEveryoneIsDone()
-						continue
-					}
-					client.send <- msg
-				case resetRound:
-					room.resetRound(client)
-				case leave:
-					if room.inProgress {
-						for c := range room.clients {
-							room.resetRound(c)
-						}
-						continue
-					}
-					client.send <- msg
-				default:
-					client.send <- msg
+		case msg := <-room.Broadcast:
+			switch msg.Type {
+			case estimate:
+				room.InProgress = true
+				room.broadcastToClients(msg)
+			case developerGuessed, skipRound, developerSkipped:
+				if room.everyDevIsDone() {
+					room.broadcastToClients(newEveryoneIsDone())
+					continue
 				}
+				room.broadcastToClients(msg)
+			case newRound:
+				room.newRound()
+			case leave:
+				if room.InProgress {
+					room.newRound()
+					continue
+				}
+				room.broadcastToClients(msg)
+			case join, reveal, roomLocked, roomOpened:
+				room.broadcastToClients(msg)
+			default:
+				log.Printf("unexpected Message %#v", msg)
 			}
 		}
 	}

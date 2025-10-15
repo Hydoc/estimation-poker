@@ -1,14 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/Hydoc/guess-dev/backend/internal"
-
-	"github.com/gorilla/websocket"
 )
 
 const (
@@ -33,20 +32,21 @@ func main() {
 	logger.Info(fmt.Sprintf("using possible guesses %s", possibleGuesses))
 	logger.Info(fmt.Sprintf("using possible guesses description %s", possibleGuessesDescription))
 
-	upgrader := &websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-
 	config, err := internal.NewGuessConfig(possibleGuesses, possibleGuessesDescription)
 	if err != nil {
 		logger.Error(err.Error())
 		return
 	}
 
-	app := internal.NewApplication(upgrader, config, logger)
-	go app.ListenForRoomDestroy()
+	app := &application{
+		logger:      logger,
+		guessConfig: config,
+		rooms:       make(map[internal.RoomId]*internal.Room),
+		destroyRoom: make(chan internal.RoomId),
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go app.listenForRoomDestroy(ctx)
 	router := app.Routes()
 	logger.Error(http.ListenAndServe(":8080", router).Error())
 }

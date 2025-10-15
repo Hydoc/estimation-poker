@@ -6,22 +6,25 @@ import {
   type UserOverview,
   type Permissions,
   type DeveloperDone,
+  type ActiveRoom,
+  type FetchActiveRoomsResponse,
 } from "@/components/types";
 import { Role, RoundState } from "@/components/types";
 
 type WebsocketStore = {
   connect(name: string, role: string, roomId: string): Promise<void>;
+  createRoom(name: string): Promise<string>;
   disconnect(): void;
   resetRound(): void;
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
-  fetchActiveRooms(): Promise<string[]>;
+  fetchActiveRooms(): Promise<ActiveRoom[]>;
   send(message: SendableWebsocketMessage): void;
   isRoundInRoomInProgress(roomId: string): Promise<boolean>;
-  isRoomLocked(roomId: string): Promise<boolean>;
   fetchPossibleGuesses(): Promise<void>;
   fetchPermissions(): Promise<void>;
-  fetchRoomIsLocked(): Promise<boolean>;
+  fetchRoomIsLocked(roomId: string): Promise<boolean>;
   passwordMatchesRoom(roomId: string, password: string): Promise<boolean>;
+  roomExists(roomId: string): Promise<boolean>;
   username: Ref<string>;
   isConnected: Ref<boolean>;
   usersInRoom: Ref<UserOverview>;
@@ -57,12 +60,12 @@ type ReceivableWebsocketMessage = {
     | "join"
     | "leave"
     | "estimate"
+    | "reveal"
     | "developer-guessed"
     | "everyone-done"
     | "you-guessed"
     | "you-skipped"
-    | "reveal-round"
-    | "reset-round"
+    | "new-round"
     | "room-locked"
     | "developer-skipped"
     | "room-opened";
@@ -74,10 +77,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const userRole: Ref<Role> = ref(Role.Empty);
   const userRoomId = ref("");
   const websocket: Ref<WebSocket | null> = ref(null);
-  const usersInRoom: Ref<UserOverview> = ref({
-    developerList: [],
-    productOwnerList: [],
-  });
+  const usersInRoom: Ref<UserOverview> = ref([]);
   const roundState: Ref<RoundState> = ref(RoundState.Waiting);
   const ticketToGuess = ref("");
   const guess = ref(0);
@@ -142,15 +142,15 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           await fetchUsersInRoom();
           roundState.value = RoundState.End;
           break;
-        case "reveal-round":
+        case "reveal":
           developerDone.value = decoded.data;
           showAllGuesses.value = true;
           break;
         case "room-locked":
         case "room-opened":
-          await fetchRoomIsLocked();
+          await fetchRoomIsLocked(userRoomId.value);
           break;
-        case "reset-round":
+        case "new-round":
           resetRound();
           await fetchUsersInRoom();
           break;
@@ -168,6 +168,14 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
         resolve(true);
       }
     });
+  }
+
+  async function createRoom(name: string): Promise<string> {
+    const response = await fetch(`/api/estimation/room/create?name=${name}`);
+    if (!response.ok) {
+      throw new Error("Could not create room");
+    }
+    return (await response.json()).id;
   }
 
   function send(message: SendableWebsocketMessage) {
@@ -197,9 +205,9 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     return ((await response.json()) as { inProgress: boolean }).inProgress;
   }
 
-  async function isRoomLocked(roomId: string): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${roomId}/state`);
-    return ((await response.json()) as { isLocked: boolean }).isLocked;
+  async function roomExists(roomId: string): Promise<boolean> {
+    const response = await fetch(`/api/estimation/room/${roomId}/exists`);
+    return ((await response.json()) as { exists: boolean }).exists;
   }
 
   async function passwordMatchesRoom(roomId: string, password: string): Promise<boolean> {
@@ -218,18 +226,21 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   async function fetchUsersInRoom() {
     const response = await fetch(`/api/estimation/room/${userRoomId.value}/users`);
     if (!response.ok) {
-      usersInRoom.value = {
-        productOwnerList: [],
-        developerList: [],
-      };
+      usersInRoom.value = [];
       return;
     }
 
     usersInRoom.value = await response.json();
   }
 
-  async function fetchActiveRooms(): Promise<string[]> {
-    return (await fetch("/api/estimation/room/rooms")).json();
+  async function fetchActiveRooms(): Promise<ActiveRoom[]> {
+    const response = await fetch("/api/estimation/room/rooms");
+    if (!response.ok) {
+      throw new Error("Could not find active rooms");
+    }
+
+    const json = (await response.json()) as FetchActiveRoomsResponse;
+    return json.rooms || [];
   }
 
   async function fetchPossibleGuesses() {
@@ -258,8 +269,8 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     return;
   }
 
-  async function fetchRoomIsLocked(): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${userRoomId.value}/state`);
+  async function fetchRoomIsLocked(roomId: string): Promise<boolean> {
+    const response = await fetch(`/api/estimation/room/${roomId}/state`);
     if (!response.ok) {
       roomIsLocked.value = false;
       return roomIsLocked.value;
@@ -275,7 +286,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     isConnected,
     usersInRoom,
     isRoundInRoomInProgress,
-    isRoomLocked,
     roomId: userRoomId,
     possibleGuesses,
     username,
@@ -296,5 +306,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     permissions,
     roomIsLocked,
     developerDone,
+    createRoom,
+    roomExists,
   };
 });
