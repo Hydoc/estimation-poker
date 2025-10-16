@@ -179,7 +179,6 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 	assert.DeepEqual(t, gotClientMsg, newEveryoneIsDone())
 }
 
-// sometimes stuck, why
 func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 	room := NewRoom(RoomId("Test"), make(chan<- RoomId), "Tester")
 	go room.Run()
