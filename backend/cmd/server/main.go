@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Hydoc/go-message"
 	"github.com/Hydoc/guess-dev/backend/internal"
 )
 
@@ -14,6 +15,16 @@ const (
 	defaultGuesses            = "1,2,3,4,5"
 	defaultGuessesDescription = "Bis zu 4 Std.,Bis zu 8 Std.,Bis zu 3 Tagen,Bis zu 5 Tagen,Mehr als 5 Tage"
 )
+
+func createBus() message.Bus {
+	bus := message.NewBus()
+	bus.Register(internal.SkipRound, internal.HandleSkipRound)
+	bus.Register(internal.Estimate, internal.HandleEstimate)
+	bus.Register(internal.Guess, internal.HandleGuess)
+	bus.Register(internal.NewRound, internal.HandleNewRound)
+	bus.Register(internal.Reveal, internal.HandleReveal)
+	return bus
+}
 
 func main() {
 	var possibleGuesses, possibleGuessesDescription string
@@ -43,6 +54,7 @@ func main() {
 		guessConfig: config,
 		rooms:       make(map[internal.RoomId]*internal.Room),
 		destroyRoom: make(chan internal.RoomId),
+		bus:         createBus(),
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

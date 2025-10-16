@@ -142,7 +142,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 	go room.Run()
 
 	msg := &Message{
-		Type: estimate,
+		Type: Estimate,
 		Data: nil,
 	}
 	room.Broadcast <- msg

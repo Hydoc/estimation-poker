@@ -2,9 +2,11 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
+	"github.com/Hydoc/go-message"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )
@@ -27,16 +29,64 @@ type Client struct {
 	guess      int
 	doSkip     bool
 	send       chan *Message
+	bus        message.Bus
 }
 
-func NewClient(name, role string, room *Room, connection *websocket.Conn) *Client {
+func NewClient(name, role string, room *Room, connection *websocket.Conn, bus message.Bus) *Client {
 	return &Client{
 		room:       room,
 		Name:       name,
 		connection: connection,
 		Role:       role,
 		send:       make(chan *Message),
+		bus:        bus,
 	}
+}
+
+func HandleGuess(msg message.Message) (*message.Message, error) {
+	payload, ok := msg.Payload.(GuessPayload)
+	if ok && payload.client.Role == Developer {
+		payload.client.guess = payload.guess
+		payload.client.doSkip = false
+		payload.client.room.Broadcast <- newDeveloperGuessed()
+		payload.client.send <- newYouGuessed(payload.guess)
+	}
+	return nil, nil
+}
+
+func HandleSkipRound(msg message.Message) (*message.Message, error) {
+	payload, ok := msg.Payload.(SkipRoundPayload)
+	if ok && payload.client.Role == Developer {
+		payload.client.doSkip = true
+		payload.client.guess = 0
+		payload.client.room.Broadcast <- newDeveloperSkipped()
+		payload.client.send <- newYouSkipped()
+	}
+	return nil, nil
+}
+
+func HandleNewRound(msg message.Message) (*message.Message, error) {
+	payload, ok := msg.Payload.(NewRoundPayload)
+	if ok && payload.client.Role == ProductOwner {
+		payload.client.room.Broadcast <- newNewRound()
+	}
+	return nil, nil
+}
+
+func HandleEstimate(msg message.Message) (*message.Message, error) {
+	payload, ok := msg.Payload.(EstimatePayload)
+	if ok && payload.client.Role == ProductOwner {
+		payload.client.room.Broadcast <- newEstimate(payload.ticket)
+	}
+	return nil, nil
+}
+
+func HandleReveal(msg message.Message) (*message.Message, error) {
+	payload, ok := msg.Payload.(RevealPayload)
+	if ok && payload.client.Role == ProductOwner {
+		payload.client.room.Broadcast <- newReveal(payload.client.room.Clients)
+	}
+	return nil, nil
 }
 
 func (client *Client) WebsocketReader() {
@@ -53,24 +103,32 @@ func (client *Client) WebsocketReader() {
 			return
 		}
 
+		cmd, err := fabricate(incMessage, client)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		client.bus.Dispatch(cmd)
+		continue
+
 		switch {
-		case incMessage.Type == skipRound && client.Role == Developer:
-			client.doSkip = true
-			client.guess = 0
-			client.room.Broadcast <- newDeveloperSkipped()
-			client.send <- newYouSkipped()
-		case incMessage.Type == guess && client.Role == Developer:
-			actualGuess := int(incMessage.Data.(float64))
-			client.guess = actualGuess
-			client.doSkip = false
-			client.room.Broadcast <- newDeveloperGuessed()
-			client.send <- newYouGuessed(actualGuess)
-		case incMessage.Type == newRound && client.Role == ProductOwner:
-			client.room.Broadcast <- incMessage
-		case incMessage.Type == reveal && client.Role == ProductOwner:
-			client.room.Broadcast <- newReveal(client.room.Clients)
-		case incMessage.Type == estimate && client.Role == ProductOwner:
-			client.room.Broadcast <- incMessage
+		// case incMessage.Type == SkipRound && client.Role == Developer:
+		// 	client.doSkip = true
+		// 	client.guess = 0
+		// 	client.room.Broadcast <- newDeveloperSkipped()
+		// 	client.send <- newYouSkipped()
+		// case incMessage.Type == Guess && client.Role == Developer:
+		// 	actualGuess := int(incMessage.Data.(float64))
+		// 	client.guess = actualGuess
+		// 	client.doSkip = false
+		// 	client.room.Broadcast <- newDeveloperGuessed()
+		// 	client.send <- newYouGuessed(actualGuess)
+		// case incMessage.Type == NewRound && client.Role == ProductOwner:
+		// 	client.room.Broadcast <- incMessage
+		// case incMessage.Type == Reveal && client.Role == ProductOwner:
+		// 	client.room.Broadcast <- newReveal(client.room.Clients)
+		// case incMessage.Type == Estimate && client.Role == ProductOwner:
+		// 	client.room.Broadcast <- incMessage
 		case incMessage.Type == lockRoom:
 			pw, pwOk := incMessage.Data.(map[string]any)["password"]
 			key, keyOk := incMessage.Data.(map[string]any)["key"]
@@ -105,6 +163,47 @@ func (client *Client) WebsocketReader() {
 		default:
 			log.Printf("unknown Message %#v\n", incMessage)
 		}
+	}
+}
+
+func fabricate(incomingMessage *Message, client *Client) (message.Message, error) {
+	switch incomingMessage.Type {
+	case SkipRound:
+		return message.New(
+			SkipRound,
+			SkipRoundPayload{
+				client: client,
+			},
+		), nil
+	case Estimate:
+		ticket, ok := incomingMessage.Data.(string)
+		if !ok {
+			return message.Message{}, errors.New("ticket is invalid")
+		}
+
+		return message.New(
+			Estimate,
+			EstimatePayload{
+				client: client,
+				ticket: ticket,
+			},
+		), nil
+	case Guess:
+		actualGuess, ok := incomingMessage.Data.(float64)
+		if !ok {
+			return message.Message{}, errors.New("guess is invalid")
+		}
+
+		return message.New(Guess, GuessPayload{
+			client: client,
+			guess:  int(actualGuess),
+		}), nil
+	case NewRound:
+		return message.New(NewRound, NewRoundPayload{client: client}), nil
+	case Reveal:
+		return message.New(Reveal, RevealPayload{client: client}), nil
+	default:
+		return message.Message{}, errors.New("command not found")
 	}
 }
 

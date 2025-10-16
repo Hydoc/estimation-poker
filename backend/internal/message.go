@@ -3,13 +3,13 @@ package internal
 const (
 	join             = "join"
 	leave            = "leave"
-	guess            = "guess"
-	newRound         = "new-round"
-	estimate         = "estimate"
+	Guess            = "guess"
+	NewRound         = "new-round"
+	Estimate         = "estimate"
 	lockRoom         = "lock-room"
 	openRoom         = "open-room"
-	skipRound        = "skip"
-	reveal           = "reveal"
+	SkipRound        = "skip"
+	Reveal           = "reveal"
 	roomLocked       = "room-locked"
 	roomOpened       = "room-opened"
 	developerGuessed = "developer-guessed"
@@ -24,9 +24,38 @@ type Message struct {
 	Data any    `json:"data"`
 }
 
+type SkipRoundPayload struct {
+	client *Client
+}
+
+type NewRoundPayload struct {
+	client *Client
+}
+
+type EstimatePayload struct {
+	client *Client
+	ticket string
+}
+
+type GuessPayload struct {
+	client *Client
+	guess  int
+}
+
+type RevealPayload struct {
+	client *Client
+}
+
 func NewJoin() *Message {
 	return &Message{
 		Type: join,
+	}
+}
+
+func newEstimate(ticket string) *Message {
+	return &Message{
+		Type: Estimate,
+		Data: ticket,
 	}
 }
 
@@ -69,14 +98,14 @@ func newReveal(clients map[*Client]bool) *Message {
 	}
 
 	return &Message{
-		Type: reveal,
+		Type: Reveal,
 		Data: out,
 	}
 }
 
 func newNewRound() *Message {
 	return &Message{
-		Type: newRound,
+		Type: NewRound,
 	}
 }
 

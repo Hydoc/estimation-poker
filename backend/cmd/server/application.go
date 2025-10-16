@@ -14,12 +14,14 @@ import (
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 
+	"github.com/Hydoc/go-message"
 	"github.com/Hydoc/guess-dev/backend/internal"
 )
 
 type application struct {
-	roomMu sync.Mutex
+	mu sync.Mutex
 
+	bus         message.Bus
 	logger      *slog.Logger
 	guessConfig *internal.GuessConfig
 	rooms       map[internal.RoomId]*internal.Room
@@ -42,8 +44,8 @@ func (app *application) withRequiredQueryParam(param string, next http.HandlerFu
 }
 
 func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, request *http.Request) {
-	app.roomMu.Lock()
-	defer app.roomMu.Unlock()
+	app.mu.Lock()
+	defer app.mu.Unlock()
 
 	defer request.Body.Close()
 	roomId := request.PathValue("id")
@@ -72,8 +74,8 @@ func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, reque
 }
 
 func (app *application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
-	app.roomMu.Lock()
-	defer app.roomMu.Unlock()
+	app.mu.Lock()
+	defer app.mu.Unlock()
 
 	roomId := request.PathValue("id")
 	username := request.PathValue("username")
@@ -105,8 +107,8 @@ func (app *application) handleFetchPermissions(writer http.ResponseWriter, reque
 }
 
 func (app *application) createNewRoom(writer http.ResponseWriter, request *http.Request) {
-	app.roomMu.Lock()
-	defer app.roomMu.Unlock()
+	app.mu.Lock()
+	defer app.mu.Unlock()
 
 	name := request.URL.Query().Get("name")
 
@@ -123,16 +125,16 @@ func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *htt
 }
 
 func (app *application) handleRoomExists(writer http.ResponseWriter, request *http.Request) {
-	app.roomMu.Lock()
-	defer app.roomMu.Unlock()
+	app.mu.Lock()
+	defer app.mu.Unlock()
 	roomId := request.PathValue("id")
 	_, ok := app.rooms[internal.RoomId(roomId)]
 	app.writeJson(writer, http.StatusOK, envelope{"exists": ok}, nil)
 }
 
 func (app *application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
-	app.roomMu.Lock()
-	defer app.roomMu.Unlock()
+	app.mu.Lock()
+	defer app.mu.Unlock()
 
 	roomId := request.PathValue("id")
 	actualRoom, ok := app.rooms[internal.RoomId(roomId)]
@@ -150,8 +152,8 @@ func (app *application) handleFetchRoomState(writer http.ResponseWriter, request
 }
 
 func (app *application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
-	app.roomMu.Lock()
-	defer app.roomMu.Unlock()
+	app.mu.Lock()
+	defer app.mu.Unlock()
 	roomId := request.PathValue("id")
 
 	name := request.URL.Query().Get("name")
@@ -186,8 +188,8 @@ func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 func (app *application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
 	roomId := request.PathValue("id")
 
-	app.roomMu.Lock()
-	defer app.roomMu.Unlock()
+	app.mu.Lock()
+	defer app.mu.Unlock()
 
 	room, ok := app.rooms[internal.RoomId(roomId)]
 	if !ok {
@@ -213,8 +215,8 @@ func (app *application) handleFetchUsers(writer http.ResponseWriter, request *ht
 }
 
 func (app *application) handleWs(writer http.ResponseWriter, request *http.Request) {
-	app.roomMu.Lock()
-	defer app.roomMu.Unlock()
+	app.mu.Lock()
+	defer app.mu.Unlock()
 
 	roomId, err := uuid.Parse(request.PathValue("id"))
 	if err != nil {
@@ -245,7 +247,7 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 	if strings.Contains(request.URL.Path, "product-owner") {
 		clientRole = internal.ProductOwner
 	}
-	client := internal.NewClient(name, clientRole, clientRoom, connection)
+	client := internal.NewClient(name, clientRole, clientRoom, connection, app.bus)
 	clientRoom.Join <- client
 	clientRoom.Broadcast <- internal.NewJoin()
 
@@ -259,9 +261,9 @@ func (app *application) listenForRoomDestroy(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case roomId := <-app.destroyRoom:
-			app.roomMu.Lock()
+			app.mu.Lock()
 			delete(app.rooms, roomId)
-			app.roomMu.Unlock()
+			app.mu.Unlock()
 		}
 	}
 }

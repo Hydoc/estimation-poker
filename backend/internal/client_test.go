@@ -136,11 +136,11 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 	go client.WebsocketReader()
 	go client.WebsocketWriter()
 	expectedMessage := &Message{
-		Type: reveal,
+		Type: Reveal,
 		Data: []map[string]any{},
 	}
 	client.send <- &Message{
-		Type: reveal,
+		Type: Reveal,
 	}
 
 	got := <-broadcastChannel
@@ -206,7 +206,7 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 	go client.WebsocketReader()
 
 	wsjson.Write(context.Background(), connection, Message{
-		Type: skipRound,
+		Type: SkipRound,
 	})
 
 	expectedMsg := newDeveloperSkipped()
@@ -340,7 +340,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 
 	// due to the echo websocket it writes to itself
 	expectedMsg := &Message{
-		Type: estimate,
+		Type: Estimate,
 	}
 	clientChannel <- expectedMsg
 
