@@ -181,31 +181,22 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 
 // sometimes stuck, why
 func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
+	room := NewRoom(RoomId("Test"), make(chan<- RoomId), "Tester")
+	go room.Run()
+
 	clientSendChannel := make(chan *Message)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
 	}
-	room := &Room{
-		Id:         "Test",
-		InProgress: false,
-		leave:      make(chan *Client),
-		Join:       make(chan *Client),
-		Clients: map[*Client]bool{
-			client: true,
-			{
-				Role:  Developer,
-				guess: 0,
-			}: true,
-		},
-		Broadcast: make(chan *Message),
-		destroy:   make(chan<- RoomId),
+	room.Join <- client
+	room.Join <- &Client{
+		Role:  Developer,
+		guess: 0,
+		send:  clientSendChannel,
 	}
 	msg := newDeveloperGuessed()
-	go room.Run()
-	go func() {
-		room.Broadcast <- msg
-	}()
+	room.Broadcast <- msg
 
 	select {
 	case <-time.After(5 * time.Second):
