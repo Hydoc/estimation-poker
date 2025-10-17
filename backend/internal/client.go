@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -73,6 +74,22 @@ func HandleNewRound(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
+func HandleLockRoom(msg message.Message) (*message.Message, error) {
+	payload, ok := msg.Payload.(LockRoomPayload)
+	if ok && payload.client.room.lock(payload.client.Name, payload.password, payload.key) {
+		payload.client.room.Broadcast <- newRoomLocked()
+	}
+	return nil, nil
+}
+
+func HandleOpenRoom(msg message.Message) (*message.Message, error) {
+	payload, ok := msg.Payload.(OpenRoomPayload)
+	if ok && payload.client.room.open(payload.client.Name, payload.key) {
+		payload.client.room.Broadcast <- newRoomOpened()
+	}
+	return nil, nil
+}
+
 func HandleEstimate(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(EstimatePayload)
 	if ok && payload.client.Role == ProductOwner {
@@ -109,60 +126,6 @@ func (client *Client) WebsocketReader() {
 			continue
 		}
 		client.bus.Dispatch(cmd)
-		continue
-
-		switch {
-		// case incMessage.Type == SkipRound && client.Role == Developer:
-		// 	client.doSkip = true
-		// 	client.guess = 0
-		// 	client.room.Broadcast <- newDeveloperSkipped()
-		// 	client.send <- newYouSkipped()
-		// case incMessage.Type == Guess && client.Role == Developer:
-		// 	actualGuess := int(incMessage.Data.(float64))
-		// 	client.guess = actualGuess
-		// 	client.doSkip = false
-		// 	client.room.Broadcast <- newDeveloperGuessed()
-		// 	client.send <- newYouGuessed(actualGuess)
-		// case incMessage.Type == NewRound && client.Role == ProductOwner:
-		// 	client.room.Broadcast <- incMessage
-		// case incMessage.Type == Reveal && client.Role == ProductOwner:
-		// 	client.room.Broadcast <- newReveal(client.room.Clients)
-		// case incMessage.Type == Estimate && client.Role == ProductOwner:
-		// 	client.room.Broadcast <- incMessage
-		case incMessage.Type == lockRoom:
-			pw, pwOk := incMessage.Data.(map[string]any)["password"]
-			key, keyOk := incMessage.Data.(map[string]any)["key"]
-
-			if !keyOk {
-				log.Printf("client: %s tried to lock room %s without a key\n", client.Name, client.room.Id)
-				break
-			}
-			if !pwOk {
-				log.Printf("client: %s tried to lock room %s without a password\n", client.Name, client.room.Id)
-				break
-			}
-
-			if client.room.lock(client.Name, pw.(string), key.(string)) {
-				client.room.Broadcast <- newRoomLocked()
-				break
-			}
-			log.Println("was not able to lock room")
-		case incMessage.Type == openRoom:
-			key, keyOk := incMessage.Data.(map[string]any)["key"]
-
-			if !keyOk {
-				log.Println("client:", client.Name, "tried to open room", client.room.Id, "without a key")
-				break
-			}
-
-			if client.room.open(client.Name, key.(string)) {
-				client.room.Broadcast <- newRoomOpened()
-				break
-			}
-			log.Println("was not able to open room")
-		default:
-			log.Printf("unknown Message %#v\n", incMessage)
-		}
 	}
 }
 
@@ -202,8 +165,35 @@ func fabricate(incomingMessage *Message, client *Client) (message.Message, error
 		return message.New(NewRound, NewRoundPayload{client: client}), nil
 	case Reveal:
 		return message.New(Reveal, RevealPayload{client: client}), nil
+	case LockRoom:
+		pw, pwOk := incomingMessage.Data.(map[string]any)["password"]
+		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
+
+		if !keyOk {
+			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a key", client.Name, client.room.Id)
+		}
+		if !pwOk {
+			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a password", client.Name, client.room.Id)
+		}
+
+		return message.New(LockRoom, LockRoomPayload{
+			client:   client,
+			key:      key.(string),
+			password: pw.(string),
+		}), nil
+	case OpenRoom:
+		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
+
+		if !keyOk {
+			return message.Message{}, fmt.Errorf("client: %s tried to open room %s without a key", client.Name, client.room.Id)
+		}
+
+		return message.New(OpenRoom, OpenRoomPayload{
+			client: client,
+			key:    key.(string),
+		}), nil
 	default:
-		return message.Message{}, errors.New("command not found")
+		return message.Message{}, errors.New("message not found")
 	}
 }
 

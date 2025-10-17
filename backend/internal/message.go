@@ -6,8 +6,8 @@ const (
 	Guess            = "guess"
 	NewRound         = "new-round"
 	Estimate         = "estimate"
-	lockRoom         = "lock-room"
-	openRoom         = "open-room"
+	LockRoom         = "lock-room"
+	OpenRoom         = "open-room"
 	SkipRound        = "skip"
 	Reveal           = "reveal"
 	roomLocked       = "room-locked"
@@ -30,6 +30,17 @@ type SkipRoundPayload struct {
 
 type NewRoundPayload struct {
 	client *Client
+}
+
+type LockRoomPayload struct {
+	client   *Client
+	key      string
+	password string
+}
+
+type OpenRoomPayload struct {
+	client *Client
+	key    string
 }
 
 type EstimatePayload struct {

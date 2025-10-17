@@ -23,6 +23,8 @@ func createBus() message.Bus {
 	bus.Register(internal.Guess, internal.HandleGuess)
 	bus.Register(internal.NewRound, internal.HandleNewRound)
 	bus.Register(internal.Reveal, internal.HandleReveal)
+	bus.Register(internal.LockRoom, internal.HandleLockRoom)
+	bus.Register(internal.OpenRoom, internal.HandleOpenRoom)
 	return bus
 }
 
