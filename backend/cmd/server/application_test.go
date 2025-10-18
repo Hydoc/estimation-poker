@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/Hydoc/go-message"
 	"github.com/Hydoc/guess-dev/backend/internal"
 	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
@@ -160,14 +161,14 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		url               string
 		name              string
 		rooms             map[internal.RoomId]*internal.Room
-		expectation       map[string]interface{}
-		expectedErrorBody map[string]interface{}
+		expectation       map[string]any
+		expectedErrorBody map[string]any
 		statusCode        int
 	}{
 		{
 			name: "not find client when clients are empty",
 			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=Bla", roomId),
-			expectation: map[string]interface{}{
+			expectation: map[string]any{
 				"exists": false,
 			},
 			rooms: map[internal.RoomId]*internal.Room{
@@ -180,7 +181,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		{
 			name: "find client when client exists",
 			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=%s", roomId, client.Name),
-			expectation: map[string]interface{}{
+			expectation: map[string]any{
 				"exists": true,
 			},
 			rooms: map[internal.RoomId]*internal.Room{
@@ -203,7 +204,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorBody: map[string]interface{}{
+			expectedErrorBody: map[string]any{
 				"message": "name is missing in query",
 			},
 			statusCode: 400,
@@ -211,7 +212,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		{
 			name: "not find client when no room with id was found",
 			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=Test", roomId),
-			expectation: map[string]interface{}{
+			expectation: map[string]any{
 				"exists": false,
 			},
 			rooms:             map[internal.RoomId]*internal.Room{},
@@ -231,7 +232,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 
 			router.ServeHTTP(recorder, request)
 
-			var got map[string]interface{}
+			var got map[string]any
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			gotContentType := recorder.Header().Get("Content-Type")
@@ -251,11 +252,12 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 
 func TestApplication_handleFetchUsers(t *testing.T) {
 	room := internal.NewRoom("1", make(chan<- internal.RoomId), "")
-	dev := internal.NewClient("B", internal.Developer, room, nil)
-	otherDev := internal.NewClient("Another", internal.Developer, room, nil)
-	devWithEqualLetter := internal.NewClient("Also a dev", internal.Developer, room, nil)
-	productOwner := internal.NewClient("Another one", internal.ProductOwner, room, nil)
-	otherProductOwner := internal.NewClient("Also a po", internal.ProductOwner, room, nil)
+	bus := message.NewBus()
+	dev := internal.NewClient("B", internal.Developer, room, nil, bus)
+	otherDev := internal.NewClient("Another", internal.Developer, room, nil, bus)
+	devWithEqualLetter := internal.NewClient("Also a dev", internal.Developer, room, nil, bus)
+	productOwner := internal.NewClient("Another one", internal.ProductOwner, room, nil, bus)
+	otherProductOwner := internal.NewClient("Also a po", internal.ProductOwner, room, nil, bus)
 
 	tests := []struct {
 		name        string
@@ -549,7 +551,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *internal.GuessConfig
-		want   []map[string]interface{}
+		want   []map[string]any
 	}{
 		{
 			name: "multiple guesses",
@@ -565,7 +567,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 					},
 				},
 			},
-			want: []map[string]interface{}{
+			want: []map[string]any{
 				{
 					"guess":       float64(1),
 					"description": "Test 1",
@@ -586,7 +588,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 					},
 				},
 			},
-			want: []map[string]interface{}{
+			want: []map[string]any{
 				{
 					"guess":       float64(1),
 					"description": "Test 1",
@@ -598,7 +600,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 			config: &internal.GuessConfig{
 				Guesses: make([]internal.GuessConfigEntry, 0),
 			},
-			want: make([]map[string]interface{}, 0),
+			want: make([]map[string]any, 0),
 		},
 	}
 
@@ -613,7 +615,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 
 			router.ServeHTTP(recorder, request)
 
-			var got []map[string]interface{}
+			var got []map[string]any
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			assert.DeepEqual(t, got, test.want)

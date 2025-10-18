@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/Hydoc/go-message"
 	"github.com/coder/websocket"
@@ -15,9 +14,6 @@ import (
 const (
 	ProductOwner = "product-owner"
 	Developer    = "developer"
-	pongWait     = 60 * time.Second
-	pingPeriod   = (pongWait * 9) / 10
-	writeWait    = 10 * time.Second
 )
 
 type UserDTO map[string]any
@@ -115,9 +111,16 @@ func (client *Client) WebsocketReader() {
 	for {
 		var incMessage *Message
 		err := wsjson.Read(context.Background(), client.connection, &incMessage)
+
 		if err != nil {
-			log.Println("error reading incoming client Message:", err)
-			return
+			switch websocket.CloseStatus(err) {
+			case websocket.StatusNoStatusRcvd, websocket.StatusGoingAway:
+				return
+			default:
+				log.Println("error reading incoming client Message:", err)
+				return
+			}
+
 		}
 
 		cmd, err := fabricate(incMessage, client)
@@ -198,14 +201,11 @@ func fabricate(incomingMessage *Message, client *Client) (message.Message, error
 }
 
 func (client *Client) WebsocketWriter() {
-	for {
-		select {
-		case msg := <-client.send:
-			err := wsjson.Write(context.Background(), client.connection, msg)
-			if err != nil {
-				log.Println("error writing to client:", err)
-				return
-			}
+	for msg := range client.send {
+		err := wsjson.Write(context.Background(), client.connection, msg)
+		if err != nil {
+			log.Println("error writing to client:", err)
+			return
 		}
 	}
 }
