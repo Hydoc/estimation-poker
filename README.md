@@ -1,6 +1,6 @@
 [![Backend CI](https://github.com/Hydoc/guess-dev/actions/workflows/go.yml/badge.svg)](https://github.com/Hydoc/guess-dev/actions/workflows/go.yml)
 [![Frontend CI](https://github.com/Hydoc/guess-dev/actions/workflows/node.js.yml/badge.svg)](https://github.com/Hydoc/guess-dev/actions/workflows/node.js.yml)
-[![codecov](https://codecov.io/gh/Hydoc/guess-dev/graph/badge.svg?token=W6K85E6PQQ)](https://codecov.io/gh/Hydoc/guess-dev)
+[![codecov](https://codecov.io/gh/Hydoc/estimation-poker/graph/badge.svg?token=W6K85E6PQQ)](https://codecov.io/gh/Hydoc/estimation-poker)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Hydoc/guess-dev/backend)](https://goreportcard.com/report/github.com/Hydoc/guess-dev/backend)
 
 # Estimation Poker
