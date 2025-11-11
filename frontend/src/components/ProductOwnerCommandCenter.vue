@@ -106,7 +106,7 @@ function doLetEstimate() {
         v-else-if="!hasDevelopersInRoom"
         class="text-center"
       >
-        Warten auf Entwickler...
+        Waiting for developers...
       </p>
     </div>
   </v-container>

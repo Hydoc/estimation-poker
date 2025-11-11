@@ -69,7 +69,7 @@ function leftForElement(index: number, username: string): string {
         @reveal="emit('reveal')"
         @new-round="emit('new-round')"
       />
-      <span v-if="!hasTicketToGuess && !userIsProductOwner">Warten auf Ticket…</span>
+      <span v-if="!hasTicketToGuess && !userIsProductOwner">Waiting for ticket…</span>
       <span
         v-if="hasTicketToGuess && userIsDeveloper"
         class="text-h5"

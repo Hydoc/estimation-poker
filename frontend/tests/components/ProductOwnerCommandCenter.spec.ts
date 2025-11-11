@@ -37,7 +37,7 @@ describe("ProductOwnerCommandCenter", () => {
       expect(wrapper.findComponent(VBtn).find("button").attributes("type")).equal("submit");
       expect(wrapper.findComponent(VBtn).text()).equal("Schätzen lassen");
       expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
-      expect(wrapper.text()).not.contains("Warten auf Entwickler...");
+      expect(wrapper.text()).not.contains("Waiting for developers...");
     });
 
     it("should render without developers in room", () => {
@@ -52,7 +52,7 @@ describe("ProductOwnerCommandCenter", () => {
       });
 
       expect(wrapper.findComponent(VForm).exists()).to.be.false;
-      expect(wrapper.find("p").text()).equal("Warten auf Entwickler...");
+      expect(wrapper.find("p").text()).equal("Waiting for developers...");
     });
 
     it("should render button with progress bar when round is in progress but not every dev is done", () => {

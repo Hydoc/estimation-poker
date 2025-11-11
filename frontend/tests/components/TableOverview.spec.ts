@@ -47,7 +47,7 @@ describe("TableOverview", () => {
         .false;
       expect(wrapper.findComponent(ProductOwnerCommandCenter).props("showAllGuesses")).to.be.false;
 
-      expect(wrapper.text()).not.contains("Warten auf Ticket…");
+      expect(wrapper.text()).not.contains("Waiting for ticket…");
 
       expect(wrapper.findAll(".seat")).length(2);
       expect(wrapper.findAll(".seat").at(0).attributes("style")).equal("left: 285px; top: 50px;");
@@ -71,7 +71,7 @@ describe("TableOverview", () => {
       const wrapper = createWrapper();
 
       expect(wrapper.findComponent(ProductOwnerCommandCenter).exists()).to.be.false;
-      expect(wrapper.text()).contains("Warten auf Ticket…");
+      expect(wrapper.text()).contains("Waiting for ticket…");
       expect(wrapper.findAllComponents(DeveloperCard)).length(1);
     });
   });

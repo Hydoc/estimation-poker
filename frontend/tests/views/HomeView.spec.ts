@@ -74,7 +74,9 @@ describe("HomeView", () => {
       await nextTick();
 
       expect(wrapper.findAllComponents(RoomDialog)).length(3);
-      expect(wrapper.findAllComponents(RoomDialog).at(0).props("activatorText")).equal("Create a new room");
+      expect(wrapper.findAllComponents(RoomDialog).at(0).props("activatorText")).equal(
+        "Create a new room",
+      );
       expect(wrapper.findAllComponents(RoomDialog).at(1).props("activatorText")).equal("Join");
       expect(wrapper.findAllComponents(RoomDialog).at(2).props("activatorText")).equal("Join");
       expect(wrapper.findComponent(VCard).exists()).to.be.true;
@@ -88,9 +90,13 @@ describe("HomeView", () => {
       expect(wrapper.findAllComponents(VCard).at(0).props("subtitle")).equal("first-id");
       expect(wrapper.findAllComponents(VCard).at(1).props("subtitle")).equal("second-id");
 
-      expect(wrapper.findAllComponents(VCardText).at(0).findComponent(VIcon).props("icon")).equal("mdi-account");
+      expect(wrapper.findAllComponents(VCardText).at(0).findComponent(VIcon).props("icon")).equal(
+        "mdi-account",
+      );
       expect(wrapper.findAllComponents(VCardText).at(0).text()).equal("1 player");
-      expect(wrapper.findAllComponents(VCardText).at(1).findComponent(VIcon).props("icon")).equal("mdi-account");
+      expect(wrapper.findAllComponents(VCardText).at(1).findComponent(VIcon).props("icon")).equal(
+        "mdi-account",
+      );
       expect(wrapper.findAllComponents(VCardText).at(1).text()).equal("3 players");
     });
   });
