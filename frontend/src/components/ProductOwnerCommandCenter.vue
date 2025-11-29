@@ -66,7 +66,13 @@ function doLetEstimate() {
           placeholder="CC-0000"
           required
         />
-        <v-btn width="100%" type="submit" :disabled="!canEstimate"> Estimate </v-btn>
+        <v-btn
+          width="100%"
+          type="submit"
+          :disabled="!canEstimate"
+        >
+          Estimate
+        </v-btn>
       </v-form>
       <v-progress-circular
         v-if="props.hasTicketToGuess && !props.showAllGuesses"
@@ -78,15 +84,29 @@ function doLetEstimate() {
         color="teal"
       >
         <template #default>
-          <v-btn color="teal" :disabled="!roundCanBeRevealed" @click="emit('reveal')">
+          <v-btn
+            color="teal"
+            :disabled="!roundCanBeRevealed"
+            @click="emit('reveal')"
+          >
             Reveal
           </v-btn>
         </template>
       </v-progress-circular>
-      <v-btn v-if="props.showAllGuesses" width="100%" color="blue-grey" @click="emit('new-round')">
+      <v-btn
+        v-if="props.showAllGuesses"
+        width="100%"
+        color="blue-grey"
+        @click="emit('new-round')"
+      >
         New round
       </v-btn>
-      <p v-else-if="!hasDevelopersInRoom" class="text-center">Waiting for developers...</p>
+      <p
+        v-else-if="!hasDevelopersInRoom"
+        class="text-center"
+      >
+        Waiting for developers...
+      </p>
     </div>
   </v-container>
 </template>

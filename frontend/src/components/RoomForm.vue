@@ -39,16 +39,32 @@ const textFieldRules = computed(() => [
       {{ props.subtitle }}
     </v-card-subtitle>
     <v-card-text>
-      <v-form v-model="formIsValid" fast-fail validate-on="input" @submit.prevent>
-        <v-text-field v-model="name" label="Name" required :rules="textFieldRules" />
+      <v-form
+        v-model="formIsValid"
+        fast-fail
+        validate-on="input"
+        @submit.prevent
+      >
+        <v-text-field
+          v-model="name"
+          label="Name"
+          required
+          :rules="textFieldRules"
+        />
 
         <v-radio-group
           v-model="role"
           label="Your role"
           :rules="[(value) => !!value || 'Can not be empty']"
         >
-          <v-radio label="Product Owner" :value="Role.ProductOwner" />
-          <v-radio label="Developer" :value="Role.Developer" />
+          <v-radio
+            label="Product Owner"
+            :value="Role.ProductOwner"
+          />
+          <v-radio
+            label="Developer"
+            :value="Role.Developer"
+          />
         </v-radio-group>
 
         <v-text-field
@@ -60,7 +76,11 @@ const textFieldRules = computed(() => [
           :rules="textFieldRules"
         />
 
-        <v-alert v-if="props.errorMessage" color="error" :text="props.errorMessage" />
+        <v-alert
+          v-if="props.errorMessage"
+          color="error"
+          :text="props.errorMessage"
+        />
       </v-form>
     </v-card-text>
     <v-card-actions>

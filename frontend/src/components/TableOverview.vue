@@ -70,7 +70,10 @@ function leftForElement(index: number, username: string): string {
         @new-round="emit('new-round')"
       />
       <span v-if="!hasTicketToGuess && !userIsProductOwner">Waiting for ticket…</span>
-      <span v-if="hasTicketToGuess && userIsDeveloper" class="text-h5">{{
+      <span
+        v-if="hasTicketToGuess && userIsDeveloper"
+        class="text-h5"
+      >{{
         props.ticketToGuess
       }}</span>
     </div>

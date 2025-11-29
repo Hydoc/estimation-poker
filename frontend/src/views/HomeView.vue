@@ -66,7 +66,10 @@ onBeforeMount(async () => {
 <template>
   <main>
     <v-container>
-      <div v-if="activeRooms.length > 0" class="d-flex flex-column">
+      <div
+        v-if="activeRooms.length > 0"
+        class="d-flex flex-column"
+      >
         <div class="align-self-end">
           <room-dialog
             v-if="activeRooms.length > 0"
@@ -110,8 +113,15 @@ onBeforeMount(async () => {
         </div>
       </div>
 
-      <div v-else class="d-flex align-center flex-column ga-7">
-        <v-icon icon="mdi-magnify" class="opacity-50" size="80" />
+      <div
+        v-else
+        class="d-flex align-center flex-column ga-7"
+      >
+        <v-icon
+          icon="mdi-magnify"
+          class="opacity-50"
+          size="80"
+        />
 
         <span class="text-h4 opacity-90">There are currently no rooms</span>
 

@@ -52,7 +52,10 @@ watch(
 </script>
 
 <template>
-  <round-summary v-if="showRoundSummary" :developer-done="props.developerDone" />
+  <round-summary
+    v-if="showRoundSummary"
+    :developer-done="props.developerDone"
+  />
 
   <v-container fluid>
     <v-col cols="12">
@@ -70,7 +73,10 @@ watch(
         />
       </v-row>
 
-      <v-row align="center" justify="center">
+      <v-row
+        align="center"
+        justify="center"
+      >
         <developer-command-center
           v-if="userIsDeveloper"
           class="developer-command-center"
