@@ -25,8 +25,8 @@ describe("RoundSummary", () => {
       expect(wrapper.findComponent(VCard).exists()).to.be.true;
       expect(wrapper.getComponent(VCard).findAll(".card")).length(1);
       expect(wrapper.getComponent(VCard).find(".card").text()).equal("2");
-      expect(wrapper.getComponent(VCard).text()).contains("2 Schätzungen");
-      expect(wrapper.getComponent(VCard).text()).contains("Übereinstimmung");
+      expect(wrapper.getComponent(VCard).text()).contains("2 guesses");
+      expect(wrapper.getComponent(VCard).text()).contains("Agreement");
       expect(wrapper.getComponent(VCard).getComponent(VProgressCircular).props("modelValue")).equal(
         100,
       );
@@ -45,8 +45,8 @@ describe("RoundSummary", () => {
       expect(wrapper.getComponent(VCard).findAll(".card").at(1).text()).equal("1");
       expect(wrapper.getComponent(VCard).findAll(".card").at(2).text()).equal("2");
 
-      expect(wrapper.getComponent(VCard).text()).contains("1 Schätzung");
-      expect(wrapper.getComponent(VCard).text()).contains("Übereinstimmung");
+      expect(wrapper.getComponent(VCard).text()).contains("1 guess");
+      expect(wrapper.getComponent(VCard).text()).contains("Agreement");
       expect(wrapper.getComponent(VCard).getComponent(VProgressCircular).props("modelValue")).equal(
         33.33333333333333,
       );
