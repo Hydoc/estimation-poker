@@ -22,16 +22,9 @@ const showDialog = defineModel("showDialog", { type: Boolean, default: false, re
 </script>
 
 <template>
-  <v-dialog
-    v-model="showDialog"
-    width="500"
-  >
+  <v-dialog v-model="showDialog" width="500">
     <template #activator="{ props: activatorProps }">
-      <v-btn
-        v-bind="activatorProps"
-        color="primary"
-        :text="props.activatorText"
-      />
+      <v-btn v-bind="activatorProps" color="primary" :text="props.activatorText" />
     </template>
 
     <room-form

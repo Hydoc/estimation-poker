@@ -8,12 +8,13 @@ import (
 	"os"
 
 	"github.com/Hydoc/go-message"
+
 	"github.com/Hydoc/guess-dev/backend/internal"
 )
 
 const (
 	defaultGuesses            = "1,2,3,4,5"
-	defaultGuessesDescription = "Bis zu 4 Std.,Bis zu 8 Std.,Bis zu 3 Tagen,Bis zu 5 Tagen,Mehr als 5 Tage"
+	defaultGuessesDescription = "Up to 4h,Up to 8h,Up to 3 days,Up to 5 days,More than 5 days"
 )
 
 func createBus() message.Bus {

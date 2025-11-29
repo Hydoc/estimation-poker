@@ -12,7 +12,7 @@ services:
       - app
     environment:
       POSSIBLE_GUESSES: 1,2,3,4,5
-      POSSIBLE_GUESSES_DESC: Bis zu 4 Std.,Bis zu 8 Std.,Bis zu 3 Tagen,Bis zu 5 Tagen,Mehr als 5 Tage
+      POSSIBLE_GUESSES_DESC: Up to 4h,Up to 8h,Up to 3 days,Up to 5 days,More than 5 days
 
   frontend:
     build:

@@ -28,14 +28,14 @@ describe("ProductOwnerCommandCenter", () => {
       expect(wrapper.findComponent(VForm).exists()).to.be.true;
       expect(wrapper.findComponent(VForm).props("fastFail")).to.be.true;
       expect(wrapper.findComponent(VTextField).exists()).to.be.true;
-      expect(wrapper.findComponent(VTextField).props("label")).equal("Ticket zum schätzen");
+      expect(wrapper.findComponent(VTextField).props("label")).equal("Ticket to guess");
       expect(wrapper.findComponent(VTextField).props("placeholder")).equal("CC-0000");
       expect(Object.keys(wrapper.findComponent(VTextField).find("input").attributes())).contains(
         "required",
       );
       expect(wrapper.findAllComponents(VBtn)).length(1);
       expect(wrapper.findComponent(VBtn).find("button").attributes("type")).equal("submit");
-      expect(wrapper.findComponent(VBtn).text()).equal("Schätzen lassen");
+      expect(wrapper.findComponent(VBtn).text()).equal("Estimate");
       expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
       expect(wrapper.text()).not.contains("Waiting for developers...");
     });
@@ -72,7 +72,7 @@ describe("ProductOwnerCommandCenter", () => {
       expect(wrapper.findComponent(VForm).exists()).to.be.false;
 
       expect(wrapper.findAllComponents(VBtn)).length(1);
-      expect(wrapper.findComponent(VBtn).text()).equal("WH-2 auflösen");
+      expect(wrapper.findComponent(VBtn).text()).equal("Reveal");
       expect(wrapper.findComponent(VBtn).props("disabled")).to.be.true;
       expect(wrapper.findComponent(VBtn).props("color")).equal("teal");
 
@@ -97,7 +97,7 @@ describe("ProductOwnerCommandCenter", () => {
       expect(wrapper.findComponent(VForm).exists()).to.be.false;
 
       expect(wrapper.findAllComponents(VBtn)).length(1);
-      expect(wrapper.findComponent(VBtn).text()).equal("Neue Runde");
+      expect(wrapper.findComponent(VBtn).text()).equal("New round");
       expect(wrapper.findComponent(VProgressCircular).exists()).to.be.false;
     });
   });
@@ -140,9 +140,7 @@ describe("ProductOwnerCommandCenter", () => {
       await wrapper.findComponent(VTextField).setValue("WR-1");
       await wrapper.findComponent(VTextField).setValue("");
       await nextTick();
-      expect(wrapper.findComponent(VTextField).text()).contains(
-        "Fehler: Hier müsste eigentlich was stehen",
-      );
+      expect(wrapper.findComponent(VTextField).text()).contains("Error: Can not be empty");
     });
 
     it("should show validation message when ticket does not match regex", async () => {
@@ -162,9 +160,7 @@ describe("ProductOwnerCommandCenter", () => {
       await wrapper.findComponent(VTextField).setValue("WR");
       await wrapper.findComponent(VTextField).trigger("blur");
       await nextTick();
-      expect(wrapper.findComponent(VTextField).text()).contains(
-        "Fehler: Muss im Format ^[A-Z]{2,}-\\d+$ sein",
-      );
+      expect(wrapper.findComponent(VTextField).text()).contains("Error: ^[A-Z]{2,}-\\d+$ required");
     });
 
     it("should emit estimate on form submit", async () => {

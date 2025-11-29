@@ -23,9 +23,8 @@ const ticketToGuess = ref("");
 const form: Ref<VForm | undefined> = ref();
 
 const ticketRules = [
-  (value: string) => !!value || "Fehler: Hier müsste eigentlich was stehen",
-  (value: string) =>
-    /^[A-Z]{2,}-\d+$/.test(value) || "Fehler: Muss im Format ^[A-Z]{2,}-\\d+$ sein",
+  (value: string) => !!value || "Error: Can not be empty",
+  (value: string) => /^[A-Z]{2,}-\d+$/.test(value) || "Error: ^[A-Z]{2,}-\\d+$ required",
 ];
 const canEstimate = computed(() => ticketToGuess.value !== "" && form.value?.isValid);
 
@@ -62,18 +61,12 @@ function doLetEstimate() {
         <v-text-field
           v-model="ticketToGuess"
           bg-color="white"
-          label="Ticket zum schätzen"
+          label="Ticket to guess"
           :rules="ticketRules"
           placeholder="CC-0000"
           required
         />
-        <v-btn
-          width="100%"
-          type="submit"
-          :disabled="!canEstimate"
-        >
-          Schätzen lassen
-        </v-btn>
+        <v-btn width="100%" type="submit" :disabled="!canEstimate"> Estimate </v-btn>
       </v-form>
       <v-progress-circular
         v-if="props.hasTicketToGuess && !props.showAllGuesses"
@@ -85,29 +78,15 @@ function doLetEstimate() {
         color="teal"
       >
         <template #default>
-          <v-btn
-            color="teal"
-            :disabled="!roundCanBeRevealed"
-            @click="emit('reveal')"
-          >
-            {{ props.actualTicketToGuess }} auflösen
+          <v-btn color="teal" :disabled="!roundCanBeRevealed" @click="emit('reveal')">
+            Reveal
           </v-btn>
         </template>
       </v-progress-circular>
-      <v-btn
-        v-if="props.showAllGuesses"
-        width="100%"
-        color="blue-grey"
-        @click="emit('new-round')"
-      >
-        Neue Runde
+      <v-btn v-if="props.showAllGuesses" width="100%" color="blue-grey" @click="emit('new-round')">
+        New round
       </v-btn>
-      <p
-        v-else-if="!hasDevelopersInRoom"
-        class="text-center"
-      >
-        Waiting for developers...
-      </p>
+      <p v-else-if="!hasDevelopersInRoom" class="text-center">Waiting for developers...</p>
     </div>
   </v-container>
 </template>
