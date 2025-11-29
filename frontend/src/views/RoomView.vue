@@ -40,6 +40,16 @@ const isConnected = computed(() => websocketStore.isConnected);
 
 const roundIsWaiting = computed(() => roundState.value === RoundState.Waiting);
 
+const roundStateAsReadableString = computed(() => {
+  if (roundState.value === RoundState.Waiting) {
+    return "Waiting for people to join…";
+  } else if (roundState.value === RoundState.InProgress) {
+    return `Currently guessing ${ticketToGuess.value}`;
+  } else {
+    return "Everyone guessed!";
+  }
+});
+
 function sendMessage(
   type: SendableWebsocketMessageType,
   data: string | number | null | { password?: string; key: string },
@@ -141,7 +151,10 @@ onMounted(async () => {
   </div>
 
   <div v-else>
-    <v-dialog v-model="showSetRoomPasswordDialog" max-width="500">
+    <v-dialog
+      v-model="showSetRoomPasswordDialog"
+      max-width="500"
+    >
       <v-card>
         <v-card-title>Set password</v-card-title>
         <v-card-text>
@@ -155,8 +168,17 @@ onMounted(async () => {
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="red" @click="showSetRoomPasswordDialog = false"> Cancel </v-btn>
-          <v-btn :disabled="roomPassword.length === 0" color="green" @click="lockRoom">
+          <v-btn
+            color="red"
+            @click="showSetRoomPasswordDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            :disabled="roomPassword.length === 0"
+            color="green"
+            @click="lockRoom"
+          >
             Lock
           </v-btn>
         </v-card-actions>
@@ -165,16 +187,32 @@ onMounted(async () => {
 
     <v-toolbar rounded>
       <v-toolbar-title>
-        {{ roomIsLocked ? "private" : "public" }} room: {{ roomId }}
+        {{ roundStateAsReadableString }}
       </v-toolbar-title>
       <div v-if="roundIsWaiting">
-        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="copyPassword">
-          <v-tooltip activator="parent" location="bottom"> Copy password </v-tooltip>
+        <v-btn
+          v-if="permissions.room.canLock && roomIsLocked"
+          @click="copyPassword"
+        >
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Copy password
+          </v-tooltip>
           <v-icon>mdi-content-copy</v-icon>
         </v-btn>
 
-        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="openRoom">
-          <v-tooltip activator="parent" location="bottom"> Unlock room </v-tooltip>
+        <v-btn
+          v-if="permissions.room.canLock && roomIsLocked"
+          @click="openRoom"
+        >
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Unlock room
+          </v-tooltip>
           <v-icon>mdi-key</v-icon>
         </v-btn>
 
@@ -182,12 +220,22 @@ onMounted(async () => {
           v-if="permissions.room.canLock && !roomIsLocked"
           @click="showSetRoomPasswordDialog = true"
         >
-          <v-tooltip activator="parent" location="bottom"> Lock room </v-tooltip>
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Lock room
+          </v-tooltip>
           <v-icon>mdi-lock</v-icon>
         </v-btn>
 
         <v-btn @click="leaveRoom">
-          <v-tooltip activator="parent" location="bottom"> Leave room </v-tooltip>
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Leave room
+          </v-tooltip>
           <v-icon>mdi-location-exit</v-icon>
         </v-btn>
       </div>
@@ -210,7 +258,10 @@ onMounted(async () => {
       @skip="sendMessage('skip', null)"
     />
 
-    <v-snackbar v-model="showSnackbar" :timeout="3000">
+    <v-snackbar
+      v-model="showSnackbar"
+      :timeout="3000"
+    >
       {{ snackbarText }}
     </v-snackbar>
   </div>
