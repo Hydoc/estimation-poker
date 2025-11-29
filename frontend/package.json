@@ -10,8 +10,7 @@
     "test": "vitest run --coverage",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
-    "lint": "eslint . --fix --ignore-pattern gitignore",
-    "format": "prettier --write ."
+    "lint": "eslint . --fix --ignore-pattern gitignore"
   },
   "dependencies": {
     "@pinia/testing": "^1.0.3",

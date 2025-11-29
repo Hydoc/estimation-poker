@@ -27,15 +27,11 @@ tasks:
   check-frontend-test:
     cmd: docker compose exec frontend pnpm test
 
-  check-frontend-format:
-    cmd: docker compose exec frontend pnpm format
-
   check-frontend-lint:
     cmd: docker compose exec frontend pnpm lint
 
   check-frontend:
     cmds:
-      - task: check-frontend-format
       - task: check-frontend-lint
       - task: check-frontend-test
 
