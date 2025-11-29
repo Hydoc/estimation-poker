@@ -2,7 +2,7 @@
 import { type SendableWebsocketMessageType, useWebsocketStore } from "@/stores/websocket";
 import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, type Ref, watch } from "vue";
 import { Role, RoundState } from "@/components/types.ts";
 import RoomForm from "@/components/RoomForm.vue";
 
@@ -20,7 +20,6 @@ const passwordForRoom = ref("");
 const errorMessage = ref("");
 const roomIsLocked = computed(() => websocketStore.roomIsLocked);
 const usersInRoom = computed(() => websocketStore.usersInRoom);
-const roomId = computed(() => websocketStore.roomId);
 const queryRoomId = computed((): string => {
   if (Array.isArray(route.params.id)) {
     return route.params.id[0];
@@ -151,10 +150,7 @@ onMounted(async () => {
   </div>
 
   <div v-else>
-    <v-dialog
-      v-model="showSetRoomPasswordDialog"
-      max-width="500"
-    >
+    <v-dialog v-model="showSetRoomPasswordDialog" max-width="500">
       <v-card>
         <v-card-title>Set password</v-card-title>
         <v-card-text>
@@ -168,17 +164,8 @@ onMounted(async () => {
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            color="red"
-            @click="showSetRoomPasswordDialog = false"
-          >
-            Cancel
-          </v-btn>
-          <v-btn
-            :disabled="roomPassword.length === 0"
-            color="green"
-            @click="lockRoom"
-          >
+          <v-btn color="red" @click="showSetRoomPasswordDialog = false"> Cancel </v-btn>
+          <v-btn :disabled="roomPassword.length === 0" color="green" @click="lockRoom">
             Lock
           </v-btn>
         </v-card-actions>
@@ -190,29 +177,13 @@ onMounted(async () => {
         {{ roundStateAsReadableString }}
       </v-toolbar-title>
       <div v-if="roundIsWaiting">
-        <v-btn
-          v-if="permissions.room.canLock && roomIsLocked"
-          @click="copyPassword"
-        >
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Copy password
-          </v-tooltip>
+        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="copyPassword">
+          <v-tooltip activator="parent" location="bottom"> Copy password </v-tooltip>
           <v-icon>mdi-content-copy</v-icon>
         </v-btn>
 
-        <v-btn
-          v-if="permissions.room.canLock && roomIsLocked"
-          @click="openRoom"
-        >
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Unlock room
-          </v-tooltip>
+        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="openRoom">
+          <v-tooltip activator="parent" location="bottom"> Unlock room </v-tooltip>
           <v-icon>mdi-key</v-icon>
         </v-btn>
 
@@ -220,22 +191,12 @@ onMounted(async () => {
           v-if="permissions.room.canLock && !roomIsLocked"
           @click="showSetRoomPasswordDialog = true"
         >
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Lock room
-          </v-tooltip>
+          <v-tooltip activator="parent" location="bottom"> Lock room </v-tooltip>
           <v-icon>mdi-lock</v-icon>
         </v-btn>
 
         <v-btn @click="leaveRoom">
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Leave room
-          </v-tooltip>
+          <v-tooltip activator="parent" location="bottom"> Leave room </v-tooltip>
           <v-icon>mdi-location-exit</v-icon>
         </v-btn>
       </div>
@@ -258,12 +219,7 @@ onMounted(async () => {
       @skip="sendMessage('skip', null)"
     />
 
-    <v-snackbar
-      v-model="showSnackbar"
-      :timeout="3000"
-    >
-      {{ snackbarText }}
-    </v-snackbar>
+    <v-snackbar-queue v-model="websocketStore.notifications" :timeout="2000" color="gray" />
   </div>
 </template>
 

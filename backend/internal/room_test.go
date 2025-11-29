@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Hydoc/guess-dev/backend/internal/assert"
 	"github.com/google/uuid"
+
+	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
 func TestNewRoom(t *testing.T) {
@@ -267,7 +268,7 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 	}
 	go room.Run()
 
-	msg := newLeave()
+	msg := newLeave(client.Name)
 	room.Broadcast <- msg
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel

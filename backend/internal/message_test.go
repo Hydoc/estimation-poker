@@ -21,9 +21,9 @@ func TestMessage(t *testing.T) {
 		},
 		{
 			name:         "newLeave",
-			msg:          newLeave(),
+			msg:          newLeave("Test"),
 			expectedType: leave,
-			expectedData: nil,
+			expectedData: "Test",
 		},
 		{
 			name:         "newRoomLocked",

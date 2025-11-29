@@ -70,9 +70,10 @@ func newEstimate(ticket string) *Message {
 	}
 }
 
-func newLeave() *Message {
+func newLeave(name string) *Message {
 	return &Message{
 		Type: leave,
+		Data: name,
 	}
 }
 

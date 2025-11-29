@@ -39,6 +39,7 @@ type WebsocketStore = {
   permissions: Ref<Permissions>;
   roomIsLocked: Ref<boolean>;
   developerDone: Ref<DeveloperDone[]>;
+  notifications: Ref<string[]>;
 };
 
 export type SendableWebsocketMessageType =
@@ -87,6 +88,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const permissions: Ref<Permissions> = ref({ room: { canLock: false } });
   const roomIsLocked: Ref<boolean> = ref(false);
   const developerDone: Ref<DeveloperDone[]> = ref([]);
+  const notifications: Ref<string[]> = ref([]);
 
   const isConnected = computed(() => websocket.value !== null);
 
@@ -121,6 +123,9 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
       const decoded = JSON.parse(message.data) as ReceivableWebsocketMessage;
       switch (decoded.type) {
         case "leave":
+          await fetchUsersInRoom();
+          notifications.value.push(`${decoded.data} has left the room…`);
+          break;
         case "join":
         case "developer-skipped":
         case "developer-guessed":
@@ -308,5 +313,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     developerDone,
     createRoom,
     roomExists,
+    notifications,
   };
 });

@@ -25,29 +25,37 @@ const mostGuessedPercentage = computed(() => {
 </script>
 
 <template>
-  <v-bottom-sheet :model-value="true" inset height="250" :scrim="false">
+  <v-bottom-sheet
+    :model-value="true"
+    inset
+    height="250"
+    :scrim="false"
+  >
     <v-card>
       <v-card-text class="d-flex ga-5 pt-16 justify-center align-center">
-        <div v-for="(amountOfGuesses, stat) in stats" :key="stat">
+        <div
+          v-for="(amountOfGuesses, stat) in stats"
+          :key="stat"
+        >
           <div class="d-flex flex-column justify-center align-center ga-2">
-            <progress class="progress" :max="totalDevelopers" :value="amountOfGuesses" />
+            <progress
+              class="progress"
+              :max="totalDevelopers"
+              :value="amountOfGuesses"
+            />
             <div class="card">
               <span>
                 <strong v-if="stat > 0">{{ stat }}</strong>
                 <v-icon v-else>mdi-coffee</v-icon>
               </span>
             </div>
-            <span
-              ><strong
-                >{{ amountOfGuesses }}
-                {{ amountOfGuesses === 1 ? "Schätzung" : "Schätzungen" }}</strong
-              ></span
-            >
+            <span><strong>{{ amountOfGuesses }}
+              {{ amountOfGuesses === 1 ? "guess" : "guesses" }}</strong></span>
           </div>
         </div>
 
         <div class="d-flex flex-column justify-center align-center ga-3 pb-5 pl-4">
-          <strong class="agreement">Übereinstimmung:</strong>
+          <strong class="agreement">Agreement:</strong>
           <v-progress-circular
             size="50"
             color="teal"

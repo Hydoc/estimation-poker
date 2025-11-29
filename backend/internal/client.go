@@ -105,7 +105,7 @@ func HandleReveal(msg message.Message) (*message.Message, error) {
 func (client *Client) WebsocketReader() {
 	defer func() {
 		client.room.leave <- client
-		client.room.Broadcast <- newLeave()
+		client.room.Broadcast <- newLeave(client.Name)
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {
