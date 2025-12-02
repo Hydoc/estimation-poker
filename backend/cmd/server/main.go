@@ -62,6 +62,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go app.listenForRoomDestroy(ctx)
-	router := app.Routes()
+	router := app.routes()
 	logger.Error(http.ListenAndServe(":8080", router).Error())
 }

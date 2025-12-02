@@ -28,14 +28,12 @@ type application struct {
 	destroyRoom chan internal.RoomId
 }
 
-type envelope map[string]any
-
 func (app *application) withRequiredQueryParam(param string, next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		queryParam := request.URL.Query().Get(param)
 
 		if len(queryParam) == 0 || !request.URL.Query().Has(param) {
-			app.writeJson(writer, http.StatusBadRequest, envelope{"message": fmt.Sprintf("%s is missing in query", param)}, nil)
+			app.writeJSON(writer, http.StatusBadRequest, envelope{"message": fmt.Sprintf("%s is missing in query", param)}, nil)
 			return
 		}
 
@@ -48,8 +46,14 @@ func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, reque
 	defer app.mu.Unlock()
 
 	defer request.Body.Close()
-	roomId := request.PathValue("id")
-	actualRoom, ok := app.rooms[internal.RoomId(roomId)]
+
+	roomId, err := app.readIdParam(request)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
+
+	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
 		writer.WriteHeader(http.StatusForbidden)
 		return
@@ -59,18 +63,18 @@ func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, reque
 		Password string `json:"password"`
 	}
 
-	err := json.NewDecoder(request.Body).Decode(&input)
+	err = app.readJSON(writer, request, &input)
 	if err != nil {
-		app.writeJson(writer, http.StatusOK, envelope{"ok": false}, nil)
+		app.writeJSON(writer, http.StatusOK, envelope{"ok": false}, nil)
 		return
 	}
 
 	if actualRoom.Verify(input.Password) {
-		app.writeJson(writer, http.StatusOK, envelope{"ok": true}, nil)
+		app.writeJSON(writer, http.StatusOK, envelope{"ok": true}, nil)
 		return
 	}
 
-	app.writeJson(writer, http.StatusOK, envelope{"ok": false}, nil)
+	app.writeJSON(writer, http.StatusOK, envelope{"ok": false}, nil)
 }
 
 func (app *application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
@@ -86,7 +90,7 @@ func (app *application) handleFetchPermissions(writer http.ResponseWriter, reque
 	}
 
 	if actualRoom.NameOfCreator == username {
-		app.writeJson(writer, http.StatusOK, map[string]map[string]map[string]any{
+		app.writeJSON(writer, http.StatusOK, map[string]map[string]map[string]any{
 			"permissions": {
 				"room": {
 					"canLock": true,
@@ -97,7 +101,7 @@ func (app *application) handleFetchPermissions(writer http.ResponseWriter, reque
 		return
 	}
 
-	app.writeJson(writer, http.StatusOK, map[string]map[string]map[string]any{
+	app.writeJSON(writer, http.StatusOK, map[string]map[string]map[string]any{
 		"permissions": {
 			"room": {
 				"canLock": false,
@@ -110,18 +114,27 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	app.mu.Lock()
 	defer app.mu.Unlock()
 
-	name := request.URL.Query().Get("name")
+	var input struct {
+		name    string
+		guesses map[int]string
+	}
+
+	err := app.readJSON(writer, request, &input)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
 
 	roomId := uuid.New()
-	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, name)
+	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, input.name)
 	app.rooms[room.Id] = room
 	go room.Run()
 
-	app.writeJson(writer, http.StatusCreated, envelope{"id": roomId.String()}, nil)
+	app.writeJSON(writer, http.StatusCreated, envelope{"id": roomId.String()}, nil)
 }
 
 func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
-	app.writeJson(writer, http.StatusOK, app.guessConfig.Guesses, nil)
+	app.writeJSON(writer, http.StatusOK, app.guessConfig.Guesses, nil)
 }
 
 func (app *application) handleRoomExists(writer http.ResponseWriter, request *http.Request) {
@@ -129,7 +142,7 @@ func (app *application) handleRoomExists(writer http.ResponseWriter, request *ht
 	defer app.mu.Unlock()
 	roomId := request.PathValue("id")
 	_, ok := app.rooms[internal.RoomId(roomId)]
-	app.writeJson(writer, http.StatusOK, envelope{"exists": ok}, nil)
+	app.writeJSON(writer, http.StatusOK, envelope{"exists": ok}, nil)
 }
 
 func (app *application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
@@ -139,13 +152,13 @@ func (app *application) handleFetchRoomState(writer http.ResponseWriter, request
 	roomId := request.PathValue("id")
 	actualRoom, ok := app.rooms[internal.RoomId(roomId)]
 	if !ok {
-		app.writeJson(writer, http.StatusOK, envelope{
+		app.writeJSON(writer, http.StatusOK, envelope{
 			"inProgress": false,
 			"isLocked":   false,
 		}, nil)
 		return
 	}
-	app.writeJson(writer, http.StatusOK, envelope{
+	app.writeJSON(writer, http.StatusOK, envelope{
 		"inProgress": actualRoom.InProgress,
 		"isLocked":   actualRoom.IsLocked,
 	}, nil)
@@ -159,17 +172,17 @@ func (app *application) handleUserInRoomExists(writer http.ResponseWriter, reque
 	name := request.URL.Query().Get("name")
 
 	if _, ok := app.rooms[internal.RoomId(roomId)]; !ok {
-		app.writeJson(writer, http.StatusOK, envelope{"exists": false}, nil)
+		app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
 		return
 	}
 
 	for client := range app.rooms[internal.RoomId(roomId)].Clients {
 		if client.Name == name {
-			app.writeJson(writer, http.StatusConflict, envelope{"exists": true}, nil)
+			app.writeJSON(writer, http.StatusConflict, envelope{"exists": true}, nil)
 			return
 		}
 	}
-	app.writeJson(writer, http.StatusOK, envelope{"exists": false}, nil)
+	app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
 }
 
 func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
@@ -182,7 +195,7 @@ func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 	sort.Slice(activeRooms, func(i, j int) bool {
 		return activeRooms[i].Created.Before(activeRooms[j].Created)
 	})
-	app.writeJson(writer, http.StatusOK, envelope{"rooms": activeRooms}, nil)
+	app.writeJSON(writer, http.StatusOK, envelope{"rooms": activeRooms}, nil)
 }
 
 func (app *application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
@@ -193,7 +206,7 @@ func (app *application) handleFetchUsers(writer http.ResponseWriter, request *ht
 
 	room, ok := app.rooms[internal.RoomId(roomId)]
 	if !ok {
-		app.writeJson(writer, http.StatusOK, []map[string]any{}, nil)
+		app.writeJSON(writer, http.StatusOK, []map[string]any{}, nil)
 		return
 	}
 
@@ -211,7 +224,7 @@ func (app *application) handleFetchUsers(writer http.ResponseWriter, request *ht
 		out = append(out, client.ToJson())
 	}
 
-	app.writeJson(writer, http.StatusOK, out, nil)
+	app.writeJSON(writer, http.StatusOK, out, nil)
 }
 
 func (app *application) handleWs(writer http.ResponseWriter, request *http.Request) {
@@ -220,20 +233,20 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 
 	roomId, err := uuid.Parse(request.PathValue("id"))
 	if err != nil {
-		app.writeJson(writer, http.StatusBadRequest, envelope{"message": "roomId is invalid"}, nil)
+		app.writeJSON(writer, http.StatusBadRequest, envelope{"message": "roomId is invalid"}, nil)
 		return
 	}
 
 	name := request.URL.Query().Get("name")
 
 	if utf8.RuneCountInString(name) > 15 {
-		app.writeJson(writer, http.StatusBadRequest, envelope{"message": "name must be smaller or equal to 15"}, nil)
+		app.writeJSON(writer, http.StatusBadRequest, envelope{"message": "name must be smaller or equal to 15"}, nil)
 		return
 	}
 
 	clientRoom, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
-		app.writeJson(writer, http.StatusNotFound, envelope{"message": "room not found"}, nil)
+		app.writeJSON(writer, http.StatusNotFound, envelope{"message": "room not found"}, nil)
 		return
 	}
 
