@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -81,11 +81,21 @@ func (app *application) handleFetchPermissions(writer http.ResponseWriter, reque
 	app.mu.Lock()
 	defer app.mu.Unlock()
 
-	roomId := request.PathValue("id")
-	username := request.PathValue("username")
-	actualRoom, ok := app.rooms[internal.RoomId(roomId)]
+	roomId, err := app.readIdParam(request)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
+
+	username, err := app.readNameParam(request)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
+
+	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
-		writer.WriteHeader(http.StatusNotFound)
+		app.notFoundResponse(writer, request)
 		return
 	}
 
@@ -149,8 +159,16 @@ func (app *application) handleFetchRoomState(writer http.ResponseWriter, request
 	app.mu.Lock()
 	defer app.mu.Unlock()
 
-	roomId := request.PathValue("id")
-	actualRoom, ok := app.rooms[internal.RoomId(roomId)]
+	roomId, err := app.readIdParam(request)
+	if err != nil {
+		app.writeJSON(writer, http.StatusOK, envelope{
+			"inProgress": false,
+			"isLocked":   false,
+		}, nil)
+		return
+	}
+
+	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
 		app.writeJSON(writer, http.StatusOK, envelope{
 			"inProgress": false,
@@ -167,16 +185,21 @@ func (app *application) handleFetchRoomState(writer http.ResponseWriter, request
 func (app *application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
 	app.mu.Lock()
 	defer app.mu.Unlock()
-	roomId := request.PathValue("id")
+
+	roomId, err := app.readIdParam(request)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
 
 	name := request.URL.Query().Get("name")
 
-	if _, ok := app.rooms[internal.RoomId(roomId)]; !ok {
+	if _, ok := app.rooms[internal.RoomId(roomId.String())]; !ok {
 		app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
 		return
 	}
 
-	for client := range app.rooms[internal.RoomId(roomId)].Clients {
+	for client := range app.rooms[internal.RoomId(roomId.String())].Clients {
 		if client.Name == name {
 			app.writeJSON(writer, http.StatusConflict, envelope{"exists": true}, nil)
 			return
@@ -199,12 +222,16 @@ func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 }
 
 func (app *application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
-	roomId := request.PathValue("id")
+	roomId, err := app.readIdParam(request)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
 
 	app.mu.Lock()
 	defer app.mu.Unlock()
 
-	room, ok := app.rooms[internal.RoomId(roomId)]
+	room, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
 		app.writeJSON(writer, http.StatusOK, []map[string]any{}, nil)
 		return
@@ -231,22 +258,22 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 	app.mu.Lock()
 	defer app.mu.Unlock()
 
-	roomId, err := uuid.Parse(request.PathValue("id"))
+	roomId, err := app.readIdParam(request)
 	if err != nil {
-		app.writeJSON(writer, http.StatusBadRequest, envelope{"message": "roomId is invalid"}, nil)
+		app.badRequestResponse(writer, request, err)
 		return
 	}
 
 	name := request.URL.Query().Get("name")
 
 	if utf8.RuneCountInString(name) > 15 {
-		app.writeJSON(writer, http.StatusBadRequest, envelope{"message": "name must be smaller or equal to 15"}, nil)
+		app.badRequestResponse(writer, request, errors.New("name must be smaller or equal to 15"))
 		return
 	}
 
 	clientRoom, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
-		app.writeJSON(writer, http.StatusNotFound, envelope{"message": "room not found"}, nil)
+		app.notFoundResponse(writer, request)
 		return
 	}
 

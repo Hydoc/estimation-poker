@@ -48,7 +48,7 @@ func TestApplication_handleRoomExists(t *testing.T) {
 		}
 
 		t.Run(test.name, func(t *testing.T) {
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/exists", test.roomId), nil)
 
@@ -104,7 +104,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 		}
 
 		t.Run(test.name, func(t *testing.T) {
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/state", test.room), nil)
 
@@ -138,7 +138,7 @@ func TestApplication_createNewRoom(t *testing.T) {
 				rooms: make(map[internal.RoomId]*internal.Room),
 			}
 
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/room/create?name=test", nil)
 
@@ -226,7 +226,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 			app := &application{
 				rooms: test.rooms,
 			}
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, test.url, nil)
 
@@ -357,7 +357,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 				rooms:       test.rooms,
 				destroyRoom: nil,
 			}
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/users", test.roomId), nil)
 
@@ -464,7 +464,7 @@ func TestApplication_handleWs(t *testing.T) {
 				rooms:       test.rooms,
 				destroyRoom: make(chan internal.RoomId),
 			}
-			router := app.Routes()
+			router := app.routes()
 
 			server := httptest.NewServer(router)
 			defer server.Close()
@@ -533,7 +533,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 				rooms:       test.rooms,
 				destroyRoom: nil,
 			}
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/room/rooms", nil)
 
@@ -609,7 +609,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 			app := &application{
 				guessConfig: test.config,
 			}
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
 
@@ -722,7 +722,7 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodPost, test.request, nil)
 			body := test.body()
@@ -796,7 +796,7 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			router := app.Routes()
+			router := app.routes()
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequest(http.MethodGet, test.request, nil)
 

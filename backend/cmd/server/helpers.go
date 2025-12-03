@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net/http"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -20,9 +21,19 @@ func (app *application) readIdParam(request *http.Request) (uuid.UUID, error) {
 
 	id, err := uuid.Parse(params.ByName("id"))
 	if err != nil {
-		return uuid.Nil, errors.New("invalid name parameter")
+		return uuid.Nil, errors.New("invalid id parameter")
 	}
 	return id, nil
+}
+
+func (app *application) readNameParam(request *http.Request) (string, error) {
+	params := httprouter.ParamsFromContext(request.Context())
+
+	username := params.ByName("username")
+	if utf8.RuneCountInString(username) < 1 {
+		return "", errors.New("invalid username parameter")
+	}
+	return username, nil
 }
 
 func (app *application) writeJSON(writer http.ResponseWriter, status int, data any, headers http.Header) error {
