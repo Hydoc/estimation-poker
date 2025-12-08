@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Hydoc/go-message"
+
 	"github.com/Hydoc/guess-dev/backend/internal"
 )
 
@@ -87,11 +88,7 @@ func (app *application) handleFetchPermissions(writer http.ResponseWriter, reque
 		return
 	}
 
-	username, err := app.readNameParam(request)
-	if err != nil {
-		app.badRequestResponse(writer, request, err)
-		return
-	}
+	username := request.URL.Query().Get("name")
 
 	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
@@ -125,8 +122,8 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	defer app.mu.Unlock()
 
 	var input struct {
-		name    string
-		guesses map[int]string
+		Creator string         `json:"creator"`
+		Guesses map[int]string `json:"guesses"`
 	}
 
 	err := app.readJSON(writer, request, &input)
@@ -136,7 +133,7 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	}
 
 	roomId := uuid.New()
-	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, input.name)
+	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, input.Creator)
 	app.rooms[room.Id] = room
 	go room.Run()
 
@@ -150,8 +147,12 @@ func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *htt
 func (app *application) handleRoomExists(writer http.ResponseWriter, request *http.Request) {
 	app.mu.Lock()
 	defer app.mu.Unlock()
-	roomId := request.PathValue("id")
-	_, ok := app.rooms[internal.RoomId(roomId)]
+	roomId, err := app.readIdParam(request)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
+	_, ok := app.rooms[internal.RoomId(roomId.String())]
 	app.writeJSON(writer, http.StatusOK, envelope{"exists": ok}, nil)
 }
 
