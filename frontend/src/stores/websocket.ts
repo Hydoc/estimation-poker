@@ -176,7 +176,14 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function createRoom(name: string): Promise<string> {
-    const response = await fetch(`/api/estimation/room/create?name=${name}`);
+    const response = await fetch("/api/estimation/room", {
+      method: "POST",
+      body: JSON.stringify({
+        creator: name,
+        guesses: {},
+      }),
+    });
+
     if (!response.ok) {
       throw new Error("Could not create room");
     }
@@ -239,7 +246,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function fetchActiveRooms(): Promise<ActiveRoom[]> {
-    const response = await fetch("/api/estimation/room/rooms");
+    const response = await fetch("/api/estimation/rooms");
     if (!response.ok) {
       throw new Error("Could not find active rooms");
     }
