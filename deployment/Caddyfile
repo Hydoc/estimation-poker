@@ -8,7 +8,7 @@
 	header ?Access-Control-Allow-Origin *
 
 	route {
-		reverse_proxy /api/* http://localhost:8080
+		reverse_proxy /v1/* http://localhost:8080
 
 		root * /opt/frontend
 		try_files {path} index.html

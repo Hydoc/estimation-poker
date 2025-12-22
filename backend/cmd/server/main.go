@@ -18,7 +18,7 @@ import (
 const (
 	defaultGuesses            = "1,2,3,4,5"
 	defaultGuessesDescription = "Up to 4h,Up to 8h,Up to 3 days,Up to 5 days,More than 5 days"
-	version                   = "1.20.0"
+	version                   = "1.21.0"
 )
 
 type config struct {

@@ -52,7 +52,7 @@ func TestApplication_handleRoomExists(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			router := app.routes()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/exists", test.roomId), nil)
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/room/%s/exists", test.roomId), nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -108,7 +108,7 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			router := app.routes()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/state", test.room), nil)
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/room/%s/state", test.room), nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -156,7 +156,7 @@ func TestApplication_createNewRoom(t *testing.T) {
 
 			router := app.routes()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodPost, "/api/estimation/room", bytes.NewReader(body))
+			request := httptest.NewRequest(http.MethodPost, "/v1/room", bytes.NewReader(body))
 
 			router.ServeHTTP(recorder, request)
 
@@ -183,7 +183,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 	}{
 		{
 			name: "not find client when clients are empty",
-			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=Bla", roomId),
+			url:  fmt.Sprintf("/v1/room/%s/users/exists?name=Bla", roomId),
 			expectation: map[string]any{
 				"exists": false,
 			},
@@ -196,7 +196,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		},
 		{
 			name: "find client when client exists",
-			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=%s", roomId, client.Name),
+			url:  fmt.Sprintf("/v1/room/%s/users/exists?name=%s", roomId, client.Name),
 			expectation: map[string]any{
 				"exists": true,
 			},
@@ -211,7 +211,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		},
 		{
 			name:        "error when trying to access without name",
-			url:         fmt.Sprintf("/api/estimation/room/%s/users/exists?name=", roomId),
+			url:         fmt.Sprintf("/v1/room/%s/users/exists?name=", roomId),
 			expectation: nil,
 			rooms: map[internal.RoomId]*internal.Room{
 				internal.RoomId(roomId): {
@@ -227,7 +227,7 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 		},
 		{
 			name: "not find client when no room with id was found",
-			url:  fmt.Sprintf("/api/estimation/room/%s/users/exists?name=Test", roomId),
+			url:  fmt.Sprintf("/v1/room/%s/users/exists?name=Test", roomId),
 			expectation: map[string]any{
 				"exists": false,
 			},
@@ -376,7 +376,7 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 			}
 			router := app.routes()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/estimation/room/%s/users", test.roomId), nil)
+			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/room/%s/users", test.roomId), nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -403,7 +403,7 @@ func TestApplication_handleWs(t *testing.T) {
 	}{
 		{
 			name: "connect as developer",
-			url:  "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/developer?name=Test",
+			url:  "/v1/room/ffb25a3d-a5db-42b7-9733-345f61167077/developer?name=Test",
 			rooms: map[internal.RoomId]*internal.Room{
 				internal.RoomId("ffb25a3d-a5db-42b7-9733-345f61167077"): {
 					Id:         "ffb25a3d-a5db-42b7-9733-345f61167077",
@@ -419,7 +419,7 @@ func TestApplication_handleWs(t *testing.T) {
 		},
 		{
 			name: "connect as product owner",
-			url:  "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=Test",
+			url:  "/v1/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=Test",
 			rooms: map[internal.RoomId]*internal.Room{
 				internal.RoomId("ffb25a3d-a5db-42b7-9733-345f61167077"): {
 					Id:         "ffb25a3d-a5db-42b7-9733-345f61167077",
@@ -435,7 +435,7 @@ func TestApplication_handleWs(t *testing.T) {
 		},
 		{
 			name:  "not connecting due to name too long",
-			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=whateverthisisitiswaytoooooooooooolong",
+			url:   "/v1/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=whateverthisisitiswaytoooooooooooolong",
 			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"error": "name must be smaller or equal to 15",
@@ -444,7 +444,7 @@ func TestApplication_handleWs(t *testing.T) {
 		},
 		{
 			name:  "not connecting due to missing name",
-			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=",
+			url:   "/v1/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=",
 			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"message": "name is missing in query",
@@ -455,7 +455,7 @@ func TestApplication_handleWs(t *testing.T) {
 		},
 		{
 			name:  "not connecting due to invalid roomId not found",
-			url:   "/api/estimation/room/invalid/product-owner?name=test",
+			url:   "/v1/room/invalid/product-owner?name=test",
 			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"error": "invalid id parameter",
@@ -464,7 +464,7 @@ func TestApplication_handleWs(t *testing.T) {
 		},
 		{
 			name:  "not connecting because room not found",
-			url:   "/api/estimation/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=test",
+			url:   "/v1/room/ffb25a3d-a5db-42b7-9733-345f61167077/product-owner?name=test",
 			rooms: make(map[internal.RoomId]*internal.Room),
 			expectedError: map[string]string{
 				"error": "the requested resource could not be found",
@@ -552,7 +552,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 			}
 			router := app.routes()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, "/api/estimation/rooms", nil)
+			request := httptest.NewRequest(http.MethodGet, "/v1/rooms", nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -628,7 +628,7 @@ func TestApplication_handlePossibleGuesses(t *testing.T) {
 			}
 			router := app.routes()
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, "/api/estimation/possible-guesses", nil)
+			request := httptest.NewRequest(http.MethodGet, "/v1/possible-guesses", nil)
 
 			router.ServeHTTP(recorder, request)
 
@@ -679,7 +679,7 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 			body: func() *bytes.Buffer {
 				return nil
 			},
-			request: "/api/estimation/room/50e15380-1475-4ec6-abb0-f1e22929a8e5/authenticate",
+			request: "/v1/room/50e15380-1475-4ec6-abb0-f1e22929a8e5/authenticate",
 		},
 		{
 			name:     "ok = false when body can not be decoded",
@@ -688,7 +688,7 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 			body: func() *bytes.Buffer {
 				return bytes.NewBuffer([]byte(""))
 			},
-			request: "/api/estimation/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
+			request: "/v1/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
 		},
 		{
 			name:     "ok = true when password matches",
@@ -704,7 +704,7 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 				}
 				return &buf
 			},
-			request: "/api/estimation/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
+			request: "/v1/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
 		},
 		{
 			name:     "ok = false when password does not match",
@@ -720,7 +720,7 @@ func TestApplication_handleRoomAuthenticate(t *testing.T) {
 				}
 				return &buf
 			},
-			request: "/api/estimation/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
+			request: "/v1/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
 		},
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("helo world"), bcrypt.DefaultCost)
@@ -773,7 +773,7 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 			name:     "not found when room not found",
 			wantCode: http.StatusBadRequest,
 			wantBody: nil,
-			request:  "/api/estimation/room/1244132/permissions?name=test",
+			request:  "/v1/room/1244132/permissions?name=test",
 		},
 		{
 			name:     "correct permissions when user is creator of room",
@@ -786,7 +786,7 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 					},
 				},
 			},
-			request: fmt.Sprintf("/api/estimation/room/%s/permissions?name=bla", id.String()),
+			request: fmt.Sprintf("/v1/room/%s/permissions?name=bla", id.String()),
 		},
 		{
 			name:     "correct permissions when user is not creator of room",
@@ -798,7 +798,7 @@ func TestApplication_handleFetchPermissions(t *testing.T) {
 					},
 				},
 			},
-			request: fmt.Sprintf("/api/estimation/room/%s/permissions?name=any-other", id.String()),
+			request: fmt.Sprintf("/v1/room/%s/permissions?name=any-other", id.String()),
 		},
 	}
 

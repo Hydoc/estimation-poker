@@ -42,7 +42,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     expect(websocketUrl).equal(
-      "ws://localhost:3000/api/estimation/room/Test/product-owner?name=ABC",
+      "ws://localhost:3000/v1/room/Test/product-owner?name=ABC",
     );
     expect(websocketStore.username).equal("ABC");
     expect(websocketStore.userRole).equal(Role.ProductOwner);
@@ -58,7 +58,7 @@ describe("Websocket Store", () => {
   it("should connect as developer", async () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.Developer, "Test");
-    expect(websocketUrl).equal("ws://localhost:3000/api/estimation/room/Test/developer?name=ABC");
+    expect(websocketUrl).equal("ws://localhost:3000/v1/room/Test/developer?name=ABC");
   });
 
   it("should send a message", async () => {
@@ -104,7 +104,7 @@ describe("Websocket Store", () => {
     });
 
     expect(websocketStore.usersInRoom).deep.equal(usersInRoom);
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/users");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/users");
   });
 
   it("should fetch users in room when leave message appeared", async () => {
@@ -124,7 +124,7 @@ describe("Websocket Store", () => {
     });
 
     expect(websocketStore.usersInRoom).deep.equal(usersInRoom);
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/users");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/users");
   });
 
   it("should fetch users in room when developer-guessed message appeared", async () => {
@@ -144,7 +144,7 @@ describe("Websocket Store", () => {
     });
 
     expect(websocketStore.usersInRoom).deep.equal(usersInRoom);
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/users");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/users");
   });
 
   it("should update round state and ticket to guess when estimate appears", async () => {
@@ -192,7 +192,7 @@ describe("Websocket Store", () => {
     await websocketOnMessage({
       data: JSON.stringify({ type: "everyone-done" }),
     });
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/users");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/users");
     expect(websocketStore.roundState).equal(RoundState.End);
   });
 
@@ -216,7 +216,7 @@ describe("Websocket Store", () => {
       data: JSON.stringify({ type: "room-locked" }),
     });
 
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/state");
     expect(websocketStore.roomIsLocked).to.be.true;
   });
 
@@ -231,7 +231,7 @@ describe("Websocket Store", () => {
       data: JSON.stringify({ type: "room-opened" }),
     });
 
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/state");
     expect(websocketStore.roomIsLocked).to.be.false;
   });
 
@@ -258,7 +258,7 @@ describe("Websocket Store", () => {
     expect(websocketStore.guess).equal(0);
     expect(websocketStore.roundState).equal(RoundState.Waiting);
     expect(websocketStore.showAllGuesses).to.be.false;
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/users");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/users");
   });
 
   it("should close when error occured", async () => {
@@ -309,7 +309,7 @@ describe("Websocket Store", () => {
     expect(actual).to.be.true;
     expect(global.fetch).toHaveBeenNthCalledWith(
       1,
-      "/api/estimation/room/Blub/users/exists?name=Bla",
+      "/v1/room/Blub/users/exists?name=Bla",
     );
   });
 
@@ -322,7 +322,7 @@ describe("Websocket Store", () => {
     expect(actual).to.be.false;
     expect(global.fetch).toHaveBeenNthCalledWith(
       1,
-      "/api/estimation/room/Blub/users/exists?name=Bla",
+      "/v1/room/Blub/users/exists?name=Bla",
     );
   });
 
@@ -333,7 +333,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const actual = await websocketStore.isRoundInRoomInProgress("Blub");
     expect(actual).to.be.false;
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Blub/state");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Blub/state");
   });
 
   it("should return true when round in room in progress", async () => {
@@ -343,7 +343,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const actual = await websocketStore.isRoundInRoomInProgress("Blub");
     expect(actual).to.be.true;
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Blub/state");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Blub/state");
   });
 
   it("should fetch active rooms", async () => {
@@ -366,7 +366,7 @@ describe("Websocket Store", () => {
         playerCount: 1,
       },
     ]);
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/rooms");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/rooms");
   });
 
   it("should fetch passwordMatchesRoom when password matches", async () => {
@@ -377,7 +377,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const matches = await websocketStore.passwordMatchesRoom("abc", "top secret");
     expect(matches).to.be.true;
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/authenticate", {
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/abc/authenticate", {
       method: "POST",
       body: JSON.stringify({ password: "top secret" }),
     });
@@ -391,7 +391,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const matches = await websocketStore.passwordMatchesRoom("abc", "top secret");
     expect(matches).to.be.false;
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/authenticate", {
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/abc/authenticate", {
       method: "POST",
       body: JSON.stringify({ password: "top secret" }),
     });
@@ -404,7 +404,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const matches = await websocketStore.passwordMatchesRoom("abc", "top secret");
     expect(matches).to.be.false;
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/abc/authenticate", {
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/abc/authenticate", {
       method: "POST",
       body: JSON.stringify({ password: "top secret" }),
     });
@@ -427,7 +427,7 @@ describe("Websocket Store", () => {
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketStore.fetchPermissions();
 
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/permissions?name=ABC");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/permissions?name=ABC");
     expect(websocketStore.permissions).deep.equal({
       room: {
         canLock: true,
@@ -445,7 +445,7 @@ describe("Websocket Store", () => {
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketStore.fetchPermissions();
 
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/permissions?name=ABC");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/permissions?name=ABC");
     expect(websocketStore.permissions).deep.equal({
       room: {
         canLock: false,
@@ -464,7 +464,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     const actual = await websocketStore.fetchRoomIsLocked("Test");
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/state");
     expect(actual).to.be.true;
   });
 
@@ -476,7 +476,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     const actual = await websocketStore.fetchRoomIsLocked("Test");
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/state");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/state");
     expect(actual).to.be.false;
   });
 
@@ -500,7 +500,7 @@ describe("Websocket Store", () => {
       { guess: 4, description: "Bis zu 5 Tagen" },
       { guess: 5, description: "Mehr als 5 Tage" },
     ]);
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/possible-guesses");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/possible-guesses");
   });
 
   it("should reset possible guesses when error occurred", async () => {
@@ -510,6 +510,6 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.fetchPossibleGuesses();
     expect(websocketStore.possibleGuesses).deep.equal([]);
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/possible-guesses");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/possible-guesses");
   });
 });

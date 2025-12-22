@@ -104,9 +104,9 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     userRoomId.value = roomId;
 
     const roleUrl = role === Role.Developer ? "developer" : "product-owner";
-    let wsUrl = `wss://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`;
+    let wsUrl = `wss://${window.location.host}/v1/room/${roomId}/${roleUrl}?name=${name}`;
     if (window.location.protocol !== "https:") {
-      wsUrl = `ws://${window.location.host}/api/estimation/room/${roomId}/${roleUrl}?name=${name}`;
+      wsUrl = `ws://${window.location.host}/v1/room/${roomId}/${roleUrl}?name=${name}`;
     }
     websocket.value = new WebSocket(wsUrl);
     await waitForOpenConnection(websocket.value);
@@ -176,7 +176,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function createRoom(name: string): Promise<string> {
-    const response = await fetch("/api/estimation/room", {
+    const response = await fetch("/v1/room", {
       method: "POST",
       body: JSON.stringify({
         creator: name,
@@ -208,22 +208,22 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${roomId}/users/exists?name=${name}`);
+    const response = await fetch(`/v1/room/${roomId}/users/exists?name=${name}`);
     return ((await response.json()) as { exists: boolean }).exists;
   }
 
   async function isRoundInRoomInProgress(roomId: string): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${roomId}/state`);
+    const response = await fetch(`/v1/room/${roomId}/state`);
     return ((await response.json()) as { inProgress: boolean }).inProgress;
   }
 
   async function roomExists(roomId: string): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${roomId}/exists`);
+    const response = await fetch(`/v1/room/${roomId}/exists`);
     return ((await response.json()) as { exists: boolean }).exists;
   }
 
   async function passwordMatchesRoom(roomId: string, password: string): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${roomId}/authenticate`, {
+    const response = await fetch(`/v1/room/${roomId}/authenticate`, {
       method: "POST",
       body: JSON.stringify({ password }),
     });
@@ -236,7 +236,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function fetchUsersInRoom() {
-    const response = await fetch(`/api/estimation/room/${userRoomId.value}/users`);
+    const response = await fetch(`/v1/room/${userRoomId.value}/users`);
     if (!response.ok) {
       usersInRoom.value = [];
       return;
@@ -246,7 +246,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function fetchActiveRooms(): Promise<ActiveRoom[]> {
-    const response = await fetch("/api/estimation/rooms");
+    const response = await fetch("/v1/rooms");
     if (!response.ok) {
       throw new Error("Could not find active rooms");
     }
@@ -256,7 +256,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function fetchPossibleGuesses() {
-    const response = await fetch("/api/estimation/possible-guesses");
+    const response = await fetch("/v1/possible-guesses");
     if (!response.ok) {
       possibleGuesses.value = [];
       return;
@@ -267,7 +267,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
 
   async function fetchPermissions(): Promise<void> {
     const response = await fetch(
-      `/api/estimation/room/${userRoomId.value}/permissions?name=${username.value}`,
+      `/v1/room/${userRoomId.value}/permissions?name=${username.value}`,
     );
     if (!response.ok) {
       permissions.value = {
@@ -282,7 +282,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function fetchRoomIsLocked(roomId: string): Promise<boolean> {
-    const response = await fetch(`/api/estimation/room/${roomId}/state`);
+    const response = await fetch(`/v1/room/${roomId}/state`);
     if (!response.ok) {
       roomIsLocked.value = false;
       return roomIsLocked.value;
