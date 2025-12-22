@@ -21,5 +21,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/api/estimation/room/:id/permissions", app.withRequiredQueryParam("name", app.handleFetchPermissions))
 	router.HandlerFunc(http.MethodGet, "/api/estimation/possible-guesses", app.handlePossibleGuesses)
 
-	return router
+	router.HandlerFunc(http.MethodGet, "/api/estimation/health", app.healthcheckHandler)
+
+	return app.recoverPanic(router)
 }

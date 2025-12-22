@@ -4,43 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 
-	"github.com/Hydoc/go-message"
-
 	"github.com/Hydoc/guess-dev/backend/internal"
 )
-
-type application struct {
-	mu sync.Mutex
-
-	bus         message.Bus
-	logger      *slog.Logger
-	guessConfig *internal.GuessConfig
-	rooms       map[internal.RoomId]*internal.Room
-	destroyRoom chan internal.RoomId
-}
-
-func (app *application) withRequiredQueryParam(param string, next http.HandlerFunc) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		queryParam := request.URL.Query().Get(param)
-
-		if len(queryParam) == 0 || !request.URL.Query().Has(param) {
-			app.writeJSON(writer, http.StatusBadRequest, envelope{"message": fmt.Sprintf("%s is missing in query", param)}, nil)
-			return
-		}
-
-		next.ServeHTTP(writer, request)
-	}
-}
 
 func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, request *http.Request) {
 	app.mu.Lock()

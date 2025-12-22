@@ -120,10 +120,12 @@ func (room *Room) Run() {
 			room.Clients[client] = true
 			room.clientMu.Unlock()
 		case client := <-room.leave:
+			room.clientMu.Lock()
 			delete(room.Clients, client)
 			if len(room.Clients) == 0 {
 				room.destroy <- room.Id
 			}
+			room.clientMu.Unlock()
 		case msg := <-room.Broadcast:
 			switch msg.Type {
 			case Estimate:
