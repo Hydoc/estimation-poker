@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -266,13 +267,14 @@ func TestApplication_handleUserInRoomExists(t *testing.T) {
 }
 
 func TestApplication_handleFetchUsers(t *testing.T) {
-	room := internal.NewRoom("9c874aaa-c628-4688-a72d-0b1afc708a7d", make(chan<- internal.RoomId), "")
+	logger := slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil))
+	room := internal.NewRoom("9c874aaa-c628-4688-a72d-0b1afc708a7d", make(chan<- internal.RoomId), "", logger)
 	bus := message.NewBus()
-	dev := internal.NewClient("B", internal.Developer, room, nil, bus)
-	otherDev := internal.NewClient("Another", internal.Developer, room, nil, bus)
-	devWithEqualLetter := internal.NewClient("Also a dev", internal.Developer, room, nil, bus)
-	productOwner := internal.NewClient("Another one", internal.ProductOwner, room, nil, bus)
-	otherProductOwner := internal.NewClient("Also a po", internal.ProductOwner, room, nil, bus)
+	dev := internal.NewClient("B", internal.Developer, room, nil, bus, logger)
+	otherDev := internal.NewClient("Another", internal.Developer, room, nil, bus, logger)
+	devWithEqualLetter := internal.NewClient("Also a dev", internal.Developer, room, nil, bus, logger)
+	productOwner := internal.NewClient("Another one", internal.ProductOwner, room, nil, bus, logger)
+	otherProductOwner := internal.NewClient("Also a po", internal.ProductOwner, room, nil, bus, logger)
 
 	tests := []struct {
 		name        string

@@ -1,8 +1,10 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -20,7 +22,7 @@ import (
 func TestClient_NewProductOwner(t *testing.T) {
 	expectedName := "Test Person"
 	expectedRole := ProductOwner
-	client := NewClient(expectedName, expectedRole, &Room{}, &websocket.Conn{}, message.NewBus())
+	client := NewClient(expectedName, expectedRole, &Room{}, &websocket.Conn{}, message.NewBus(), slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 
 	if expectedName != client.Name {
 		t.Errorf("expected %v, got %v", expectedName, client.Name)
@@ -44,7 +46,7 @@ func TestClient_NewClient(t *testing.T) {
 	expectedName := "Test Person"
 	expectedRole := Developer
 	expectedGuess := 0
-	client := NewClient(expectedName, expectedRole, &Room{}, &websocket.Conn{}, message.NewBus())
+	client := NewClient(expectedName, expectedRole, &Room{}, &websocket.Conn{}, message.NewBus(), slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 
 	assert.Equal(t, client.Name, expectedName)
 	assert.Equal(t, client.Role, expectedRole)
@@ -63,7 +65,7 @@ func TestClient_NewClient(t *testing.T) {
 }
 
 func TestClient_Reset(t *testing.T) {
-	client := NewClient("Any", Developer, &Room{}, &websocket.Conn{}, message.NewBus())
+	client := NewClient("Any", Developer, &Room{}, &websocket.Conn{}, message.NewBus(), slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	client.guess = 2
 	client.newRound()
 
@@ -138,7 +140,7 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 
 	bus := message.NewBus()
 	bus.Register(Reveal, HandleReveal)
-	client := NewClient("Test", ProductOwner, room, connection, bus)
+	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	go client.WebsocketReader()
 	go client.WebsocketWriter()
 	expectedMessage := &Message{
@@ -171,7 +173,7 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 
 	bus := message.NewBus()
 	bus.Register(NewRound, HandleNewRound)
-	client := NewClient("Test", ProductOwner, room, connection, bus)
+	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	go client.WebsocketReader()
 
 	expectedMsg := newNewRound()

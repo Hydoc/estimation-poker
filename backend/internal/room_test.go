@@ -2,8 +2,7 @@ package internal
 
 import (
 	"bytes"
-	"log"
-	"os"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -15,7 +14,7 @@ import (
 
 func TestNewRoom(t *testing.T) {
 	expectedRoomId := RoomId("Test")
-	room := NewRoom(expectedRoomId, make(chan<- RoomId), "")
+	room := NewRoom(expectedRoomId, make(chan<- RoomId), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	assert.Equal(t, room.Id, expectedRoomId)
 	assert.False(t, room.InProgress)
 }
@@ -81,7 +80,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_RegisteringAClient(t *testing.T) {
-	room := NewRoom("Test", make(chan<- RoomId), "")
+	room := NewRoom("Test", make(chan<- RoomId), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	client := &Client{}
 	go room.Run()
 
@@ -181,7 +180,9 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 }
 
 func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
-	room := NewRoom(RoomId("Test"), make(chan<- RoomId), "Tester")
+	var logBuffer bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuffer, nil))
+	room := NewRoom("Test", make(chan<- RoomId), "Tester", logger)
 	go room.Run()
 
 	clientSendChannel := make(chan *Message)
@@ -352,10 +353,7 @@ func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
 
 func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 	var logBuffer bytes.Buffer
-	log.SetOutput(&logBuffer)
-	defer func() {
-		log.SetOutput(os.Stderr)
-	}()
+	logger := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
 	key := uuid.New()
 	room := &Room{
@@ -370,10 +368,11 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 		NameOfCreator:  "Bla",
 		Key:            key,
 		HashedPassword: make([]byte, 0),
+		logger:         logger,
 	}
 
 	got := room.lock("ABC", strings.Repeat("bla", 90), key.String())
-	wantedLog := "could not hash password"
+	wantedLog := "failed to hash password"
 
 	assert.False(t, got)
 	assert.StringContains(t, logBuffer.String(), wantedLog)

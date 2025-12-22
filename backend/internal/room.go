@@ -2,7 +2,8 @@ package internal
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ type RoomId string
 
 type Room struct {
 	clientMu sync.Mutex
+	logger   *slog.Logger
 
 	Id             RoomId
 	InProgress     bool
@@ -40,9 +42,10 @@ func (room *Room) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&out)
 }
 
-func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
+func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *slog.Logger) *Room {
 	return &Room{
 		Id:             name,
+		logger:         logger,
 		InProgress:     false,
 		leave:          make(chan *Client),
 		Join:           make(chan *Client),
@@ -60,7 +63,7 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string) *Room {
 func (room *Room) lock(username, password, key string) bool {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Printf("could not hash password %s\n", password)
+		room.logger.Error("failed to hash password")
 		return false
 	}
 	if username == room.NameOfCreator && key == room.Key.String() {
@@ -143,7 +146,7 @@ func (room *Room) Run() {
 			case join, Reveal, roomLocked, roomOpened:
 				room.broadcastToClients(msg)
 			default:
-				log.Printf("unexpected Message %#v", msg)
+				room.logger.Error(fmt.Sprintf("unexpected Message %#v", msg))
 			}
 		}
 	}

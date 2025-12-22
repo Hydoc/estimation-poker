@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/Hydoc/go-message"
@@ -22,6 +22,7 @@ type UserDTO map[string]any
 
 type Client struct {
 	connection *websocket.Conn
+	logger     *slog.Logger
 	room       *Room
 	Name       string
 	Role       string
@@ -31,7 +32,7 @@ type Client struct {
 	bus        message.Bus
 }
 
-func NewClient(name, role string, room *Room, connection *websocket.Conn, bus message.Bus) *Client {
+func NewClient(name, role string, room *Room, connection *websocket.Conn, bus message.Bus, logger *slog.Logger) *Client {
 	return &Client{
 		room:       room,
 		Name:       name,
@@ -39,6 +40,7 @@ func NewClient(name, role string, room *Room, connection *websocket.Conn, bus me
 		Role:       role,
 		send:       make(chan *Message),
 		bus:        bus,
+		logger:     logger,
 	}
 }
 
@@ -119,7 +121,7 @@ func (client *Client) WebsocketReader() {
 			case websocket.StatusNoStatusRcvd, websocket.StatusGoingAway:
 				return
 			default:
-				log.Println("error reading incoming client Message:", err)
+				client.logger.Error("error reading incoming client Message:", "error", err)
 				return
 			}
 
@@ -127,7 +129,7 @@ func (client *Client) WebsocketReader() {
 
 		cmd, err := fabricate(incMessage, client)
 		if err != nil {
-			log.Println(err)
+			client.logger.Error(err.Error())
 			continue
 		}
 		client.bus.Dispatch(cmd)
@@ -215,7 +217,7 @@ func (client *Client) WebsocketWriter() {
 		case msg := <-client.send:
 			err := wsjson.Write(context.Background(), client.connection, msg)
 			if err != nil {
-				log.Println("error writing to client:", err)
+				client.logger.Error("error writing to client:", "error", err)
 				return
 			}
 		case <-ticker.C:
@@ -223,7 +225,7 @@ func (client *Client) WebsocketWriter() {
 			err := client.connection.Ping(ctx)
 			if err != nil {
 				cancel()
-				log.Println("error pinging client:", err)
+				client.logger.Error("error pinging client:", "error", err)
 				return
 			}
 			cancel()

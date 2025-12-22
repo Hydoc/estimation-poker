@@ -133,7 +133,7 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	}
 
 	roomId := uuid.New()
-	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, input.Creator)
+	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, input.Creator, app.logger)
 	app.rooms[room.Id] = room
 	go room.Run()
 
@@ -288,7 +288,7 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 	if strings.Contains(request.URL.Path, "product-owner") {
 		clientRole = internal.ProductOwner
 	}
-	client := internal.NewClient(name, clientRole, clientRoom, connection, app.bus)
+	client := internal.NewClient(name, clientRole, clientRoom, connection, app.bus, app.logger)
 	clientRoom.Join <- client
 	clientRoom.Broadcast <- internal.NewJoin()
 
