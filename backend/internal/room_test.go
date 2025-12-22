@@ -289,7 +289,6 @@ func TestRoom_lock(t *testing.T) {
 		Clients:        make(map[*Client]bool),
 		Broadcast:      make(chan *Message),
 		destroy:        nil,
-		IsLocked:       false,
 		NameOfCreator:  "Bla",
 		Key:            key,
 		HashedPassword: make([]byte, 0),
@@ -298,7 +297,7 @@ func TestRoom_lock(t *testing.T) {
 	got := room.lock("Bla", "top secret", key.String())
 
 	assert.True(t, got)
-	assert.True(t, room.IsLocked)
+	assert.True(t, room.IsLocked())
 	assert.False(t, len(room.HashedPassword) == 0)
 }
 
@@ -312,7 +311,6 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 		Clients:        make(map[*Client]bool),
 		Broadcast:      make(chan *Message),
 		destroy:        nil,
-		IsLocked:       false,
 		NameOfCreator:  "Bla",
 		Key:            key,
 		HashedPassword: make([]byte, 0),
@@ -329,7 +327,6 @@ func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 		Id:            "Test",
 		InProgress:    false,
 		NameOfCreator: "some user",
-		IsLocked:      false,
 		Key:           id,
 	}
 	got := room.open("invalid user", id.String())
@@ -342,7 +339,6 @@ func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
 		Id:            "Test",
 		InProgress:    false,
 		NameOfCreator: "some user",
-		IsLocked:      false,
 		Key:           uuid.New(),
 	}
 
@@ -364,7 +360,6 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 		Clients:        make(map[*Client]bool),
 		Broadcast:      make(chan *Message),
 		destroy:        nil,
-		IsLocked:       false,
 		NameOfCreator:  "Bla",
 		Key:            key,
 		HashedPassword: make([]byte, 0),

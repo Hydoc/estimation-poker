@@ -152,7 +152,7 @@ func (app *application) handleFetchRoomState(writer http.ResponseWriter, request
 	}
 	app.writeJSON(writer, http.StatusOK, envelope{
 		"inProgress": actualRoom.InProgress,
-		"isLocked":   actualRoom.IsLocked,
+		"isLocked":   actualRoom.IsLocked(),
 	}, nil)
 }
 
@@ -185,7 +185,7 @@ func (app *application) handleUserInRoomExists(writer http.ResponseWriter, reque
 func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
 	var activeRooms []*internal.Room
 	for _, room := range app.rooms {
-		if !room.IsLocked {
+		if !room.IsLocked() {
 			activeRooms = append(activeRooms, room)
 		}
 	}

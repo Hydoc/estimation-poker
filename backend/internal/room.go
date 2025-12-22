@@ -25,7 +25,6 @@ type Room struct {
 	Broadcast      chan *Message
 	destroy        chan<- RoomId
 	NameOfCreator  string
-	IsLocked       bool
 	Key            uuid.UUID
 	HashedPassword []byte
 	Created        time.Time
@@ -53,7 +52,6 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *s
 		Broadcast:      make(chan *Message),
 		destroy:        destroy,
 		NameOfCreator:  nameOfCreator,
-		IsLocked:       false,
 		Key:            uuid.New(),
 		HashedPassword: make([]byte, 0),
 		Created:        time.Now(),
@@ -67,7 +65,6 @@ func (room *Room) lock(username, password, key string) bool {
 		return false
 	}
 	if username == room.NameOfCreator && key == room.Key.String() {
-		room.IsLocked = true
 		room.HashedPassword = hashed
 		return true
 	}
@@ -77,7 +74,6 @@ func (room *Room) lock(username, password, key string) bool {
 
 func (room *Room) open(username, key string) bool {
 	if username == room.NameOfCreator && key == room.Key.String() {
-		room.IsLocked = false
 		room.HashedPassword = make([]byte, 0)
 		return true
 	}
@@ -110,6 +106,10 @@ func (room *Room) broadcastToClients(msg *Message) {
 	for client := range room.Clients {
 		client.send <- msg
 	}
+}
+
+func (room *Room) IsLocked() bool {
+	return len(room.HashedPassword) > 0
 }
 
 func (room *Room) Run() {
