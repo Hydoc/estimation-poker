@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Hydoc/go-message"
 	"github.com/coder/websocket"
@@ -14,6 +15,7 @@ import (
 const (
 	ProductOwner = "product-owner"
 	Developer    = "developer"
+	PingInterval = time.Second * 20
 )
 
 type UserDTO map[string]any
@@ -201,11 +203,30 @@ func fabricate(incomingMessage *Message, client *Client) (message.Message, error
 }
 
 func (client *Client) WebsocketWriter() {
-	for msg := range client.send {
-		err := wsjson.Write(context.Background(), client.connection, msg)
-		if err != nil {
-			log.Println("error writing to client:", err)
-			return
+	ticker := time.NewTicker(PingInterval)
+
+	defer func() {
+		client.room.leave <- client
+		client.room.Broadcast <- newLeave(client.Name)
+		client.connection.Close(websocket.StatusNormalClosure, "")
+	}()
+	for {
+		select {
+		case msg := <-client.send:
+			err := wsjson.Write(context.Background(), client.connection, msg)
+			if err != nil {
+				log.Println("error writing to client:", err)
+				return
+			}
+		case <-ticker.C:
+			ctx, cancel := context.WithTimeout(context.Background(), PingInterval)
+			err := client.connection.Ping(ctx)
+			if err != nil {
+				cancel()
+				log.Println("error pinging client:", err)
+				return
+			}
+			cancel()
 		}
 	}
 }

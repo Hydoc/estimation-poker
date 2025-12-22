@@ -267,7 +267,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
 
   async function fetchPermissions(): Promise<void> {
     const response = await fetch(
-      `/api/estimation/room/${userRoomId.value}/${username.value}/permissions`,
+      `/api/estimation/room/${userRoomId.value}/permissions?name=${username.value}`,
     );
     if (!response.ok) {
       permissions.value = {

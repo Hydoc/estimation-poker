@@ -366,7 +366,7 @@ describe("Websocket Store", () => {
         playerCount: 1,
       },
     ]);
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/rooms");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/rooms");
   });
 
   it("should fetch passwordMatchesRoom when password matches", async () => {
@@ -427,7 +427,7 @@ describe("Websocket Store", () => {
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketStore.fetchPermissions();
 
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/ABC/permissions");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/permissions?name=ABC");
     expect(websocketStore.permissions).deep.equal({
       room: {
         canLock: true,
@@ -445,7 +445,7 @@ describe("Websocket Store", () => {
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
     await websocketStore.fetchPermissions();
 
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/ABC/permissions");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/api/estimation/room/Test/permissions?name=ABC");
     expect(websocketStore.permissions).deep.equal({
       room: {
         canLock: false,
