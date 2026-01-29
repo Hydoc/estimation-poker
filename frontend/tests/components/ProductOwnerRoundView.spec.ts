@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import ProductOwnerCommandCenter from "../../src/components/ProductOwnerCommandCenter.vue";
+import ProductOwnerRoundView from "../../src/components/ProductOwnerRoundView.vue";
 import { VBtn, VForm, VProgressCircular, VTextField } from "vuetify/components";
 import { nextTick } from "vue";
 import { Developer, RoundState } from "../../src/components/types";
@@ -12,10 +12,10 @@ const ResizeObserverMock = vi.fn(() => ({
 }));
 
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
-describe("ProductOwnerCommandCenter", () => {
+describe("ProductOwnerRoundView", () => {
   describe("rendering", () => {
     it("should render", () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -41,7 +41,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should render without developers in room", () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -56,7 +56,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should render button with progress bar when round is in progress but not every dev is done", () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.InProgress,
           hasTicketToGuess: true,
@@ -81,7 +81,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should render button without progress bar when round is finished", () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.End,
           hasTicketToGuess: true,
@@ -104,7 +104,7 @@ describe("ProductOwnerCommandCenter", () => {
 
   describe("functionality", () => {
     it("should enable button when everything is valid", async () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -124,7 +124,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should show validation message when ticket is cleared", async () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -144,7 +144,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should show validation message when ticket does not match regex", async () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -164,7 +164,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should emit estimate on form submit", async () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,
@@ -186,7 +186,7 @@ describe("ProductOwnerCommandCenter", () => {
     });
 
     it("should not emit estimate when product owner can not estimate due to form invalid", async () => {
-      const wrapper = vuetifyMount(ProductOwnerCommandCenter, {
+      const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
           hasTicketToGuess: false,

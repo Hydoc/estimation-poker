@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { type SendableWebsocketMessageType, useWebsocketStore } from "@/stores/websocket";
-import { useRoute, useRouter } from "vue-router";
+import {type SendableWebsocketMessageType, useWebsocketStore} from "@/stores/websocket";
+import {useRoute, useRouter} from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
-import { ref, computed, onMounted, type Ref, watch } from "vue";
-import { Role, RoundState } from "@/components/types.ts";
+import {computed, onMounted, ref} from "vue";
+import {Role, RoundState} from "@/components/types.ts";
 import RoomForm from "@/components/RoomForm.vue";
 
 const websocketStore = useWebsocketStore();
@@ -18,6 +18,7 @@ const name = ref("");
 const role = ref(Role.Empty);
 const passwordForRoom = ref("");
 const errorMessage = ref("");
+const showIssuesDrawer = ref(false);
 const roomIsLocked = computed(() => websocketStore.roomIsLocked);
 const usersInRoom = computed(() => websocketStore.usersInRoom);
 const queryRoomId = computed((): string => {
@@ -36,6 +37,7 @@ const possibleGuesses = computed(() => websocketStore.possibleGuesses);
 const permissions = computed(() => websocketStore.permissions);
 const developerDone = computed(() => websocketStore.developerDone);
 const isConnected = computed(() => websocketStore.isConnected);
+const issues = computed(() => websocketStore.issues);
 
 const roundIsWaiting = computed(() => roundState.value === RoundState.Waiting);
 
@@ -189,6 +191,15 @@ onMounted(async () => {
         {{ roundStateAsReadableString }}
       </v-toolbar-title>
       <div v-if="roundIsWaiting">
+        <v-btn @click="showIssuesDrawer = !showIssuesDrawer">
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Issues
+          </v-tooltip>
+          <v-icon>mdi-text-box-outline</v-icon>
+        </v-btn>
         <v-btn
           v-if="permissions.room.canLock && roomIsLocked"
           @click="copyPassword"
@@ -256,6 +267,54 @@ onMounted(async () => {
       @new-round="sendMessage('new-round', null)"
       @skip="sendMessage('skip', null)"
     />
+
+    <v-navigation-drawer
+      v-model="showIssuesDrawer"
+      width="400"
+      :location="$vuetify.display.mobile ? 'bottom' : 'right'"
+    >
+      <template #prepend>
+        <v-container>
+          <v-col>
+            <v-row>
+              <v-list-item
+                title="Issues"
+              />
+              <v-spacer />
+              <v-btn
+                icon="mdi-close"
+                variant="flat"
+                size="small"
+                @click="showIssuesDrawer = false"
+              />
+            </v-row>
+          </v-col>
+        </v-container>
+
+        <v-divider />
+      </template>
+      <v-list>
+        <v-list-item
+          v-for="issue in issues"
+          :key="issue"
+        >
+          <v-card
+            variant="tonal"
+            class="pa-2"
+          >
+            <v-card-title>{{ issue }}</v-card-title>
+
+            <v-card-actions>
+              <v-btn variant="tonal">
+                Vote this issue
+              </v-btn>
+              <v-spacer />
+              <span>-</span>
+            </v-card-actions>
+          </v-card>
+        </v-list-item>
+      </v-list>
+    </v-navigation-drawer>
 
     <v-snackbar-queue
       v-model="websocketStore.notifications"

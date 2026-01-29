@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import DeveloperCommandCenter from "../../src/components/DeveloperCommandCenter.vue";
+import DeveloperRoundView from "../../src/components/DeveloperRoundView.vue";
 import { VIcon } from "vuetify/components";
 import { vuetifyMount } from "../vuetifyMount";
 
-describe("DeveloperCommandCenter", () => {
+describe("DeveloperRoundView", () => {
   describe("rendering", () => {
     it("should render", () => {
-      const wrapper = vuetifyMount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
           guess: 0,
           showAllGuesses: false,
@@ -45,7 +45,7 @@ describe("DeveloperCommandCenter", () => {
     });
 
     it("should render with correct guess when developer did guess", async () => {
-      const wrapper = vuetifyMount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
           guess: 2,
           showAllGuesses: false,
@@ -66,7 +66,7 @@ describe("DeveloperCommandCenter", () => {
     });
 
     it("should render with correct color when developer didSkip", () => {
-      const wrapper = vuetifyMount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
           guess: 0,
           showAllGuesses: false,
@@ -91,7 +91,7 @@ describe("DeveloperCommandCenter", () => {
 
   describe("functionality", () => {
     it("should emit guess on card click submit", async () => {
-      const wrapper = vuetifyMount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
           guess: 0,
           showAllGuesses: false,
@@ -115,7 +115,7 @@ describe("DeveloperCommandCenter", () => {
     });
 
     it("should emit skip on skip card press", async () => {
-      const wrapper = vuetifyMount(DeveloperCommandCenter, {
+      const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
           guess: 0,
           showAllGuesses: false,

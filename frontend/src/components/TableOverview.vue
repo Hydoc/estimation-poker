@@ -9,7 +9,7 @@ import {
   type UserOverview,
 } from "./types";
 import DeveloperCard from "@/components/DeveloperCard.vue";
-import ProductOwnerCommandCenter from "@/components/ProductOwnerCommandCenter.vue";
+import ProductOwnerRoundView from "@/components/ProductOwnerRoundView.vue";
 
 type Props = {
   usersInRoom: UserOverview;
@@ -58,7 +58,7 @@ function leftForElement(index: number, username: string): string {
 <template>
   <div class="virtual-table">
     <div class="table">
-      <product-owner-command-center
+      <product-owner-round-view
         v-if="userIsProductOwner"
         :round-state="props.roundState"
         :developer-list="developerList"

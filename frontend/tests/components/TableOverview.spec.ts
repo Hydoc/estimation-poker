@@ -7,7 +7,7 @@ import {
   Role,
   RoundState,
 } from "../../src/components/types";
-import ProductOwnerCommandCenter from "../../src/components/ProductOwnerCommandCenter.vue";
+import ProductOwnerRoundView from "../../src/components/ProductOwnerRoundView.vue";
 import DeveloperCard from "../../src/components/DeveloperCard.vue";
 import { vuetifyMount } from "../vuetifyMount";
 
@@ -36,16 +36,16 @@ describe("TableOverview", () => {
       expect(wrapper.find(".virtual-table").exists()).to.be.true;
       expect(wrapper.find(".table").exists()).to.be.true;
 
-      expect(wrapper.findComponent(ProductOwnerCommandCenter).exists()).to.be.true;
-      expect(wrapper.findComponent(ProductOwnerCommandCenter).props("roundState")).equal(
+      expect(wrapper.findComponent(ProductOwnerRoundView).exists()).to.be.true;
+      expect(wrapper.findComponent(ProductOwnerRoundView).props("roundState")).equal(
         RoundState.Waiting,
       );
-      expect(wrapper.findComponent(ProductOwnerCommandCenter).props("developerList")).deep.equal([
+      expect(wrapper.findComponent(ProductOwnerRoundView).props("developerList")).deep.equal([
         { name: "Test Dev", isDone: false, role: "developer" } as Developer,
       ]);
-      expect(wrapper.findComponent(ProductOwnerCommandCenter).props("hasTicketToGuess")).to.be
+      expect(wrapper.findComponent(ProductOwnerRoundView).props("hasTicketToGuess")).to.be
         .false;
-      expect(wrapper.findComponent(ProductOwnerCommandCenter).props("showAllGuesses")).to.be.false;
+      expect(wrapper.findComponent(ProductOwnerRoundView).props("showAllGuesses")).to.be.false;
 
       expect(wrapper.text()).not.contains("Waiting for ticket…");
 
@@ -70,7 +70,7 @@ describe("TableOverview", () => {
     it("should render as developer", () => {
       const wrapper = createWrapper();
 
-      expect(wrapper.findComponent(ProductOwnerCommandCenter).exists()).to.be.false;
+      expect(wrapper.findComponent(ProductOwnerRoundView).exists()).to.be.false;
       expect(wrapper.text()).contains("Waiting for ticket…");
       expect(wrapper.findAllComponents(DeveloperCard)).length(1);
     });
@@ -90,7 +90,7 @@ describe("TableOverview", () => {
         "",
       );
 
-      wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("estimate", "WH-12");
+      wrapper.findComponent(ProductOwnerRoundView).vm.$emit("estimate", "WH-12");
       expect(wrapper.emitted("estimate")).deep.equal([["WH-12"]]);
     });
 
@@ -107,7 +107,7 @@ describe("TableOverview", () => {
         "",
       );
 
-      wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("reveal");
+      wrapper.findComponent(ProductOwnerRoundView).vm.$emit("reveal");
       expect(wrapper.emitted("reveal")).deep.equal([[]]);
     });
 
@@ -124,7 +124,7 @@ describe("TableOverview", () => {
         "WH-2",
       );
 
-      wrapper.findComponent(ProductOwnerCommandCenter).vm.$emit("new-round");
+      wrapper.findComponent(ProductOwnerRoundView).vm.$emit("new-round");
       expect(wrapper.emitted("new-round")).deep.equal([[]]);
     });
   });

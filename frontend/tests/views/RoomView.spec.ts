@@ -5,7 +5,7 @@ import { useWebsocketStore } from "../../src/stores/websocket";
 import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "../../src/components/RoomDetail.vue";
 import { Role, RoundState } from "../../src/components/types";
-import { VBtn, VDialog, VIcon, VTextField, VToolbar } from "vuetify/components";
+import {VApp, VBtn, VDialog, VIcon, VNavigationDrawer, VTextField, VToolbar} from "vuetify/components";
 import { nextTick } from "vue";
 import { vuetifyMount } from "../vuetifyMount";
 import RoomForm from "../../src/components/RoomForm.vue";

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import RoomDetail from "../../src/components/RoomDetail.vue";
 import { Role, RoundState } from "../../src/components/types";
 import TableOverview from "../../src/components/TableOverview.vue";
-import DeveloperCommandCenter from "../../src/components/DeveloperCommandCenter.vue";
+import DeveloperRoundView from "../../src/components/DeveloperRoundView.vue";
 import RoundSummary from "../../src/components/RoundSummary.vue";
 import { nextTick } from "vue";
 import { vuetifyMount } from "../vuetifyMount";
@@ -59,12 +59,12 @@ describe("RoomDetail", () => {
       expect(wrapper.findComponent(TableOverview).props("ticketToGuess")).equal("");
       expect(wrapper.findComponent(TableOverview).props("roundState")).equal(RoundState.Waiting);
 
-      expect(wrapper.findComponent(DeveloperCommandCenter).exists()).to.be.true;
-      expect(wrapper.findComponent(DeveloperCommandCenter).props("showAllGuesses")).to.be.false;
-      expect(wrapper.findComponent(DeveloperCommandCenter).props("guess")).equal(0);
-      expect(wrapper.findComponent(DeveloperCommandCenter).props("didSkip")).to.be.false;
-      expect(wrapper.findComponent(DeveloperCommandCenter).props("hasTicketToGuess")).to.be.false;
-      expect(wrapper.findComponent(DeveloperCommandCenter).props("possibleGuesses")).deep.equal([
+      expect(wrapper.findComponent(DeveloperRoundView).exists()).to.be.true;
+      expect(wrapper.findComponent(DeveloperRoundView).props("showAllGuesses")).to.be.false;
+      expect(wrapper.findComponent(DeveloperRoundView).props("guess")).equal(0);
+      expect(wrapper.findComponent(DeveloperRoundView).props("didSkip")).to.be.false;
+      expect(wrapper.findComponent(DeveloperRoundView).props("hasTicketToGuess")).to.be.false;
+      expect(wrapper.findComponent(DeveloperRoundView).props("possibleGuesses")).deep.equal([
         { guess: 1, description: "Bis zu 4 Std." },
         { guess: 2, description: "Bis zu 8 Std." },
         { guess: 3, description: "Bis zu 3 Tagen" },
@@ -127,7 +127,7 @@ describe("RoomDetail", () => {
         },
       });
 
-      wrapper.findComponent(DeveloperCommandCenter).vm.$emit("skip", 1);
+      wrapper.findComponent(DeveloperRoundView).vm.$emit("skip", 1);
       expect(wrapper.emitted("skip")).deep.equal([[]]);
     });
 
@@ -155,7 +155,7 @@ describe("RoomDetail", () => {
         },
       });
 
-      wrapper.findComponent(DeveloperCommandCenter).vm.$emit("guess", 1);
+      wrapper.findComponent(DeveloperRoundView).vm.$emit("guess", 1);
       expect(wrapper.emitted("guess")).deep.equal([[1]]);
     });
 

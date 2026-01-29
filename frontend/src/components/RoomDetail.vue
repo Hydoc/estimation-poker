@@ -8,7 +8,7 @@ import {
 } from "@/components/types";
 import { computed, ref, watch } from "vue";
 import TableOverview from "@/components/TableOverview.vue";
-import DeveloperCommandCenter from "@/components/DeveloperCommandCenter.vue";
+import DeveloperRoundView from "@/components/DeveloperRoundView.vue";
 import RoundSummary from "@/components/RoundSummary.vue";
 
 type Props = {
@@ -77,7 +77,7 @@ watch(
         align="center"
         justify="center"
       >
-        <developer-command-center
+        <developer-round-view
           v-if="userIsDeveloper"
           class="developer-command-center"
           :show-all-guesses="props.showAllGuesses"

@@ -40,6 +40,7 @@ type WebsocketStore = {
   roomIsLocked: Ref<boolean>;
   developerDone: Ref<DeveloperDone[]>;
   notifications: Ref<string[]>;
+  issues: Ref<any[]>;
 };
 
 export type SendableWebsocketMessageType =
@@ -89,6 +90,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const roomIsLocked: Ref<boolean> = ref(false);
   const developerDone: Ref<DeveloperDone[]> = ref([]);
   const notifications: Ref<string[]> = ref([]);
+  const issues: Ref<any[]> = ref(["WRR-100", "ABC-22"]);
 
   const isConnected = computed(() => websocket.value !== null);
 
@@ -321,5 +323,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     createRoom,
     roomExists,
     notifications,
+    issues,
   };
 });
