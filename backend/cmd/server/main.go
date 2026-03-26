@@ -104,5 +104,6 @@ func createBus() message.Bus {
 	bus.Register(internal.Reveal, internal.HandleReveal)
 	bus.Register(internal.LockRoom, internal.HandleLockRoom)
 	bus.Register(internal.OpenRoom, internal.HandleOpenRoom)
+	bus.Register(internal.AddIssue, internal.HandleAddIssue)
 	return bus
 }

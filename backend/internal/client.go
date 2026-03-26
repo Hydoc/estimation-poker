@@ -106,6 +106,15 @@ func HandleReveal(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
+func HandleAddIssue(msg message.Message) (*message.Message, error) {
+	payload, ok := msg.Payload.(AddIssuePayload)
+	if ok && payload.client.Role == ProductOwner {
+		payload.client.room.addIssue(payload.issue)
+		payload.client.room.Broadcast <- newIssues()
+	}
+	return nil, nil
+}
+
 func (client *Client) WebsocketReader() {
 	defer func() {
 		client.room.leave <- client
@@ -198,6 +207,16 @@ func fabricate(incomingMessage *Message, client *Client) (message.Message, error
 		return message.New(OpenRoom, OpenRoomPayload{
 			client: client,
 			key:    key.(string),
+		}), nil
+	case AddIssue:
+		actualIssue, ok := incomingMessage.Data.(string)
+		if !ok {
+			return message.Message{}, errors.New("issue is invalid")
+		}
+
+		return message.New(AddIssue, AddIssuePayload{
+			client: client,
+			issue:  actualIssue,
 		}), nil
 	default:
 		return message.Message{}, errors.New("message not found")

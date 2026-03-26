@@ -13,6 +13,11 @@ import (
 
 type RoomId string
 
+type Issue struct {
+	Title string
+	Guess int
+}
+
 type Room struct {
 	clientMu sync.Mutex
 	logger   *slog.Logger
@@ -28,6 +33,7 @@ type Room struct {
 	Key            uuid.UUID
 	HashedPassword []byte
 	Created        time.Time
+	Issues         []Issue
 }
 
 func (room *Room) MarshalJSON() ([]byte, error) {
@@ -152,4 +158,11 @@ func (room *Room) Run() {
 			}
 		}
 	}
+}
+
+func (room *Room) addIssue(issue string) {
+	room.Issues = append(room.Issues, Issue{
+		Title: issue,
+		Guess: -1,
+	})
 }

@@ -17,6 +17,8 @@ const (
 	developerSkipped = "developer-skipped"
 	youSkipped       = "you-skipped"
 	youGuessed       = "you-guessed"
+	AddIssue         = "add-issue"
+	issues           = "issues"
 )
 
 type Message struct {
@@ -46,6 +48,11 @@ type OpenRoomPayload struct {
 type EstimatePayload struct {
 	client *Client
 	ticket string
+}
+
+type AddIssuePayload struct {
+	client *Client
+	issue  string
 }
 
 type GuessPayload struct {
@@ -86,6 +93,12 @@ func newRoomLocked() *Message {
 func newRoomOpened() *Message {
 	return &Message{
 		Type: roomOpened,
+	}
+}
+
+func newIssues() *Message {
+	return &Message{
+		Type: issues,
 	}
 }
 
