@@ -50,7 +50,8 @@ export type SendableWebsocketMessageType =
   | "new-round"
   | "lock-room"
   | "skip"
-  | "open-room";
+  | "open-room"
+  | "add-issue";
 
 type SendableWebsocketMessage = {
   type: SendableWebsocketMessageType;
@@ -90,7 +91,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   const roomIsLocked: Ref<boolean> = ref(false);
   const developerDone: Ref<DeveloperDone[]> = ref([]);
   const notifications: Ref<string[]> = ref([]);
-  const issues: Ref<any[]> = ref(["WRR-100", "ABC-22"]);
+  const issues: Ref<any[]> = ref([]);
 
   const isConnected = computed(() => websocket.value !== null);
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import {type SendableWebsocketMessageType, useWebsocketStore} from "@/stores/websocket";
-import {useRoute, useRouter} from "vue-router";
+import { type SendableWebsocketMessageType, useWebsocketStore } from "@/stores/websocket";
+import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
-import {computed, onMounted, ref} from "vue";
-import {Role, RoundState} from "@/components/types.ts";
+import { computed, onMounted, ref } from "vue";
+import { Role, RoundState } from "@/components/types.ts";
 import RoomForm from "@/components/RoomForm.vue";
 
 const websocketStore = useWebsocketStore();
@@ -18,6 +18,7 @@ const name = ref("");
 const role = ref(Role.Empty);
 const passwordForRoom = ref("");
 const errorMessage = ref("");
+const issueToAdd = ref("");
 const showIssuesDrawer = ref(false);
 const roomIsLocked = computed(() => websocketStore.roomIsLocked);
 const usersInRoom = computed(() => websocketStore.usersInRoom);
@@ -75,6 +76,15 @@ function openRoom() {
 function leaveRoom() {
   websocketStore.disconnect();
   router.push("/");
+}
+
+function addIssue() {
+  if (issueToAdd.value === "") {
+    return;
+  }
+
+  sendMessage("add-issue", issueToAdd.value);
+  issueToAdd.value = "";
 }
 
 async function writeToClipboard(text: string) {
@@ -191,7 +201,10 @@ onMounted(async () => {
         {{ roundStateAsReadableString }}
       </v-toolbar-title>
       <div v-if="roundIsWaiting">
-        <v-btn @click="showIssuesDrawer = !showIssuesDrawer">
+        <v-btn
+          v-if="userRole == Role.ProductOwner"
+          @click="showIssuesDrawer = !showIssuesDrawer"
+        >
           <v-tooltip
             activator="parent"
             location="bottom"
@@ -277,9 +290,7 @@ onMounted(async () => {
         <v-container>
           <v-col>
             <v-row>
-              <v-list-item
-                title="Issues"
-              />
+              <v-list-item title="Issues" />
               <v-spacer />
               <v-btn
                 icon="mdi-close"
@@ -314,6 +325,31 @@ onMounted(async () => {
           </v-card>
         </v-list-item>
       </v-list>
+
+      <template #append>
+        <v-container>
+          <v-card>
+            <v-card-text>
+              <v-text-field
+                v-model.trim="issueToAdd"
+                variant="outlined"
+                placeholder="New issue"
+              />
+
+              <v-card-actions>
+                <v-spacer />
+                <v-btn
+                  variant="outlined"
+                  color="green-darken-2"
+                  @click="addIssue"
+                >
+                  Add Issue
+                </v-btn>
+              </v-card-actions>
+            </v-card-text>
+          </v-card>
+        </v-container>
+      </template>
     </v-navigation-drawer>
 
     <v-snackbar-queue
