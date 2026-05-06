@@ -107,17 +107,17 @@ async function tryJoin() {
   errorMessage.value = "";
 
   const actualRoomId = queryRoomId.value;
+  const roomState = await websocketStore.roomState(actualRoomId)
 
-  const passwordMatches = roomIsLocked.value
+  const passwordMatches = roomState.isLocked
     ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
     : true;
-  if (roomIsLocked.value && !passwordMatches) {
+  if (roomState.isLocked && !passwordMatches) {
     errorMessage.value = "The provided password is wrong";
     return;
   }
 
-  const roundInRoomInProgress = await websocketStore.isRoundInRoomInProgress(actualRoomId);
-  if (roundInRoomInProgress) {
+  if (roomState.inProgress) {
     errorMessage.value = "The round has already started";
     return;
   }
@@ -133,13 +133,11 @@ async function tryJoin() {
 }
 
 onMounted(async () => {
-  const roomExists = await websocketStore.roomExists(queryRoomId.value);
+  const roomExists = await websocketStore.roomState(queryRoomId.value);
   if (!roomExists) {
     await router.push("/");
     return;
   }
-
-  await websocketStore.fetchRoomIsLocked(queryRoomId.value);
 
   if (isConnected.value) {
     await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);

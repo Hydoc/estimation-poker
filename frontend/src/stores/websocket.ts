@@ -7,7 +7,8 @@ import {
   type Permissions,
   type DeveloperDone,
   type ActiveRoom,
-  type FetchActiveRoomsResponse,
+  type FetchActiveRoomsResponse, 
+  type RoomState,
 } from "@/components/types";
 import { Role, RoundState } from "@/components/types";
 
@@ -19,12 +20,10 @@ type WebsocketStore = {
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
   fetchActiveRooms(): Promise<ActiveRoom[]>;
   send(message: SendableWebsocketMessage): void;
-  isRoundInRoomInProgress(roomId: string): Promise<boolean>;
   fetchPossibleGuesses(): Promise<void>;
   fetchPermissions(): Promise<void>;
-  fetchRoomIsLocked(roomId: string): Promise<boolean>;
   passwordMatchesRoom(roomId: string, password: string): Promise<boolean>;
-  roomExists(roomId: string): Promise<boolean>;
+  roomState(roomId: string): Promise<RoomState>;
   username: Ref<string>;
   isConnected: Ref<boolean>;
   usersInRoom: Ref<UserOverview>;
@@ -71,7 +70,8 @@ type ReceivableWebsocketMessage = {
     | "new-round"
     | "room-locked"
     | "developer-skipped"
-    | "room-opened";
+    | "room-opened"
+    | "issues";
   data?: any;
 };
 
@@ -99,6 +99,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     websocket.value?.close();
     websocket.value = null;
     permissions.value = { room: { canLock: false } };
+    notifications.value = [];
   }
 
   async function connect(name: string, role: Role, roomId: string): Promise<void> {
@@ -155,8 +156,10 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
           showAllGuesses.value = true;
           break;
         case "room-locked":
+          roomIsLocked.value = true;
+          break;
         case "room-opened":
-          await fetchRoomIsLocked(userRoomId.value);
+          roomIsLocked.value = false;
           break;
         case "new-round":
           resetRound();
@@ -214,15 +217,10 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     const response = await fetch(`/v1/room/${roomId}/users/exists?name=${name}`);
     return ((await response.json()) as { exists: boolean }).exists;
   }
-
-  async function isRoundInRoomInProgress(roomId: string): Promise<boolean> {
+  
+  async function roomState(roomId: string): Promise<RoomState> {
     const response = await fetch(`/v1/room/${roomId}/state`);
-    return ((await response.json()) as { inProgress: boolean }).inProgress;
-  }
-
-  async function roomExists(roomId: string): Promise<boolean> {
-    const response = await fetch(`/v1/room/${roomId}/exists`);
-    return ((await response.json()) as { exists: boolean }).exists;
+    return await response.json();
   }
 
   async function passwordMatchesRoom(roomId: string, password: string): Promise<boolean> {
@@ -284,23 +282,11 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     return;
   }
 
-  async function fetchRoomIsLocked(roomId: string): Promise<boolean> {
-    const response = await fetch(`/v1/room/${roomId}/state`);
-    if (!response.ok) {
-      roomIsLocked.value = false;
-      return roomIsLocked.value;
-    }
-
-    roomIsLocked.value = ((await response.json()) as { isLocked: boolean }).isLocked;
-    return roomIsLocked.value;
-  }
-
   return {
     connect,
     disconnect,
     isConnected,
     usersInRoom,
-    isRoundInRoomInProgress,
     roomId: userRoomId,
     possibleGuesses,
     username,
@@ -316,14 +302,13 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     fetchActiveRooms,
     fetchPossibleGuesses,
     fetchPermissions,
-    fetchRoomIsLocked,
     passwordMatchesRoom,
     permissions,
     roomIsLocked,
     developerDone,
     createRoom,
-    roomExists,
     notifications,
     issues,
+    roomState,
   };
 });

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, test, vi } from "vitest";
 import { useWebsocketStore } from "../../src/stores/websocket";
 import { Role, RoundState } from "../../src/components/types";
 import { createPinia, setActivePinia } from "pinia";
@@ -53,6 +53,41 @@ describe("Websocket Store", () => {
     expect(websocketStore.guess).equal(0);
     expect(websocketStore.didSkip).false;
     expect(websocketStore.usersInRoom).deep.equal([]);
+  });
+
+  it("should create a room", async () => {
+    // @ts-ignore
+    global.fetch = vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ id: "123" })
+    }));
+    const websocketStore = useWebsocketStore();
+    const id = await websocketStore.createRoom("test");
+    expect(id).equal("123");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room", {
+      method: "POST",
+      body: JSON.stringify({
+        creator: "test",
+        guesses: {},
+      }),
+    });
+  });
+
+  it("should throw an error when create room response is not ok", async () => {
+    // @ts-ignore
+    global.fetch = vi.fn(() => Promise.resolve({
+      ok: false,
+    }));
+    const websocketStore = useWebsocketStore();
+    
+    await expect(() => websocketStore.createRoom("test")).rejects.toThrow("Could not create room");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room", {
+      method: "POST",
+      body: JSON.stringify({
+        creator: "test",
+        guesses: {},
+      }),
+    });
   });
 
   it("should connect as developer", async () => {
@@ -205,7 +240,7 @@ describe("Websocket Store", () => {
     expect(websocketStore.showAllGuesses).to.be.true;
   });
 
-  it("should fetch room is locked when room-locked message appeared", async () => {
+  it("should set room is locked to true when room-locked message appeared", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => ({ isLocked: true }),
@@ -215,12 +250,10 @@ describe("Websocket Store", () => {
     await websocketOnMessage({
       data: JSON.stringify({ type: "room-locked" }),
     });
-
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/state");
     expect(websocketStore.roomIsLocked).to.be.true;
   });
 
-  it("should fetch room is locked when room-opened message appeared", async () => {
+  it("should set room is locked to false when room-opened message appeared", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => ({ isLocked: false }),
@@ -231,7 +264,6 @@ describe("Websocket Store", () => {
       data: JSON.stringify({ type: "room-opened" }),
     });
 
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/state");
     expect(websocketStore.roomIsLocked).to.be.false;
   });
 
@@ -326,26 +358,6 @@ describe("Websocket Store", () => {
     );
   });
 
-  it("should return false when round in room not in progress", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: () => ({ inProgress: false }),
-    });
-    const websocketStore = useWebsocketStore();
-    const actual = await websocketStore.isRoundInRoomInProgress("Blub");
-    expect(actual).to.be.false;
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Blub/state");
-  });
-
-  it("should return true when round in room in progress", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: () => ({ inProgress: true }),
-    });
-    const websocketStore = useWebsocketStore();
-    const actual = await websocketStore.isRoundInRoomInProgress("Blub");
-    expect(actual).to.be.true;
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Blub/state");
-  });
-
   it("should fetch active rooms", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -367,6 +379,25 @@ describe("Websocket Store", () => {
       },
     ]);
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/rooms");
+  });
+
+  it("should throw error when fetching active rooms fails", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+    });
+    const websocketStore = useWebsocketStore();
+    await expect(() => websocketStore.fetchActiveRooms()).rejects.toThrowError("Could not find active rooms");
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/rooms");
+  });
+
+  it("should fetch room state", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ inProgress: false, isLocked: false }),
+    });
+    const websocketStore = useWebsocketStore();
+    expect(await websocketStore.roomState("a")).deep.equal({ inProgress: false, isLocked: false });
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/a/state");
   });
 
   it("should fetch passwordMatchesRoom when password matches", async () => {
@@ -451,33 +482,6 @@ describe("Websocket Store", () => {
         canLock: false,
       },
     });
-  });
-
-  it("should fetch roomIsLocked", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => ({
-        isLocked: true,
-      }),
-    });
-
-    const websocketStore = useWebsocketStore();
-    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
-    const actual = await websocketStore.fetchRoomIsLocked("Test");
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/state");
-    expect(actual).to.be.true;
-  });
-
-  it("should fetch roomIsLocked when response not ok", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-    });
-
-    const websocketStore = useWebsocketStore();
-    await websocketStore.connect("ABC", Role.ProductOwner, "Test");
-    const actual = await websocketStore.fetchRoomIsLocked("Test");
-    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Test/state");
-    expect(actual).to.be.false;
   });
 
   it("should fetch possible guesses", async () => {

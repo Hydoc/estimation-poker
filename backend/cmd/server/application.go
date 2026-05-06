@@ -135,25 +135,20 @@ func (app *application) handleFetchRoomState(writer http.ResponseWriter, request
 
 	roomId, err := app.readIdParam(request)
 	if err != nil {
-		app.writeJSON(writer, http.StatusOK, envelope{
-			"inProgress": false,
-			"isLocked":   false,
-		}, nil)
+		app.badRequestResponse(writer, request, err)
 		return
 	}
 
 	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
-		app.writeJSON(writer, http.StatusOK, envelope{
-			"inProgress": false,
-			"isLocked":   false,
-		}, nil)
+		app.notFoundResponse(writer, request)
 		return
 	}
-	app.writeJSON(writer, http.StatusOK, envelope{
-		"inProgress": actualRoom.InProgress,
-		"isLocked":   actualRoom.IsLocked(),
-	}, nil)
+
+	err = app.writeJSON(writer, http.StatusOK, actualRoom.State(), nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+	}
 }
 
 func (app *application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
@@ -183,16 +178,16 @@ func (app *application) handleUserInRoomExists(writer http.ResponseWriter, reque
 }
 
 func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
-	var activeRooms []*internal.Room
+	var overviewRooms []internal.Overview
 	for _, room := range app.rooms {
 		if !room.IsLocked() {
-			activeRooms = append(activeRooms, room)
+			overviewRooms = append(overviewRooms, room.AsOverview())
 		}
 	}
-	sort.Slice(activeRooms, func(i, j int) bool {
-		return activeRooms[i].Created.Before(activeRooms[j].Created)
+	sort.Slice(overviewRooms, func(i, j int) bool {
+		return overviewRooms[i].Created.Before(overviewRooms[j].Created)
 	})
-	app.writeJSON(writer, http.StatusOK, envelope{"rooms": activeRooms}, nil)
+	app.writeJSON(writer, http.StatusOK, envelope{"rooms": overviewRooms}, nil)
 }
 
 func (app *application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {

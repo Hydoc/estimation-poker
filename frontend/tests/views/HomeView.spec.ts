@@ -1,4 +1,4 @@
-import { beforeEach, describe, it, expect, vi, Mock } from "vitest";
+import {beforeEach, describe, expect, it, Mock, vi} from "vitest";
 import HomeView from "../../src/views/HomeView.vue";
 import { createTestingPinia, TestingPinia } from "@pinia/testing";
 import { useWebsocketStore } from "../../src/stores/websocket";
@@ -27,11 +27,7 @@ beforeEach(() => {
 describe("HomeView", () => {
   describe("rendering", () => {
     it("should render without rooms", () => {
-      const wrapper = vuetifyMount(HomeView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       expect(wrapper.findComponent(VCard).exists()).to.be.false;
       expect(wrapper.findComponent(VIcon).exists()).to.be.true;
@@ -65,11 +61,7 @@ describe("HomeView", () => {
         ]),
       );
 
-      const wrapper = vuetifyMount(HomeView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       await nextTick();
 
@@ -103,11 +95,7 @@ describe("HomeView", () => {
 
   describe("functionality", () => {
     it("should reset round and close websocket on render", () => {
-      vuetifyMount(HomeView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      createWrapper();
 
       expect(websocketStore.disconnect).toHaveBeenCalledOnce();
       expect(websocketStore.resetRound).toHaveBeenCalledOnce();
@@ -115,15 +103,13 @@ describe("HomeView", () => {
 
     it("should create a new room", async () => {
       websocketStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
-      websocketStore.fetchRoomIsLocked = vi.fn(() => Promise.resolve(false));
-      websocketStore.isRoundInRoomInProgress = vi.fn(() => Promise.resolve(false));
+      websocketStore.roomState = vi.fn(() => Promise.resolve({
+        isLocked: false,
+        inProgress: false,
+      }));
       websocketStore.userExistsInRoom = vi.fn(() => Promise.resolve(false));
 
-      const wrapper = vuetifyMount(HomeView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(RoomDialog).vm.$emit("update:name", "Name");
       wrapper.findComponent(RoomDialog).vm.$emit("update:role", Role.Developer);
@@ -136,11 +122,17 @@ describe("HomeView", () => {
       await nextTick();
 
       expect(websocketStore.createRoom).toHaveBeenNthCalledWith(1, "Name");
-      expect(websocketStore.fetchRoomIsLocked).toHaveBeenNthCalledWith(1, "room-id");
-      expect(websocketStore.isRoundInRoomInProgress).toHaveBeenNthCalledWith(1, "room-id");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "Name", "room-id");
       expect(websocketStore.connect).toHaveBeenNthCalledWith(1, "Name", Role.Developer, "room-id");
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/room-id");
     });
   });
 });
+
+function createWrapper() {
+  return vuetifyMount(HomeView, {
+        global: {
+          plugins: [pinia],
+        },
+      });
+}

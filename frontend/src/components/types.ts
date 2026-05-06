@@ -52,3 +52,8 @@ export type ActiveRoom = {
   id: string;
   playerCount: number;
 };
+
+export type RoomState = {
+  inProgress: boolean;
+  isLocked: boolean;
+};

@@ -63,11 +63,7 @@ beforeEach(() => {
 describe("RoomView", () => {
   describe("rendering", () => {
     it("should render", () => {
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       expect(wrapper.findComponent(VToolbar).exists()).to.be.true;
       expect(wrapper.findComponent(VToolbar).props("rounded")).to.be.true;
@@ -94,6 +90,11 @@ describe("RoomView", () => {
     it("should fetch possible guesses on mounted", async () => {
       vuetifyMount(RoomView, {
         global: {
+          stubs: {
+            VNavigationDrawer: {
+              template: "<div></div>"
+            },
+          },
           plugins: [pinia],
         },
       });
@@ -106,11 +107,7 @@ describe("RoomView", () => {
 
     it("should render room form when user is not connected to the room", async () => {
       websocketStore.isConnected = false;
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       expect(wrapper.findComponent(RoomDetail).exists()).to.be.false;
       expect(wrapper.findComponent(RoomForm).exists()).to.be.true;
@@ -125,22 +122,14 @@ describe("RoomView", () => {
     it("should render room form when user is not connected to the room and password is required", () => {
       websocketStore.isConnected = false;
       websocketStore.roomIsLocked = true;
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       expect(wrapper.findComponent(RoomForm).exists()).to.be.true;
       expect(wrapper.findComponent(RoomForm).props("showPasswordInput")).to.be.true;
     });
 
     it("should send correct message on estimate", () => {
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(RoomDetail).vm.$emit("estimate", "WR-12");
       expect(websocketStore.send).toHaveBeenNthCalledWith(1, {
@@ -150,11 +139,7 @@ describe("RoomView", () => {
     });
 
     it("should send correct message on guess", () => {
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(RoomDetail).vm.$emit("guess", 2);
       expect(websocketStore.send).toHaveBeenNthCalledWith(1, {
@@ -164,11 +149,7 @@ describe("RoomView", () => {
     });
 
     it("should send correct message on reveal", () => {
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(RoomDetail).vm.$emit("reveal");
       expect(websocketStore.send).toHaveBeenNthCalledWith(1, {
@@ -179,25 +160,15 @@ describe("RoomView", () => {
 
     it("should redirect to '/' when room does not exists", async () => {
       websocketStore.roomExists = vi.fn(() => Promise.resolve(false));
-      vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      createWrapper();
 
       await nextTick();
 
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/");
-
-      expect(websocketStore.fetchRoomIsLocked).not.toHaveBeenCalled();
     });
 
     it("should send correct message on new-round", () => {
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(RoomDetail).vm.$emit("new-round");
       expect(websocketStore.send).toHaveBeenNthCalledWith(1, {
@@ -207,11 +178,7 @@ describe("RoomView", () => {
     });
 
     it("should disconnect and push to home when on leave", () => {
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper
         .findComponent(VToolbar)
@@ -224,11 +191,7 @@ describe("RoomView", () => {
     });
 
     it("should send correct message when locking room", async () => {
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       await wrapper
         .findComponent(VToolbar)
@@ -253,11 +216,7 @@ describe("RoomView", () => {
 
     it("should send correct message when opening room", async () => {
       websocketStore.roomIsLocked = true;
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       await wrapper
         .findComponent(VToolbar)
@@ -286,11 +245,7 @@ describe("RoomView", () => {
         },
       });
 
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       // @ts-ignore
       wrapper.vm.roomPassword = "top secret";
@@ -320,11 +275,7 @@ describe("RoomView", () => {
         },
       });
 
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       // @ts-ignore
       wrapper.vm.roomPassword = "top secret";
@@ -341,7 +292,9 @@ describe("RoomView", () => {
 
     it("should join when user not connected and everything is fine", async () => {
       websocketStore.isConnected = false;
-      websocketStore.isRoundInRoomInProgress = vi.fn(() => Promise.resolve(false));
+      websocketStore.roomState = vi.fn(() => Promise.resolve({
+        inProgress: false,
+      }));
       websocketStore.userExistsInRoom = vi.fn(() => Promise.resolve(false));
       websocketStore.connect = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -364,7 +317,7 @@ describe("RoomView", () => {
       await nextTick();
 
       expect(websocketStore.passwordMatchesRoom).not.toHaveBeenCalled();
-      expect(websocketStore.isRoundInRoomInProgress).toHaveBeenNthCalledWith(1, "room-id");
+      expect(websocketStore.roomState).toHaveBeenNthCalledWith(1, "room-id");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "Name", "room-id");
       expect(websocketStore.connect).toHaveBeenNthCalledWith(1, "Name", Role.Developer, "room-id");
       expect(websocketStore.fetchPossibleGuesses).toHaveBeenCalledOnce();
@@ -373,7 +326,10 @@ describe("RoomView", () => {
 
     it("should not join when user is not connected, room is locked and password does not match", async () => {
       websocketStore.isConnected = false;
-      websocketStore.roomIsLocked = true;
+      websocketStore.roomState = vi.fn(() => Promise.resolve({
+        inProgress: false,
+        isLocked: true,
+      }))
       websocketStore.passwordMatchesRoom = vi.fn(() => Promise.resolve(false));
       websocketStore.connect = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -381,11 +337,7 @@ describe("RoomView", () => {
           id: "room-id",
         },
       });
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(RoomForm).vm.$emit("update:name", "Name");
       wrapper.findComponent(RoomForm).vm.$emit("update:role", Role.Developer);
@@ -394,13 +346,14 @@ describe("RoomView", () => {
 
       await nextTick();
       await nextTick();
+      await nextTick();
 
       expect(wrapper.findComponent(RoomForm).props("errorMessage")).equal(
         "The provided password is wrong",
       );
 
       expect(websocketStore.passwordMatchesRoom).toHaveBeenNthCalledWith(1, "room-id", "incorrect");
-      expect(websocketStore.isRoundInRoomInProgress).not.toHaveBeenCalled();
+      expect(websocketStore.roomState).toHaveBeenNthCalledWith(1, "room-id");
       expect(websocketStore.userExistsInRoom).not.toHaveBeenCalled();
       expect(websocketStore.connect).not.toHaveBeenCalled();
       expect(websocketStore.fetchPossibleGuesses).not.toHaveBeenCalled();
@@ -411,18 +364,17 @@ describe("RoomView", () => {
       websocketStore.isConnected = false;
       websocketStore.roomIsLocked = true;
       websocketStore.passwordMatchesRoom = vi.fn(() => Promise.resolve(true));
-      websocketStore.isRoundInRoomInProgress = vi.fn(() => Promise.resolve(true));
+      websocketStore.roomState = vi.fn(() => Promise.resolve({
+        inProgress: true,
+        isLocked: true,
+      }));
       websocketStore.connect = vi.fn();
       (useRoute as Mock).mockReturnValue({
         params: {
           id: "room-id",
         },
       });
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(RoomForm).vm.$emit("update:name", "Name");
       wrapper.findComponent(RoomForm).vm.$emit("update:role", Role.Developer);
@@ -438,7 +390,7 @@ describe("RoomView", () => {
       );
 
       expect(websocketStore.passwordMatchesRoom).toHaveBeenNthCalledWith(1, "room-id", "correct");
-      expect(websocketStore.isRoundInRoomInProgress).toHaveBeenNthCalledWith(1, "room-id");
+      expect(websocketStore.roomState).toHaveBeenNthCalledWith(1, "room-id");
       expect(websocketStore.userExistsInRoom).not.toHaveBeenCalled();
       expect(websocketStore.connect).not.toHaveBeenCalled();
       expect(websocketStore.fetchPossibleGuesses).not.toHaveBeenCalled();
@@ -449,7 +401,10 @@ describe("RoomView", () => {
       websocketStore.isConnected = false;
       websocketStore.roomIsLocked = true;
       websocketStore.passwordMatchesRoom = vi.fn(() => Promise.resolve(true));
-      websocketStore.isRoundInRoomInProgress = vi.fn(() => Promise.resolve(false));
+      websocketStore.roomState = vi.fn(() => Promise.resolve({
+        inProgress: false,
+        isLocked: true,
+      }));
       websocketStore.userExistsInRoom = vi.fn(() => Promise.resolve(true));
       websocketStore.connect = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -457,11 +412,7 @@ describe("RoomView", () => {
           id: "room-id",
         },
       });
-      const wrapper = vuetifyMount(RoomView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(RoomForm).vm.$emit("update:name", "Name");
       wrapper.findComponent(RoomForm).vm.$emit("update:role", Role.Developer);
@@ -477,7 +428,7 @@ describe("RoomView", () => {
       );
 
       expect(websocketStore.passwordMatchesRoom).toHaveBeenNthCalledWith(1, "room-id", "correct");
-      expect(websocketStore.isRoundInRoomInProgress).toHaveBeenNthCalledWith(1, "room-id");
+      expect(websocketStore.roomState).toHaveBeenNthCalledWith(1, "room-id");
       expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "Name", "room-id");
       expect(websocketStore.connect).not.toHaveBeenCalled();
       expect(websocketStore.fetchPossibleGuesses).not.toHaveBeenCalled();
@@ -485,3 +436,16 @@ describe("RoomView", () => {
     });
   });
 });
+
+function createWrapper() {
+  return vuetifyMount(RoomView, {
+    global: {
+      plugins: [pinia],
+      stubs: {
+        VNavigationDrawer: {
+          template: "<div></div>"
+        },
+      },
+    },
+  });
+}

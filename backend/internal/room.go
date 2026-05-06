@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -36,15 +35,30 @@ type Room struct {
 	Issues         []Issue
 }
 
-func (room *Room) MarshalJSON() ([]byte, error) {
-	out := struct {
-		Id          RoomId `json:"id"`
-		PlayerCount int    `json:"playerCount"`
-	}{
+type State struct {
+	InProgress bool `json:"inProgress"`
+	IsLocked   bool `json:"isLocked"`
+}
+
+type Overview struct {
+	Id          RoomId    `json:"id"`
+	PlayerCount int       `json:"playerCount"`
+	Created     time.Time `json:"-"`
+}
+
+func (room *Room) State() State {
+	return State{
+		InProgress: room.InProgress,
+		IsLocked:   len(room.HashedPassword) > 0,
+	}
+}
+
+func (room *Room) AsOverview() Overview {
+	return Overview{
 		Id:          room.Id,
 		PlayerCount: len(room.Clients),
+		Created:     room.Created,
 	}
-	return json.Marshal(&out)
 }
 
 func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *slog.Logger) *Room {

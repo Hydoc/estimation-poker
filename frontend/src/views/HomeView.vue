@@ -20,26 +20,25 @@ async function connect(chosenRoomId: string | undefined) {
   errorMessage.value = "";
 
   const actualRoomId = chosenRoomId ? chosenRoomId : await websocketStore.createRoom(name.value);
+  const roomState = await websocketStore.roomState(actualRoomId);
 
-  const isLocked = await websocketStore.fetchRoomIsLocked(actualRoomId);
-  if (isLocked && passwordForRoom.value === "") {
+  if (roomState.isLocked && passwordForRoom.value === "") {
     showPasswordInput.value = true;
     return;
   }
 
-  const passwordMatches = isLocked
+  const passwordMatches = roomState.isLocked
     ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
     : true;
-  if (isLocked && !passwordMatches) {
+  if (roomState.isLocked && !passwordMatches) {
     showPasswordInput.value = true;
     errorMessage.value = "The provided password is wrong";
     return;
   }
 
   showPasswordInput.value = false;
-
-  const roundInRoomInProgress = await websocketStore.isRoundInRoomInProgress(actualRoomId);
-  if (roundInRoomInProgress) {
+  
+  if (roomState.inProgress) {
     errorMessage.value = "The round has already started";
     return;
   }
