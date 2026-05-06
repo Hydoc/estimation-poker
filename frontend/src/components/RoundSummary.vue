@@ -8,7 +8,7 @@ type Props = {
 const props = defineProps<Props>();
 
 const totalDevelopers = computed(() => props.developerDone.length);
-const stats = computed(() => {
+const stats = computed((): { [key: number]: number } => {
   return props.developerDone.reduce((carry: { [key: number]: number }, it) => {
     if (!carry[it.guess]) {
       carry[it.guess] = 0;
@@ -45,7 +45,8 @@ const mostGuessedPercentage = computed(() => {
             />
             <div class="card">
               <span>
-                <strong v-if="stat > 0">{{ stat }}</strong>
+                <!-- TODO the type-check thinks that the "stat" is a string, why? -->
+                <strong v-if="parseInt(`${stat}`) > 0">{{ stat }}</strong>
                 <v-icon v-else>mdi-coffee</v-icon>
               </span>
             </div>

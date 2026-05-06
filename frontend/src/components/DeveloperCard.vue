@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<Props>(), {
         <div class="flip-card__back">
           <span v-if="props.developerDone">
             <v-icon v-if="props.developerDone.doSkip">mdi-coffee</v-icon>
-            <strong v-else>{{ developerDone.guess }}</strong>
+            <strong v-else>{{ developerDone!.guess }}</strong>
           </span>
         </div>
       </div>
