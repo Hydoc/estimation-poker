@@ -69,31 +69,32 @@ func TestApplication_handleRoomExists(t *testing.T) {
 	}
 }
 
-func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
+func TestApplication_handleFetchRoomState(t *testing.T) {
 	tests := []struct {
-		name        string
-		expectation map[string]bool
-		rooms       map[internal.RoomId]*internal.Room
-		room        string
+		name           string
+		expectedStatus int
+		expectation    internal.State
+		rooms          map[internal.RoomId]*internal.Room
+		room           string
 	}{
 		{
-			name: "not in progress when rooms are empty",
-			expectation: map[string]bool{
-				"inProgress": false,
-				"isLocked":   false,
-			},
-			rooms: map[internal.RoomId]*internal.Room{},
-			room:  "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			name:           "not in progress when rooms are empty",
+			expectedStatus: http.StatusNotFound,
+			expectation:    internal.State{},
+			rooms:          map[internal.RoomId]*internal.Room{},
+			room:           "9c874aaa-c628-4688-a72d-0b1afc708a7d",
 		},
 		{
-			name: "in progress when room is set",
-			expectation: map[string]bool{
-				"inProgress": true,
-				"isLocked":   false,
+			name:           "in progress when room is set",
+			expectedStatus: http.StatusOK,
+			expectation: internal.State{
+				InProgress: true,
+				IsLocked:   false,
 			},
 			rooms: map[internal.RoomId]*internal.Room{
 				"9c874aaa-c628-4688-a72d-0b1afc708a7d": {
-					InProgress: true,
+					InProgress:     true,
+					HashedPassword: make([]byte, 0),
 				},
 			},
 			room: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
@@ -112,11 +113,12 @@ func TestApplication_handleRoundInRoomInProgress(t *testing.T) {
 
 			router.ServeHTTP(recorder, request)
 
-			var got map[string]bool
+			var got internal.State
 			json.Unmarshal(recorder.Body.Bytes(), &got)
 
 			gotContentType := recorder.Header().Get("Content-Type")
 
+			assert.Equal(t, recorder.Code, test.expectedStatus)
 			assert.Equal(t, gotContentType, "application/json")
 			assert.DeepEqual(t, got, test.expectation)
 		})
