@@ -7,7 +7,7 @@ import {
   type Permissions,
   type DeveloperDone,
   type ActiveRoom,
-  type FetchActiveRoomsResponse, 
+  type FetchActiveRoomsResponse,
   type RoomState,
 } from "@/components/types";
 import { Role, RoundState } from "@/components/types";
@@ -217,7 +217,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     const response = await fetch(`/v1/room/${roomId}/users/exists?name=${name}`);
     return ((await response.json()) as { exists: boolean }).exists;
   }
-  
+
   async function roomState(roomId: string): Promise<RoomState> {
     const response = await fetch(`/v1/room/${roomId}/state`);
     return await response.json();
@@ -267,9 +267,7 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   }
 
   async function fetchPermissions(): Promise<void> {
-    const response = await fetch(
-      `/v1/room/${userRoomId.value}/permissions?name=${username.value}`,
-    );
+    const response = await fetch(`/v1/room/${userRoomId.value}/permissions?name=${username.value}`);
     if (!response.ok) {
       permissions.value = {
         room: {

@@ -10,6 +10,7 @@
     "test": "vitest run --coverage",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
+    "format": "prettier --write .",
     "lint": "eslint . --fix --ignore-pattern gitignore"
   },
   "dependencies": {

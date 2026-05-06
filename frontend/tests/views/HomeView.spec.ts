@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, Mock, vi} from "vitest";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import HomeView from "../../src/views/HomeView.vue";
 import { createTestingPinia, TestingPinia } from "@pinia/testing";
 import { useWebsocketStore } from "../../src/stores/websocket";
@@ -103,10 +103,12 @@ describe("HomeView", () => {
 
     it("should create a new room", async () => {
       websocketStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
-      websocketStore.roomState = vi.fn(() => Promise.resolve({
-        isLocked: false,
-        inProgress: false,
-      }));
+      websocketStore.roomState = vi.fn(() =>
+        Promise.resolve({
+          isLocked: false,
+          inProgress: false,
+        }),
+      );
       websocketStore.userExistsInRoom = vi.fn(() => Promise.resolve(false));
 
       const wrapper = createWrapper();
@@ -131,8 +133,8 @@ describe("HomeView", () => {
 
 function createWrapper() {
   return vuetifyMount(HomeView, {
-        global: {
-          plugins: [pinia],
-        },
-      });
+    global: {
+      plugins: [pinia],
+    },
+  });
 }

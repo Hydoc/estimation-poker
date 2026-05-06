@@ -43,8 +43,7 @@ describe("TableOverview", () => {
       expect(wrapper.findComponent(ProductOwnerRoundView).props("developerList")).deep.equal([
         { name: "Test Dev", isDone: false, role: "developer" } as Developer,
       ]);
-      expect(wrapper.findComponent(ProductOwnerRoundView).props("hasTicketToGuess")).to.be
-        .false;
+      expect(wrapper.findComponent(ProductOwnerRoundView).props("hasTicketToGuess")).to.be.false;
       expect(wrapper.findComponent(ProductOwnerRoundView).props("showAllGuesses")).to.be.false;
 
       expect(wrapper.text()).not.contains("Waiting for ticket…");

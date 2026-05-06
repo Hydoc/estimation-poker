@@ -41,9 +41,7 @@ describe("Websocket Store", () => {
   it("should connect", async () => {
     const websocketStore = useWebsocketStore();
     await websocketStore.connect("ABC", Role.ProductOwner, "Test");
-    expect(websocketUrl).equal(
-      "ws://localhost:3000/v1/room/Test/product-owner?name=ABC",
-    );
+    expect(websocketUrl).equal("ws://localhost:3000/v1/room/Test/product-owner?name=ABC");
     expect(websocketStore.username).equal("ABC");
     expect(websocketStore.userRole).equal(Role.ProductOwner);
     expect(websocketStore.roomId).equal("Test");
@@ -57,10 +55,12 @@ describe("Websocket Store", () => {
 
   it("should create a room", async () => {
     // @ts-ignore
-    global.fetch = vi.fn(() => Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({ id: "123" })
-    }));
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ id: "123" }),
+      }),
+    );
     const websocketStore = useWebsocketStore();
     const id = await websocketStore.createRoom("test");
     expect(id).equal("123");
@@ -75,11 +75,13 @@ describe("Websocket Store", () => {
 
   it("should throw an error when create room response is not ok", async () => {
     // @ts-ignore
-    global.fetch = vi.fn(() => Promise.resolve({
-      ok: false,
-    }));
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+      }),
+    );
     const websocketStore = useWebsocketStore();
-    
+
     await expect(() => websocketStore.createRoom("test")).rejects.toThrow("Could not create room");
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room", {
       method: "POST",
@@ -339,10 +341,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const actual = await websocketStore.userExistsInRoom("Bla", "Blub");
     expect(actual).to.be.true;
-    expect(global.fetch).toHaveBeenNthCalledWith(
-      1,
-      "/v1/room/Blub/users/exists?name=Bla",
-    );
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Blub/users/exists?name=Bla");
   });
 
   it("should return false when user in room does not exist", async () => {
@@ -352,10 +351,7 @@ describe("Websocket Store", () => {
     const websocketStore = useWebsocketStore();
     const actual = await websocketStore.userExistsInRoom("Bla", "Blub");
     expect(actual).to.be.false;
-    expect(global.fetch).toHaveBeenNthCalledWith(
-      1,
-      "/v1/room/Blub/users/exists?name=Bla",
-    );
+    expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/room/Blub/users/exists?name=Bla");
   });
 
   it("should fetch active rooms", async () => {
@@ -386,7 +382,9 @@ describe("Websocket Store", () => {
       ok: false,
     });
     const websocketStore = useWebsocketStore();
-    await expect(() => websocketStore.fetchActiveRooms()).rejects.toThrowError("Could not find active rooms");
+    await expect(() => websocketStore.fetchActiveRooms()).rejects.toThrowError(
+      "Could not find active rooms",
+    );
     expect(global.fetch).toHaveBeenNthCalledWith(1, "/v1/rooms");
   });
 

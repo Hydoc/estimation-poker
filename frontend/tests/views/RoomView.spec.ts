@@ -5,7 +5,13 @@ import { useWebsocketStore } from "../../src/stores/websocket";
 import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "../../src/components/RoomDetail.vue";
 import { Role, RoundState } from "../../src/components/types";
-import {VApp, VBtn, VDialog, VIcon, VNavigationDrawer, VTextField, VToolbar} from "vuetify/components";
+import {
+  VBtn,
+  VDialog,
+  VIcon,
+  VTextField,
+  VToolbar,
+} from "vuetify/components";
 import { nextTick } from "vue";
 import { vuetifyMount } from "../vuetifyMount";
 import RoomForm from "../../src/components/RoomForm.vue";
@@ -41,7 +47,6 @@ beforeEach(() => {
   websocketStore.ticketToGuess = "";
   websocketStore.guess = 0;
   websocketStore.showAllGuesses = false;
-  websocketStore.roomExists = vi.fn(() => Promise.resolve(true));
   websocketStore.permissions = {
     room: {
       canLock: true,
@@ -92,7 +97,7 @@ describe("RoomView", () => {
         global: {
           stubs: {
             VNavigationDrawer: {
-              template: "<div></div>"
+              template: "<div></div>",
             },
           },
           plugins: [pinia],
@@ -292,9 +297,11 @@ describe("RoomView", () => {
 
     it("should join when user not connected and everything is fine", async () => {
       websocketStore.isConnected = false;
-      websocketStore.roomState = vi.fn(() => Promise.resolve({
-        inProgress: false,
-      }));
+      websocketStore.roomState = vi.fn(() =>
+        Promise.resolve({
+          inProgress: false,
+        }),
+      );
       websocketStore.userExistsInRoom = vi.fn(() => Promise.resolve(false));
       websocketStore.connect = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -326,10 +333,12 @@ describe("RoomView", () => {
 
     it("should not join when user is not connected, room is locked and password does not match", async () => {
       websocketStore.isConnected = false;
-      websocketStore.roomState = vi.fn(() => Promise.resolve({
-        inProgress: false,
-        isLocked: true,
-      }))
+      websocketStore.roomState = vi.fn(() =>
+        Promise.resolve({
+          inProgress: false,
+          isLocked: true,
+        }),
+      );
       websocketStore.passwordMatchesRoom = vi.fn(() => Promise.resolve(false));
       websocketStore.connect = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -364,10 +373,12 @@ describe("RoomView", () => {
       websocketStore.isConnected = false;
       websocketStore.roomIsLocked = true;
       websocketStore.passwordMatchesRoom = vi.fn(() => Promise.resolve(true));
-      websocketStore.roomState = vi.fn(() => Promise.resolve({
-        inProgress: true,
-        isLocked: true,
-      }));
+      websocketStore.roomState = vi.fn(() =>
+        Promise.resolve({
+          inProgress: true,
+          isLocked: true,
+        }),
+      );
       websocketStore.connect = vi.fn();
       (useRoute as Mock).mockReturnValue({
         params: {
@@ -401,10 +412,12 @@ describe("RoomView", () => {
       websocketStore.isConnected = false;
       websocketStore.roomIsLocked = true;
       websocketStore.passwordMatchesRoom = vi.fn(() => Promise.resolve(true));
-      websocketStore.roomState = vi.fn(() => Promise.resolve({
-        inProgress: false,
-        isLocked: true,
-      }));
+      websocketStore.roomState = vi.fn(() =>
+        Promise.resolve({
+          inProgress: false,
+          isLocked: true,
+        }),
+      );
       websocketStore.userExistsInRoom = vi.fn(() => Promise.resolve(true));
       websocketStore.connect = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -443,7 +456,7 @@ function createWrapper() {
       plugins: [pinia],
       stubs: {
         VNavigationDrawer: {
-          template: "<div></div>"
+          template: "<div></div>",
         },
       },
     },

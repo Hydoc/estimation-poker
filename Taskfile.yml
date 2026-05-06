@@ -29,9 +29,13 @@ tasks:
 
   check-frontend-lint:
     cmd: docker compose exec frontend pnpm lint
+    
+  check-frontend-format:
+    cmd: docker compose exec frontend pnpm format
 
   check-frontend:
     cmds:
+      - task: check-frontend-format
       - task: check-frontend-lint
       - task: check-frontend-test
 
