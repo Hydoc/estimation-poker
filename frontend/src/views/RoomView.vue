@@ -5,8 +5,10 @@ import RoomDetail from "@/components/RoomDetail.vue";
 import { computed, onMounted, ref } from "vue";
 import { Role, RoundState } from "@/components/types.ts";
 import RoomForm from "@/components/RoomForm.vue";
+import { useRoom } from "@/composables/useRoom.ts";
 
 const websocketStore = useWebsocketStore();
+const room = useRoom();
 const router = useRouter();
 const route = useRoute();
 const showSetRoomPasswordDialog = ref(false);
@@ -20,27 +22,29 @@ const passwordForRoom = ref("");
 const errorMessage = ref("");
 const issueToAdd = ref("");
 const showIssuesDrawer = ref(false);
-const roomIsLocked = computed(() => websocketStore.roomIsLocked);
-const usersInRoom = computed(() => websocketStore.usersInRoom);
+const roomIsLocked = computed(() => room.roomState.value.roomIsLocked);
+const usersInRoom = computed(() => room.roomState.value.users);
 const queryRoomId = computed((): string => {
   if (Array.isArray(route.params.id)) {
     return route.params.id[0];
   }
   return route.params.id;
 });
+// TODO refactor to use both composables instead of the store
 const userRole = computed(() => websocketStore.userRole);
-const roundState = computed(() => websocketStore.roundState);
-const ticketToGuess = computed(() => websocketStore.ticketToGuess);
-const guess = computed(() => websocketStore.guess);
-const didSkip = computed(() => websocketStore.didSkip);
-const showAllGuesses = computed(() => websocketStore.showAllGuesses);
 const possibleGuesses = computed(() => websocketStore.possibleGuesses);
 const permissions = computed(() => websocketStore.permissions);
-const developerDone = computed(() => websocketStore.developerDone);
 const isConnected = computed(() => websocketStore.isConnected);
-const issues = computed(() => websocketStore.issues);
 
-const roundIsWaiting = computed(() => roundState.value === RoundState.Waiting);
+const roundState = computed(() => room.roomState.value.roundState);
+const ticketToGuess = computed(() => room.roomState.value.issueToGuess);
+const guess = computed(() => room.roomState.value.guess);
+const didSkip = computed(() => room.roomState.value.doSkip);
+const showAllGuesses = computed(() => room.roomState.value.showAllGuesses);
+const developerDone = computed(() => room.roomState.value.developerDone);
+// const issues = computed(() => room.roomState.value.issues);
+
+const roundIsWaiting = computed(() => room.roomState.value.roundState === RoundState.Waiting);
 
 const roundStateAsReadableString = computed(() => {
   if (roundState.value === RoundState.Waiting) {
@@ -133,11 +137,10 @@ async function tryJoin() {
 }
 
 onMounted(async () => {
-  const roomExists = await websocketStore.roomState(queryRoomId.value);
-  if (!roomExists) {
-    await router.push("/");
-    return;
-  }
+  await websocketStore.roomState(queryRoomId.value)
+      .catch(async () => {
+        await router.push("/");
+      });
 
   if (isConnected.value) {
     await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);
@@ -160,7 +163,10 @@ onMounted(async () => {
   </div>
 
   <div v-else>
-    <v-dialog v-model="showSetRoomPasswordDialog" max-width="500">
+    <v-dialog
+      v-model="showSetRoomPasswordDialog"
+      max-width="500"
+    >
       <v-card>
         <v-card-title>Set password</v-card-title>
         <v-card-text>
@@ -174,8 +180,17 @@ onMounted(async () => {
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="red" @click="showSetRoomPasswordDialog = false"> Cancel </v-btn>
-          <v-btn :disabled="roomPassword.length === 0" color="green" @click="lockRoom">
+          <v-btn
+            color="red"
+            @click="showSetRoomPasswordDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            :disabled="roomPassword.length === 0"
+            color="green"
+            @click="lockRoom"
+          >
             Lock
           </v-btn>
         </v-card-actions>
@@ -187,17 +202,41 @@ onMounted(async () => {
         {{ roundStateAsReadableString }}
       </v-toolbar-title>
       <div v-if="roundIsWaiting">
-        <v-btn v-if="userRole == Role.ProductOwner" @click="showIssuesDrawer = !showIssuesDrawer">
-          <v-tooltip activator="parent" location="bottom"> Issues </v-tooltip>
+        <v-btn
+          v-if="userRole == Role.ProductOwner"
+          @click="showIssuesDrawer = !showIssuesDrawer"
+        >
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Issues
+          </v-tooltip>
           <v-icon>mdi-text-box-outline</v-icon>
         </v-btn>
-        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="copyPassword">
-          <v-tooltip activator="parent" location="bottom"> Copy password </v-tooltip>
+        <v-btn
+          v-if="permissions.room.canLock && roomIsLocked"
+          @click="copyPassword"
+        >
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Copy password
+          </v-tooltip>
           <v-icon>mdi-content-copy</v-icon>
         </v-btn>
 
-        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="openRoom">
-          <v-tooltip activator="parent" location="bottom"> Unlock room </v-tooltip>
+        <v-btn
+          v-if="permissions.room.canLock && roomIsLocked"
+          @click="openRoom"
+        >
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Unlock room
+          </v-tooltip>
           <v-icon>mdi-key</v-icon>
         </v-btn>
 
@@ -205,12 +244,22 @@ onMounted(async () => {
           v-if="permissions.room.canLock && !roomIsLocked"
           @click="showSetRoomPasswordDialog = true"
         >
-          <v-tooltip activator="parent" location="bottom"> Lock room </v-tooltip>
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Lock room
+          </v-tooltip>
           <v-icon>mdi-lock</v-icon>
         </v-btn>
 
         <v-btn @click="leaveRoom">
-          <v-tooltip activator="parent" location="bottom"> Leave room </v-tooltip>
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Leave room
+          </v-tooltip>
           <v-icon>mdi-location-exit</v-icon>
         </v-btn>
       </div>
@@ -257,12 +306,20 @@ onMounted(async () => {
         <v-divider />
       </template>
       <v-list>
-        <v-list-item v-for="issue in issues" :key="issue">
-          <v-card variant="tonal" class="pa-2">
+        <v-list-item
+          v-for="issue in issues"
+          :key="issue"
+        >
+          <v-card
+            variant="tonal"
+            class="pa-2"
+          >
             <v-card-title>{{ issue }}</v-card-title>
 
             <v-card-actions>
-              <v-btn variant="tonal"> Vote this issue </v-btn>
+              <v-btn variant="tonal">
+                Vote this issue
+              </v-btn>
               <v-spacer />
               <span>-</span>
             </v-card-actions>
@@ -274,11 +331,19 @@ onMounted(async () => {
         <v-container>
           <v-card>
             <v-card-text>
-              <v-text-field v-model.trim="issueToAdd" variant="outlined" placeholder="New issue" />
+              <v-text-field
+                v-model.trim="issueToAdd"
+                variant="outlined"
+                placeholder="New issue"
+              />
 
               <v-card-actions>
                 <v-spacer />
-                <v-btn variant="outlined" color="green-darken-2" @click="addIssue">
+                <v-btn
+                  variant="outlined"
+                  color="green-darken-2"
+                  @click="addIssue"
+                >
                   Add Issue
                 </v-btn>
               </v-card-actions>
@@ -288,7 +353,11 @@ onMounted(async () => {
       </template>
     </v-navigation-drawer>
 
-    <v-snackbar-queue v-model="websocketStore.notifications" :timeout="2000" color="gray" />
+    <v-snackbar-queue
+      v-model="websocketStore.notifications"
+      :timeout="2000"
+      color="gray"
+    />
   </div>
 </template>
 
