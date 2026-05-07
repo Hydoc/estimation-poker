@@ -72,7 +72,7 @@ func main() {
 		guessConfig: guessConfig,
 		rooms:       make(map[internal.RoomId]*internal.Room),
 		destroyRoom: make(chan internal.RoomId),
-		bus:         createBus(),
+		bus:         internal.CreateBus(),
 	}
 
 	srv := &http.Server{
@@ -93,17 +93,4 @@ func main() {
 	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
-}
-
-func createBus() message.Bus {
-	bus := message.NewBus()
-	bus.Register(internal.SkipRound, internal.HandleSkipRound)
-	bus.Register(internal.Estimate, internal.HandleEstimate)
-	bus.Register(internal.Guess, internal.HandleGuess)
-	bus.Register(internal.NewRound, internal.HandleNewRound)
-	bus.Register(internal.Reveal, internal.HandleReveal)
-	bus.Register(internal.LockRoom, internal.HandleLockRoom)
-	bus.Register(internal.OpenRoom, internal.HandleOpenRoom)
-	bus.Register(internal.AddIssue, internal.HandleAddIssue)
-	return bus
 }

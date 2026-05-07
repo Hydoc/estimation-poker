@@ -1,15 +1,17 @@
 package internal
 
+import "github.com/Hydoc/go-message"
+
 const (
 	join             = "join"
 	leave            = "leave"
-	Guess            = "guess"
-	NewRound         = "new-round"
-	Estimate         = "estimate"
-	LockRoom         = "lock-room"
-	OpenRoom         = "open-room"
-	SkipRound        = "skip"
-	Reveal           = "reveal"
+	guess            = "guess"
+	newRound         = "new-round"
+	estimate         = "estimate"
+	lockRoom         = "lock-room"
+	openRoom         = "open-room"
+	skipRound        = "skip"
+	reveal           = "reveal"
 	roomLocked       = "room-locked"
 	roomOpened       = "room-opened"
 	developerGuessed = "developer-guessed"
@@ -17,7 +19,7 @@ const (
 	developerSkipped = "developer-skipped"
 	youSkipped       = "you-skipped"
 	youGuessed       = "you-guessed"
-	AddIssue         = "add-issue"
+	addIssue         = "add-issue"
 	issues           = "issues"
 )
 
@@ -72,7 +74,7 @@ func NewJoin() *Message {
 
 func newEstimate(ticket string) *Message {
 	return &Message{
-		Type: Estimate,
+		Type: estimate,
 		Data: ticket,
 	}
 }
@@ -123,14 +125,14 @@ func newReveal(clients map[*Client]bool) *Message {
 	}
 
 	return &Message{
-		Type: Reveal,
+		Type: reveal,
 		Data: out,
 	}
 }
 
 func newNewRound() *Message {
 	return &Message{
-		Type: NewRound,
+		Type: newRound,
 	}
 }
 
@@ -151,4 +153,17 @@ func newYouGuessed(guess int) *Message {
 		Type: youGuessed,
 		Data: guess,
 	}
+}
+
+func CreateBus() message.Bus {
+	bus := message.NewBus()
+	bus.Register(skipRound, handleSkipRound)
+	bus.Register(estimate, handleEstimate)
+	bus.Register(guess, handleGuess)
+	bus.Register(newRound, handleNewRound)
+	bus.Register(reveal, handleReveal)
+	bus.Register(lockRoom, handleLockRoom)
+	bus.Register(openRoom, handleOpenRoom)
+	bus.Register(addIssue, handleAddIssue)
+	return bus
 }

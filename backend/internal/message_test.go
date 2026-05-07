@@ -52,13 +52,13 @@ func TestMessage(t *testing.T) {
 		{
 			name:         "newNewRound",
 			msg:          newNewRound(),
-			expectedType: NewRound,
+			expectedType: newRound,
 			expectedData: nil,
 		},
 		{
 			name:         "newReveal",
 			msg:          newReveal(make(map[*Client]bool)),
-			expectedType: Reveal,
+			expectedType: reveal,
 			expectedData: []map[string]any{},
 		},
 		{

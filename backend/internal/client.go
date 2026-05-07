@@ -44,7 +44,7 @@ func NewClient(name, role string, room *Room, connection *websocket.Conn, bus me
 	}
 }
 
-func HandleGuess(msg message.Message) (*message.Message, error) {
+func handleGuess(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(GuessPayload)
 	if ok && payload.client.Role == Developer {
 		payload.client.guess = payload.guess
@@ -55,7 +55,7 @@ func HandleGuess(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
-func HandleSkipRound(msg message.Message) (*message.Message, error) {
+func handleSkipRound(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(SkipRoundPayload)
 	if ok && payload.client.Role == Developer {
 		payload.client.doSkip = true
@@ -66,7 +66,7 @@ func HandleSkipRound(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
-func HandleNewRound(msg message.Message) (*message.Message, error) {
+func handleNewRound(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(NewRoundPayload)
 	if ok && payload.client.Role == ProductOwner {
 		payload.client.room.Broadcast <- newNewRound()
@@ -74,7 +74,7 @@ func HandleNewRound(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
-func HandleLockRoom(msg message.Message) (*message.Message, error) {
+func handleLockRoom(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(LockRoomPayload)
 	if ok && payload.client.room.lock(payload.client.Name, payload.password, payload.key) {
 		payload.client.room.Broadcast <- newRoomLocked()
@@ -82,7 +82,7 @@ func HandleLockRoom(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
-func HandleOpenRoom(msg message.Message) (*message.Message, error) {
+func handleOpenRoom(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(OpenRoomPayload)
 	if ok && payload.client.room.open(payload.client.Name, payload.key) {
 		payload.client.room.Broadcast <- newRoomOpened()
@@ -90,7 +90,7 @@ func HandleOpenRoom(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
-func HandleEstimate(msg message.Message) (*message.Message, error) {
+func handleEstimate(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(EstimatePayload)
 	if ok && payload.client.Role == ProductOwner {
 		payload.client.room.Broadcast <- newEstimate(payload.ticket)
@@ -98,7 +98,7 @@ func HandleEstimate(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
-func HandleReveal(msg message.Message) (*message.Message, error) {
+func handleReveal(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(RevealPayload)
 	if ok && payload.client.Role == ProductOwner {
 		payload.client.room.Broadcast <- newReveal(payload.client.room.Clients)
@@ -106,7 +106,7 @@ func HandleReveal(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
-func HandleAddIssue(msg message.Message) (*message.Message, error) {
+func handleAddIssue(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(AddIssuePayload)
 	if ok && payload.client.Role == ProductOwner {
 		payload.client.room.addIssue(payload.issue)
@@ -147,41 +147,41 @@ func (client *Client) WebsocketReader() {
 
 func fabricate(incomingMessage *Message, client *Client) (message.Message, error) {
 	switch incomingMessage.Type {
-	case SkipRound:
+	case skipRound:
 		return message.New(
-			SkipRound,
+			skipRound,
 			SkipRoundPayload{
 				client: client,
 			},
 		), nil
-	case Estimate:
+	case estimate:
 		ticket, ok := incomingMessage.Data.(string)
 		if !ok {
 			return message.Message{}, errors.New("ticket is invalid")
 		}
 
 		return message.New(
-			Estimate,
+			estimate,
 			EstimatePayload{
 				client: client,
 				ticket: ticket,
 			},
 		), nil
-	case Guess:
+	case guess:
 		actualGuess, ok := incomingMessage.Data.(float64)
 		if !ok {
 			return message.Message{}, errors.New("guess is invalid")
 		}
 
-		return message.New(Guess, GuessPayload{
+		return message.New(guess, GuessPayload{
 			client: client,
 			guess:  int(actualGuess),
 		}), nil
-	case NewRound:
-		return message.New(NewRound, NewRoundPayload{client: client}), nil
-	case Reveal:
-		return message.New(Reveal, RevealPayload{client: client}), nil
-	case LockRoom:
+	case newRound:
+		return message.New(newRound, NewRoundPayload{client: client}), nil
+	case reveal:
+		return message.New(reveal, RevealPayload{client: client}), nil
+	case lockRoom:
 		pw, pwOk := incomingMessage.Data.(map[string]any)["password"]
 		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
 
@@ -192,29 +192,29 @@ func fabricate(incomingMessage *Message, client *Client) (message.Message, error
 			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a password", client.Name, client.room.Id)
 		}
 
-		return message.New(LockRoom, LockRoomPayload{
+		return message.New(lockRoom, LockRoomPayload{
 			client:   client,
 			key:      key.(string),
 			password: pw.(string),
 		}), nil
-	case OpenRoom:
+	case openRoom:
 		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
 
 		if !keyOk {
 			return message.Message{}, fmt.Errorf("client: %s tried to open room %s without a key", client.Name, client.room.Id)
 		}
 
-		return message.New(OpenRoom, OpenRoomPayload{
+		return message.New(openRoom, OpenRoomPayload{
 			client: client,
 			key:    key.(string),
 		}), nil
-	case AddIssue:
+	case addIssue:
 		actualIssue, ok := incomingMessage.Data.(string)
 		if !ok {
 			return message.Message{}, errors.New("issue is invalid")
 		}
 
-		return message.New(AddIssue, AddIssuePayload{
+		return message.New(addIssue, AddIssuePayload{
 			client: client,
 			issue:  actualIssue,
 		}), nil

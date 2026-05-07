@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Hydoc/go-message"
+
 	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
@@ -93,7 +94,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 	}
 
 	bus := message.NewBus()
-	bus.Register(Guess, HandleGuess)
+	bus.Register(guess, handleGuess)
 	clientChannel := make(chan *Message)
 	client := &Client{
 		connection: connection,
@@ -106,7 +107,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 	go client.WebsocketReader()
 
 	wsjson.Write(context.Background(), connection, Message{
-		Type: Guess,
+		Type: guess,
 		Data: 2,
 	})
 
@@ -139,12 +140,12 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 	}
 
 	bus := message.NewBus()
-	bus.Register(Reveal, HandleReveal)
+	bus.Register(reveal, handleReveal)
 	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	go client.WebsocketReader()
 	go client.WebsocketWriter()
 	expectedMessage := &Message{
-		Type: Reveal,
+		Type: reveal,
 		Data: []map[string]any{},
 	}
 	client.send <- newReveal(room.Clients)
@@ -172,7 +173,7 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 	}
 
 	bus := message.NewBus()
-	bus.Register(NewRound, HandleNewRound)
+	bus.Register(newRound, handleNewRound)
 	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	go client.WebsocketReader()
 
@@ -203,7 +204,7 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 	}
 
 	bus := message.NewBus()
-	bus.Register(SkipRound, HandleSkipRound)
+	bus.Register(skipRound, handleSkipRound)
 	clientChannel := make(chan *Message)
 	client := &Client{
 		connection: connection,
@@ -216,7 +217,7 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 	go client.WebsocketReader()
 
 	wsjson.Write(context.Background(), connection, Message{
-		Type: SkipRound,
+		Type: skipRound,
 	})
 
 	expectedMsg := newDeveloperSkipped()
@@ -253,7 +254,7 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 	}
 
 	bus := message.NewBus()
-	bus.Register(LockRoom, HandleLockRoom)
+	bus.Register(lockRoom, handleLockRoom)
 	client := &Client{
 		connection: connection,
 		room:       room,
@@ -265,7 +266,7 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 	go client.WebsocketReader()
 
 	wsjson.Write(context.Background(), connection, Message{
-		Type: LockRoom,
+		Type: lockRoom,
 		Data: map[string]any{
 			"password": "my cool pw",
 			"key":      id.String(),
@@ -302,7 +303,7 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 	}
 
 	bus := message.NewBus()
-	bus.Register(OpenRoom, HandleOpenRoom)
+	bus.Register(openRoom, handleOpenRoom)
 	client := &Client{
 		connection: connection,
 		room:       room,
@@ -314,7 +315,7 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 	go client.WebsocketReader()
 
 	wsjson.Write(context.Background(), connection, Message{
-		Type: OpenRoom,
+		Type: openRoom,
 		Data: map[string]any{
 			"key": id.String(),
 		},
@@ -346,7 +347,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 
 	clientChannel := make(chan *Message)
 	bus := message.NewBus()
-	bus.Register(Estimate, HandleEstimate)
+	bus.Register(estimate, handleEstimate)
 	client := &Client{
 		connection: connection,
 		Role:       ProductOwner,
@@ -360,7 +361,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 
 	// due to the echo websocket it writes to itself
 	expectedMsg := &Message{
-		Type: Estimate,
+		Type: estimate,
 		Data: "a-ticket",
 	}
 	clientChannel <- expectedMsg

@@ -148,16 +148,16 @@ func (room *Room) Run() {
 			room.clientMu.Unlock()
 		case msg := <-room.Broadcast:
 			switch msg.Type {
-			case Estimate:
+			case estimate:
 				room.InProgress = true
 				room.broadcastToClients(msg)
-			case developerGuessed, SkipRound, developerSkipped:
+			case developerGuessed, skipRound, developerSkipped:
 				if room.everyDevIsDone() {
 					room.broadcastToClients(newEveryoneIsDone())
 					continue
 				}
 				room.broadcastToClients(msg)
-			case NewRound:
+			case newRound:
 				room.newRound()
 			case leave:
 				if room.InProgress {
@@ -165,7 +165,7 @@ func (room *Room) Run() {
 					continue
 				}
 				room.broadcastToClients(msg)
-			case join, Reveal, roomLocked, roomOpened:
+			case join, reveal, roomLocked, roomOpened:
 				room.broadcastToClients(msg)
 			default:
 				room.logger.Error(fmt.Sprintf("unexpected Message %#v", msg))
