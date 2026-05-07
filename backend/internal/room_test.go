@@ -84,7 +84,7 @@ func TestRoom_Run_RegisteringAClient(t *testing.T) {
 	client := &Client{}
 	go room.Run()
 
-	room.Join <- client
+	room.join <- client
 
 	room.clientMu.Lock()
 	if _, ok := room.Clients[client]; !ok {
@@ -101,11 +101,11 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 		Id:         roomId,
 		InProgress: false,
 		leave:      make(chan *Client),
-		Join:       nil,
+		join:       nil,
 		Clients: map[*Client]bool{
 			client: true,
 		},
-		Broadcast: nil,
+		broadcast: nil,
 		destroy:   destroyChannel,
 	}
 	go room.Run()
@@ -132,11 +132,11 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 		Id:         "Test",
 		InProgress: false,
 		leave:      nil,
-		Join:       nil,
+		join:       nil,
 		Clients: map[*Client]bool{
 			client: true,
 		},
-		Broadcast: make(chan *Message),
+		broadcast: make(chan *Message),
 		destroy:   nil,
 	}
 	go room.Run()
@@ -145,7 +145,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 		Type: estimate,
 		Data: nil,
 	}
-	room.Broadcast <- msg
+	room.broadcast <- msg
 
 	gotClientMsg := <-clientSendChannel
 
@@ -164,15 +164,15 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 		Id:         "Test",
 		InProgress: false,
 		leave:      nil,
-		Join:       nil,
+		join:       nil,
 		Clients: map[*Client]bool{
 			client: true,
 		},
-		Broadcast: make(chan *Message),
+		broadcast: make(chan *Message),
 		destroy:   nil,
 	}
 	go room.Run()
-	room.Broadcast <- newDeveloperGuessed()
+	room.broadcast <- newDeveloperGuessed()
 
 	gotClientMsg := <-clientSendChannel
 
@@ -190,14 +190,14 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 		send: clientSendChannel,
 		Role: ProductOwner,
 	}
-	room.Join <- client
-	room.Join <- &Client{
+	room.join <- client
+	room.join <- &Client{
 		Role:  Developer,
 		guess: 0,
 		send:  clientSendChannel,
 	}
 	msg := newDeveloperGuessed()
-	room.Broadcast <- msg
+	room.broadcast <- msg
 
 	select {
 	case <-time.After(5 * time.Second):
@@ -222,18 +222,18 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 		Id:         "Test",
 		InProgress: true,
 		leave:      nil,
-		Join:       nil,
+		join:       nil,
 		Clients: map[*Client]bool{
 			client:           true,
 			developerToReset: true,
 		},
-		Broadcast: make(chan *Message),
+		broadcast: make(chan *Message),
 		destroy:   nil,
 	}
 	go room.Run()
 
 	msg := newNewRound()
-	room.Broadcast <- msg
+	room.broadcast <- msg
 
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
@@ -259,18 +259,18 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 		Id:         "Test",
 		InProgress: true,
 		leave:      nil,
-		Join:       nil,
+		join:       nil,
 		Clients: map[*Client]bool{
 			client:           true,
 			developerToReset: true,
 		},
-		Broadcast: broadcastChannel,
+		broadcast: broadcastChannel,
 		destroy:   nil,
 	}
 	go room.Run()
 
 	msg := newLeave(client.Name)
-	room.Broadcast <- msg
+	room.broadcast <- msg
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
@@ -285,9 +285,9 @@ func TestRoom_lock(t *testing.T) {
 		Id:             "Test",
 		InProgress:     true,
 		leave:          nil,
-		Join:           nil,
+		join:           nil,
 		Clients:        make(map[*Client]bool),
-		Broadcast:      make(chan *Message),
+		broadcast:      make(chan *Message),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		Key:            key,
@@ -307,9 +307,9 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 		Id:             "Test",
 		InProgress:     true,
 		leave:          nil,
-		Join:           nil,
+		join:           nil,
 		Clients:        make(map[*Client]bool),
-		Broadcast:      make(chan *Message),
+		broadcast:      make(chan *Message),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		Key:            key,
@@ -356,9 +356,9 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 		Id:             "Test",
 		InProgress:     true,
 		leave:          nil,
-		Join:           nil,
+		join:           nil,
 		Clients:        make(map[*Client]bool),
-		Broadcast:      make(chan *Message),
+		broadcast:      make(chan *Message),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		Key:            key,

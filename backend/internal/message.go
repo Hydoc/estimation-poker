@@ -66,7 +66,7 @@ type RevealPayload struct {
 	client *Client
 }
 
-func NewJoin() *Message {
+func newJoin() *Message {
 	return &Message{
 		Type: join,
 	}

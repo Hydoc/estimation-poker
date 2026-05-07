@@ -49,7 +49,7 @@ func handleGuess(msg message.Message) (*message.Message, error) {
 	if ok && payload.client.Role == Developer {
 		payload.client.guess = payload.guess
 		payload.client.doSkip = false
-		payload.client.room.Broadcast <- newDeveloperGuessed()
+		payload.client.room.broadcast <- newDeveloperGuessed()
 		payload.client.send <- newYouGuessed(payload.guess)
 	}
 	return nil, nil
@@ -60,7 +60,7 @@ func handleSkipRound(msg message.Message) (*message.Message, error) {
 	if ok && payload.client.Role == Developer {
 		payload.client.doSkip = true
 		payload.client.guess = 0
-		payload.client.room.Broadcast <- newDeveloperSkipped()
+		payload.client.room.broadcast <- newDeveloperSkipped()
 		payload.client.send <- newYouSkipped()
 	}
 	return nil, nil
@@ -69,7 +69,7 @@ func handleSkipRound(msg message.Message) (*message.Message, error) {
 func handleNewRound(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(NewRoundPayload)
 	if ok && payload.client.Role == ProductOwner {
-		payload.client.room.Broadcast <- newNewRound()
+		payload.client.room.broadcast <- newNewRound()
 	}
 	return nil, nil
 }
@@ -77,7 +77,7 @@ func handleNewRound(msg message.Message) (*message.Message, error) {
 func handleLockRoom(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(LockRoomPayload)
 	if ok && payload.client.room.lock(payload.client.Name, payload.password, payload.key) {
-		payload.client.room.Broadcast <- newRoomLocked()
+		payload.client.room.broadcast <- newRoomLocked()
 	}
 	return nil, nil
 }
@@ -85,7 +85,7 @@ func handleLockRoom(msg message.Message) (*message.Message, error) {
 func handleOpenRoom(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(OpenRoomPayload)
 	if ok && payload.client.room.open(payload.client.Name, payload.key) {
-		payload.client.room.Broadcast <- newRoomOpened()
+		payload.client.room.broadcast <- newRoomOpened()
 	}
 	return nil, nil
 }
@@ -93,7 +93,7 @@ func handleOpenRoom(msg message.Message) (*message.Message, error) {
 func handleEstimate(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(EstimatePayload)
 	if ok && payload.client.Role == ProductOwner {
-		payload.client.room.Broadcast <- newEstimate(payload.ticket)
+		payload.client.room.broadcast <- newEstimate(payload.ticket)
 	}
 	return nil, nil
 }
@@ -101,7 +101,7 @@ func handleEstimate(msg message.Message) (*message.Message, error) {
 func handleReveal(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(RevealPayload)
 	if ok && payload.client.Role == ProductOwner {
-		payload.client.room.Broadcast <- newReveal(payload.client.room.Clients)
+		payload.client.room.broadcast <- newReveal(payload.client.room.Clients)
 	}
 	return nil, nil
 }
@@ -110,7 +110,7 @@ func handleAddIssue(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(AddIssuePayload)
 	if ok && payload.client.Role == ProductOwner {
 		payload.client.room.addIssue(payload.issue)
-		payload.client.room.Broadcast <- newIssues()
+		payload.client.room.broadcast <- newIssues()
 	}
 	return nil, nil
 }
@@ -118,7 +118,7 @@ func handleAddIssue(msg message.Message) (*message.Message, error) {
 func (client *Client) WebsocketReader() {
 	defer func() {
 		client.room.leave <- client
-		client.room.Broadcast <- newLeave(client.Name)
+		client.room.broadcast <- newLeave(client.Name)
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {
@@ -228,7 +228,7 @@ func (client *Client) WebsocketWriter() {
 
 	defer func() {
 		client.room.leave <- client
-		client.room.Broadcast <- newLeave(client.Name)
+		client.room.broadcast <- newLeave(client.Name)
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {

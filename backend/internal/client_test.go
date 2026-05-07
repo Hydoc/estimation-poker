@@ -78,8 +78,8 @@ func TestClient_Reset(t *testing.T) {
 func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *testing.T) {
 	broadcastChannel := make(chan *Message)
 	room := &Room{
-		Broadcast: broadcastChannel,
-		Join:      make(chan *Client),
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
 		leave:     make(chan *Client),
 		Clients:   make(map[*Client]bool),
 	}
@@ -123,8 +123,8 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 func TestClient_websocketReaderRevealMessage(t *testing.T) {
 	broadcastChannel := make(chan *Message)
 	room := &Room{
-		Broadcast: broadcastChannel,
-		Join:      make(chan *Client),
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
 		leave:     make(chan *Client),
 		Clients:   make(map[*Client]bool),
 	}
@@ -157,8 +157,8 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner(t *testing.T) {
 	broadcastChannel := make(chan *Message)
 	room := &Room{
-		Broadcast: broadcastChannel,
-		Join:      make(chan *Client),
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
 		leave:     make(chan *Client),
 		Clients:   make(map[*Client]bool),
 	}
@@ -188,8 +188,8 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(t *testing.T) {
 	broadcastChannel := make(chan *Message)
 	room := &Room{
-		Broadcast: broadcastChannel,
-		Join:      make(chan *Client),
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
 		leave:     make(chan *Client),
 		Clients:   make(map[*Client]bool),
 	}
@@ -235,8 +235,8 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
 	nameOfCreator := "Test"
 	room := &Room{
-		Broadcast:      broadcastChannel,
-		Join:           make(chan *Client),
+		broadcast:      broadcastChannel,
+		join:           make(chan *Client),
 		leave:          make(chan *Client),
 		Clients:        make(map[*Client]bool),
 		NameOfCreator:  nameOfCreator,
@@ -284,8 +284,8 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 	id := uuid.New()
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
 	room := &Room{
-		Broadcast:      broadcastChannel,
-		Join:           make(chan *Client),
+		broadcast:      broadcastChannel,
+		join:           make(chan *Client),
 		leave:          make(chan *Client),
 		Clients:        make(map[*Client]bool),
 		NameOfCreator:  "Test",
@@ -330,8 +330,8 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 func TestClient_WebsocketWriter(t *testing.T) {
 	broadcastChannel := make(chan *Message)
 	room := &Room{
-		Broadcast: broadcastChannel,
-		Join:      make(chan *Client),
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
 		leave:     make(chan *Client),
 		Clients:   make(map[*Client]bool),
 	}

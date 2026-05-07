@@ -24,9 +24,9 @@ type Room struct {
 	Id             RoomId
 	InProgress     bool
 	leave          chan *Client
-	Join           chan *Client
+	join           chan *Client
 	Clients        map[*Client]bool
-	Broadcast      chan *Message
+	broadcast      chan *Message
 	destroy        chan<- RoomId
 	NameOfCreator  string
 	Key            uuid.UUID
@@ -67,15 +67,20 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *s
 		logger:         logger,
 		InProgress:     false,
 		leave:          make(chan *Client),
-		Join:           make(chan *Client),
+		join:           make(chan *Client),
 		Clients:        make(map[*Client]bool),
-		Broadcast:      make(chan *Message),
+		broadcast:      make(chan *Message),
 		destroy:        destroy,
 		NameOfCreator:  nameOfCreator,
 		Key:            uuid.New(),
 		HashedPassword: make([]byte, 0),
 		Created:        time.Now(),
 	}
+}
+
+func (room *Room) Join(client *Client) {
+	room.join <- client
+	room.broadcast <- newJoin()
 }
 
 func (room *Room) lock(username, password, key string) bool {
@@ -135,7 +140,7 @@ func (room *Room) IsLocked() bool {
 func (room *Room) Run() {
 	for {
 		select {
-		case client := <-room.Join:
+		case client := <-room.join:
 			room.clientMu.Lock()
 			room.Clients[client] = true
 			room.clientMu.Unlock()
@@ -146,7 +151,7 @@ func (room *Room) Run() {
 				room.destroy <- room.Id
 			}
 			room.clientMu.Unlock()
-		case msg := <-room.Broadcast:
+		case msg := <-room.broadcast:
 			switch msg.Type {
 			case estimate:
 				room.InProgress = true

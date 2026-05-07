@@ -257,8 +257,7 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 		clientRole = internal.ProductOwner
 	}
 	client := internal.NewClient(name, clientRole, clientRoom, connection, app.bus, app.logger)
-	clientRoom.Join <- client
-	clientRoom.Broadcast <- internal.NewJoin()
+	clientRoom.Join(client)
 
 	go client.WebsocketReader()
 	go client.WebsocketWriter()

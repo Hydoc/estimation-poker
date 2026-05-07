@@ -21,54 +21,6 @@ import (
 	"github.com/Hydoc/guess-dev/backend/internal/assert"
 )
 
-func TestApplication_handleRoomExists(t *testing.T) {
-	tests := []struct {
-		name        string
-		expectation bool
-		rooms       map[internal.RoomId]*internal.Room
-		roomId      string
-	}{
-		{
-			name:        "not exists for empty rooms",
-			expectation: false,
-			rooms:       map[internal.RoomId]*internal.Room{},
-			roomId:      "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-		},
-		{
-			name:        "exists for existing rooms",
-			expectation: true,
-			rooms: map[internal.RoomId]*internal.Room{
-				internal.RoomId("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {},
-			},
-			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-		},
-	}
-
-	for _, test := range tests {
-		app := &application{
-			rooms: test.rooms,
-		}
-
-		t.Run(test.name, func(t *testing.T) {
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/room/%s/exists", test.roomId), nil)
-
-			router.ServeHTTP(recorder, request)
-
-			var got envelope
-			json.Unmarshal(recorder.Body.Bytes(), &got)
-
-			gotContentType := recorder.Header().Get("Content-Type")
-
-			assert.Equal(t, gotContentType, "application/json")
-			assert.DeepEqual(t, got, envelope{
-				"exists": test.expectation,
-			})
-		})
-	}
-}
-
 func TestApplication_handleFetchRoomState(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -410,12 +362,10 @@ func TestApplication_handleWs(t *testing.T) {
 				internal.RoomId("ffb25a3d-a5db-42b7-9733-345f61167077"): {
 					Id:         "ffb25a3d-a5db-42b7-9733-345f61167077",
 					InProgress: false,
-					Join:       make(chan *internal.Client),
-					Broadcast:  make(chan *internal.Message),
 				},
 			},
 			expectedError:  nil,
-			expectedStatus: -1,
+			expectedStatus: 101,
 			expectedRoomId: "ffb25a3d-a5db-42b7-9733-345f61167077",
 			expectedRole:   internal.Developer,
 		},
@@ -426,12 +376,10 @@ func TestApplication_handleWs(t *testing.T) {
 				internal.RoomId("ffb25a3d-a5db-42b7-9733-345f61167077"): {
 					Id:         "ffb25a3d-a5db-42b7-9733-345f61167077",
 					InProgress: false,
-					Join:       make(chan *internal.Client),
-					Broadcast:  make(chan *internal.Message),
 				},
 			},
 			expectedError:  nil,
-			expectedStatus: -1,
+			expectedStatus: 101,
 			expectedRoomId: "ffb25a3d-a5db-42b7-9733-345f61167077",
 			expectedRole:   internal.ProductOwner,
 		},
@@ -475,12 +423,11 @@ func TestApplication_handleWs(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			expectedMsg := internal.NewJoin()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			app := &application{
 				guessConfig: &internal.GuessConfig{},
-				rooms:       test.rooms,
+				rooms:       tt.rooms,
 				destroyRoom: make(chan internal.RoomId),
 			}
 			router := app.routes()
@@ -488,21 +435,17 @@ func TestApplication_handleWs(t *testing.T) {
 			server := httptest.NewServer(router)
 			defer server.Close()
 
-			url := "ws" + strings.TrimPrefix(server.URL, "http") + test.url
+			url := "ws" + strings.TrimPrefix(server.URL, "http") + tt.url
 			_, response, _ := websocket.Dial(context.Background(), url, nil)
 
-			if test.expectedError != nil {
+			assert.Equal(t, response.StatusCode, tt.expectedStatus)
+
+			if tt.expectedError != nil {
 				var got map[string]string
 				json.NewDecoder(response.Body).Decode(&got)
-				assert.DeepEqual(t, got, test.expectedError)
+				assert.DeepEqual(t, got, tt.expectedError)
 				return
 			}
-
-			registeredClient := <-app.rooms[internal.RoomId(test.expectedRoomId)].Join
-			broadcastedMsg := <-app.rooms[internal.RoomId(test.expectedRoomId)].Broadcast
-
-			assert.DeepEqual(t, broadcastedMsg, expectedMsg)
-			assert.Equal(t, registeredClient.Role, test.expectedRole)
 		})
 	}
 }

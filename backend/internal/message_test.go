@@ -15,7 +15,7 @@ func TestMessage(t *testing.T) {
 	}{
 		{
 			name:         "NewJoin",
-			msg:          NewJoin(),
+			msg:          newJoin(),
 			expectedType: join,
 			expectedData: nil,
 		},
