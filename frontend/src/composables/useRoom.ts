@@ -171,6 +171,7 @@ export function useRoom(): UseRoom {
 
   function leaveRoom() {
     websocket.disconnect();
+    roomId.value = nothing();
     notifications.value = [];
     name.value = nothing();
     role.value = nothing();

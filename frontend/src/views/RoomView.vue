@@ -157,7 +157,10 @@ onMounted(async () => {
   </div>
 
   <div v-else>
-    <v-dialog v-model="showSetRoomPasswordDialog" max-width="500">
+    <v-dialog
+      v-model="showSetRoomPasswordDialog"
+      max-width="500"
+    >
       <v-card>
         <v-card-title>Set password</v-card-title>
         <v-card-text>
@@ -171,8 +174,17 @@ onMounted(async () => {
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="red" @click="showSetRoomPasswordDialog = false"> Cancel </v-btn>
-          <v-btn :disabled="roomPassword.length === 0" color="green" @click="lockRoom">
+          <v-btn
+            color="red"
+            @click="showSetRoomPasswordDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            :disabled="roomPassword.length === 0"
+            color="green"
+            @click="lockRoom"
+          >
             Lock
           </v-btn>
         </v-card-actions>
@@ -187,20 +199,41 @@ onMounted(async () => {
         <v-btn
           v-if="
             isJust(estimationStore.roomState.role) &&
-            estimationStore.roomState.role.value == Role.ProductOwner
+              estimationStore.roomState.role.value == Role.ProductOwner
           "
           @click="showIssuesDrawer = !showIssuesDrawer"
         >
-          <v-tooltip activator="parent" location="bottom"> Issues </v-tooltip>
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Issues
+          </v-tooltip>
           <v-icon>mdi-text-box-outline</v-icon>
         </v-btn>
-        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="copyPassword">
-          <v-tooltip activator="parent" location="bottom"> Copy password </v-tooltip>
+        <v-btn
+          v-if="permissions.room.canLock && roomIsLocked"
+          @click="copyPassword"
+        >
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Copy password
+          </v-tooltip>
           <v-icon>mdi-content-copy</v-icon>
         </v-btn>
 
-        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="openRoom">
-          <v-tooltip activator="parent" location="bottom"> Unlock room </v-tooltip>
+        <v-btn
+          v-if="permissions.room.canLock && roomIsLocked"
+          @click="openRoom"
+        >
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Unlock room
+          </v-tooltip>
           <v-icon>mdi-key</v-icon>
         </v-btn>
 
@@ -208,12 +241,22 @@ onMounted(async () => {
           v-if="permissions.room.canLock && !roomIsLocked"
           @click="showSetRoomPasswordDialog = true"
         >
-          <v-tooltip activator="parent" location="bottom"> Lock room </v-tooltip>
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Lock room
+          </v-tooltip>
           <v-icon>mdi-lock</v-icon>
         </v-btn>
 
         <v-btn @click="leaveRoom">
-          <v-tooltip activator="parent" location="bottom"> Leave room </v-tooltip>
+          <v-tooltip
+            activator="parent"
+            location="bottom"
+          >
+            Leave room
+          </v-tooltip>
           <v-icon>mdi-location-exit</v-icon>
         </v-btn>
       </div>
@@ -255,12 +298,20 @@ onMounted(async () => {
         <v-divider />
       </template>
       <v-list>
-        <v-list-item v-for="issue in estimationStore.roomState.issues" :key="issue">
-          <v-card variant="tonal" class="pa-2">
+        <v-list-item
+          v-for="issue in estimationStore.roomState.issues"
+          :key="issue"
+        >
+          <v-card
+            variant="tonal"
+            class="pa-2"
+          >
             <v-card-title>{{ issue }}</v-card-title>
 
             <v-card-actions>
-              <v-btn variant="tonal"> Vote this issue </v-btn>
+              <v-btn variant="tonal">
+                Vote this issue
+              </v-btn>
               <v-spacer />
               <span>-</span>
             </v-card-actions>
@@ -272,11 +323,19 @@ onMounted(async () => {
         <v-container>
           <v-card>
             <v-card-text>
-              <v-text-field v-model.trim="issueToAdd" variant="outlined" placeholder="New issue" />
+              <v-text-field
+                v-model.trim="issueToAdd"
+                variant="outlined"
+                placeholder="New issue"
+              />
 
               <v-card-actions>
                 <v-spacer />
-                <v-btn variant="outlined" color="green-darken-2" @click="addIssue">
+                <v-btn
+                  variant="outlined"
+                  color="green-darken-2"
+                  @click="addIssue"
+                >
                   Add Issue
                 </v-btn>
               </v-card-actions>

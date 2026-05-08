@@ -75,7 +75,7 @@ onBeforeMount(async () => {
       <div
         v-if="
           isSuccess(estimationStore.roomsState.availableActiveRooms) &&
-          estimationStore.roomsState.availableActiveRooms.data.rooms.length > 0
+            estimationStore.roomsState.availableActiveRooms.data.rooms.length > 0
         "
         class="d-flex flex-column"
       >
@@ -122,8 +122,15 @@ onBeforeMount(async () => {
         </div>
       </div>
 
-      <div v-else class="d-flex align-center flex-column ga-7">
-        <v-icon icon="mdi-magnify" class="opacity-50" size="80" />
+      <div
+        v-else
+        class="d-flex align-center flex-column ga-7"
+      >
+        <v-icon
+          icon="mdi-magnify"
+          class="opacity-50"
+          size="80"
+        />
 
         <span class="text-h4 opacity-90">There are currently no rooms</span>
 
