@@ -10,14 +10,14 @@ import {
 } from "./types";
 import DeveloperCard from "@/components/DeveloperCard.vue";
 import ProductOwnerRoundView from "@/components/ProductOwnerRoundView.vue";
-import {isJust, type Maybe} from "@kaumlaut/pure/maybe";
+import { isJust, type Maybe } from "@kaumlaut/pure/maybe";
 
 type Props = {
-  usersInRoom: UserOverview;
+  usersInRoom: Readonly<UserOverview>;
   roundState: RoundState;
   developerDone: DeveloperDone[];
   showAllGuesses: boolean;
-  userRole: Role;
+  userRole: Maybe<Role>;
   issueToGuess: Maybe<string>;
 };
 const props = defineProps<Props>();
@@ -31,8 +31,12 @@ const cy = 300;
 const cx = 300;
 const developerList = computed(() => props.usersInRoom.filter((it) => it.role === "developer"));
 
-const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
-const userIsDeveloper = computed(() => props.userRole === Role.Developer);
+const userIsProductOwner = computed(
+  () => isJust(props.userRole) && props.userRole.value === Role.ProductOwner,
+);
+const userIsDeveloper = computed(
+  () => isJust(props.userRole) && props.userRole.value === Role.Developer,
+);
 const hasIssueToGuess = computed(() => isJust(props.issueToGuess));
 
 function isDeveloper(user: ProductOwner | Developer): user is Developer {
@@ -70,10 +74,7 @@ function leftForElement(index: number, username: string): string {
         @new-round="emit('new-round')"
       />
       <span v-if="!hasIssueToGuess && !userIsProductOwner">Waiting for issue…</span>
-      <span
-        v-if="isJust(props.issueToGuess) && userIsDeveloper"
-        class="text-h5"
-      >{{
+      <span v-if="isJust(props.issueToGuess) && userIsDeveloper" class="text-h5">{{
         props.issueToGuess.value
       }}</span>
     </div>

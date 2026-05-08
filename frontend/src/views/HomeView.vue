@@ -4,14 +4,12 @@ import { onBeforeMount, type Ref, ref } from "vue";
 import RoomDialog from "@/components/RoomDialog.vue";
 import { Role } from "@/components/types.ts";
 import { useRouter } from "vue-router";
-import {useRoom} from "@/composables/useRoom.ts";
-import {useRooms} from "@/composables/useRooms.ts";
-import {isSuccess} from "@kaumlaut/pure/fetch-state";
+import { isSuccess } from "@kaumlaut/pure/fetch-state";
+import { useEstimationStore } from "@/stores/estimation.ts";
 
-const rooms = useRooms();
-const room = useRoom();
+const estimationStore = useEstimationStore();
 // leave room when component renders to avoid weird behavior
-room.leave();
+estimationStore.leaveRoom();
 const websocketStore = useWebsocketStore();
 websocketStore.disconnect();
 websocketStore.resetRound();
@@ -27,18 +25,18 @@ async function connect(chosenRoomId: string | undefined) {
   errorMessage.value = "";
 
   // TODO
-  const actualRoomId = chosenRoomId ? chosenRoomId : await rooms.create(name.value);
-  const roomState = await websocketStore.roomState(actualRoomId);
+  const actualRoomId = chosenRoomId ? chosenRoomId : await estimationStore.createRoom(name.value);
+  const roomState = await estimationStore.fetchRoomState(actualRoomId);
 
   if (roomState.isLocked && passwordForRoom.value === "") {
     showPasswordInput.value = true;
     return;
   }
 
-  const passwordMatches = roomState.isLocked
+  const passwordMatches = estimationStore.roomState.roomIsLocked
     ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
     : true;
-  if (roomState.isLocked && !passwordMatches) {
+  if (estimationStore.roomState.roomIsLocked && !passwordMatches) {
     showPasswordInput.value = true;
     errorMessage.value = "The provided password is wrong";
     return;
@@ -46,7 +44,7 @@ async function connect(chosenRoomId: string | undefined) {
 
   showPasswordInput.value = false;
 
-  if (roomState.inProgress) {
+  if (estimationStore.roomState.roundInProgress) {
     errorMessage.value = "The round has already started";
     return;
   }
@@ -57,7 +55,8 @@ async function connect(chosenRoomId: string | undefined) {
     return;
   }
 
-  await websocketStore.connect(name.value, role.value, actualRoomId);
+  await estimationStore.joinRoom(name.value, role.value, actualRoomId);
+  // await websocketStore.connect(name.value, role.value, actualRoomId);
   await router.push(`/room/${actualRoomId}`);
 }
 
@@ -66,7 +65,7 @@ function playerCountAsStringForRoom(playerCount: number): string {
 }
 
 onBeforeMount(async () => {
-  await rooms.fetchActiveRooms();
+  await estimationStore.fetchActiveRooms();
 });
 </script>
 
@@ -74,12 +73,15 @@ onBeforeMount(async () => {
   <main>
     <v-container>
       <div
-        v-if="isSuccess(rooms.roomsState.value.availableActiveRooms) && rooms.roomsState.value.availableActiveRooms.data.rooms.length > 0"
+        v-if="
+          isSuccess(estimationStore.roomsState.availableActiveRooms) &&
+          estimationStore.roomsState.availableActiveRooms.data.rooms.length > 0
+        "
         class="d-flex flex-column"
       >
         <div class="align-self-end">
           <room-dialog
-            v-if="rooms.roomsState.value.availableActiveRooms.data.rooms.length > 0"
+            v-if="estimationStore.roomsState.availableActiveRooms.data.rooms.length > 0"
             v-model:role="role"
             v-model:name="name"
             activator-text="Create a new room"
@@ -90,7 +92,7 @@ onBeforeMount(async () => {
         </div>
         <div class="d-flex ga-5 flex-wrap">
           <v-card
-            v-for="(room, index) in rooms.roomsState.value.availableActiveRooms.data.rooms"
+            v-for="(room, index) in estimationStore.roomsState.availableActiveRooms.data.rooms"
             :key="room.id"
             variant="outlined"
             prepend-icon="mdi-poker-chip"
@@ -120,15 +122,8 @@ onBeforeMount(async () => {
         </div>
       </div>
 
-      <div
-        v-else
-        class="d-flex align-center flex-column ga-7"
-      >
-        <v-icon
-          icon="mdi-magnify"
-          class="opacity-50"
-          size="80"
-        />
+      <div v-else class="d-flex align-center flex-column ga-7">
+        <v-icon icon="mdi-magnify" class="opacity-50" size="80" />
 
         <span class="text-h4 opacity-90">There are currently no rooms</span>
 

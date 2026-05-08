@@ -6,9 +6,12 @@ import { computed, onMounted, ref } from "vue";
 import { Role, RoundState } from "@/components/types.ts";
 import RoomForm from "@/components/RoomForm.vue";
 import { useRoom } from "@/composables/useRoom.ts";
+import { isJust } from "@kaumlaut/pure/maybe";
+import { isSuccess } from "@kaumlaut/pure/fetch-state";
+import { useEstimationStore } from "@/stores/estimation.ts";
 
+const estimationStore = useEstimationStore();
 const websocketStore = useWebsocketStore();
-const room = useRoom();
 const router = useRouter();
 const route = useRoute();
 const showSetRoomPasswordDialog = ref(false);
@@ -22,8 +25,7 @@ const passwordForRoom = ref("");
 const errorMessage = ref("");
 const issueToAdd = ref("");
 const showIssuesDrawer = ref(false);
-const roomIsLocked = computed(() => room.roomState.value.roomIsLocked);
-const usersInRoom = computed(() => room.roomState.value.users);
+const roomIsLocked = computed(() => estimationStore.roomState.roomIsLocked);
 const queryRoomId = computed((): string => {
   if (Array.isArray(route.params.id)) {
     return route.params.id[0];
@@ -31,20 +33,13 @@ const queryRoomId = computed((): string => {
   return route.params.id;
 });
 // TODO refactor to use both composables instead of the store
-const userRole = computed(() => websocketStore.userRole);
 const possibleGuesses = computed(() => websocketStore.possibleGuesses);
 const permissions = computed(() => websocketStore.permissions);
-const isConnected = computed(() => websocketStore.isConnected);
 
-const roundState = computed(() => room.roomState.value.roundState);
-const ticketToGuess = computed(() => room.roomState.value.issueToGuess);
-const guess = computed(() => room.roomState.value.guess);
-const didSkip = computed(() => room.roomState.value.doSkip);
-const showAllGuesses = computed(() => room.roomState.value.showAllGuesses);
-const developerDone = computed(() => room.roomState.value.developerDone);
-// const issues = computed(() => room.roomState.value.issues);
-
-const roundIsWaiting = computed(() => room.roomState.value.roundState === RoundState.Waiting);
+const isConnected = computed(() => estimationStore.roomState.isConnected);
+const roundState = computed(() => estimationStore.roomState.roundState);
+const ticketToGuess = computed(() => estimationStore.roomState.issueToGuess);
+const roundIsWaiting = computed(() => estimationStore.roomState.roundState === RoundState.Waiting);
 
 const roundStateAsReadableString = computed(() => {
   if (roundState.value === RoundState.Waiting) {
@@ -78,7 +73,7 @@ function openRoom() {
 }
 
 function leaveRoom() {
-  websocketStore.disconnect();
+  estimationStore.leaveRoom();
   router.push("/");
 }
 
@@ -111,7 +106,7 @@ async function tryJoin() {
   errorMessage.value = "";
 
   const actualRoomId = queryRoomId.value;
-  const roomState = await websocketStore.roomState(actualRoomId);
+  const roomState = await estimationStore.fetchRoomState(actualRoomId);
 
   const passwordMatches = roomState.isLocked
     ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
@@ -132,18 +127,17 @@ async function tryJoin() {
     return;
   }
 
-  await websocketStore.connect(name.value, role.value, actualRoomId);
-  await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);
+  await estimationStore.joinRoom(name.value, role.value, actualRoomId);
+  await Promise.all([websocketStore.fetchPossibleGuesses(), estimationStore.fetchPermissions()]);
 }
 
 onMounted(async () => {
-  await websocketStore.roomState(queryRoomId.value)
-      .catch(async () => {
-        await router.push("/");
-      });
+  await estimationStore.fetchRoomState(queryRoomId.value).catch(async () => {
+    await router.push("/");
+  });
 
   if (isConnected.value) {
-    await Promise.all([websocketStore.fetchPossibleGuesses(), websocketStore.fetchPermissions()]);
+    await Promise.all([websocketStore.fetchPossibleGuesses(), estimationStore.fetchPermissions()]);
   }
 });
 </script>
@@ -163,10 +157,7 @@ onMounted(async () => {
   </div>
 
   <div v-else>
-    <v-dialog
-      v-model="showSetRoomPasswordDialog"
-      max-width="500"
-    >
+    <v-dialog v-model="showSetRoomPasswordDialog" max-width="500">
       <v-card>
         <v-card-title>Set password</v-card-title>
         <v-card-text>
@@ -180,17 +171,8 @@ onMounted(async () => {
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            color="red"
-            @click="showSetRoomPasswordDialog = false"
-          >
-            Cancel
-          </v-btn>
-          <v-btn
-            :disabled="roomPassword.length === 0"
-            color="green"
-            @click="lockRoom"
-          >
+          <v-btn color="red" @click="showSetRoomPasswordDialog = false"> Cancel </v-btn>
+          <v-btn :disabled="roomPassword.length === 0" color="green" @click="lockRoom">
             Lock
           </v-btn>
         </v-card-actions>
@@ -203,40 +185,22 @@ onMounted(async () => {
       </v-toolbar-title>
       <div v-if="roundIsWaiting">
         <v-btn
-          v-if="userRole == Role.ProductOwner"
+          v-if="
+            isJust(estimationStore.roomState.role) &&
+            estimationStore.roomState.role.value == Role.ProductOwner
+          "
           @click="showIssuesDrawer = !showIssuesDrawer"
         >
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Issues
-          </v-tooltip>
+          <v-tooltip activator="parent" location="bottom"> Issues </v-tooltip>
           <v-icon>mdi-text-box-outline</v-icon>
         </v-btn>
-        <v-btn
-          v-if="permissions.room.canLock && roomIsLocked"
-          @click="copyPassword"
-        >
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Copy password
-          </v-tooltip>
+        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="copyPassword">
+          <v-tooltip activator="parent" location="bottom"> Copy password </v-tooltip>
           <v-icon>mdi-content-copy</v-icon>
         </v-btn>
 
-        <v-btn
-          v-if="permissions.room.canLock && roomIsLocked"
-          @click="openRoom"
-        >
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Unlock room
-          </v-tooltip>
+        <v-btn v-if="permissions.room.canLock && roomIsLocked" @click="openRoom">
+          <v-tooltip activator="parent" location="bottom"> Unlock room </v-tooltip>
           <v-icon>mdi-key</v-icon>
         </v-btn>
 
@@ -244,37 +208,21 @@ onMounted(async () => {
           v-if="permissions.room.canLock && !roomIsLocked"
           @click="showSetRoomPasswordDialog = true"
         >
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Lock room
-          </v-tooltip>
+          <v-tooltip activator="parent" location="bottom"> Lock room </v-tooltip>
           <v-icon>mdi-lock</v-icon>
         </v-btn>
 
         <v-btn @click="leaveRoom">
-          <v-tooltip
-            activator="parent"
-            location="bottom"
-          >
-            Leave room
-          </v-tooltip>
+          <v-tooltip activator="parent" location="bottom"> Leave room </v-tooltip>
           <v-icon>mdi-location-exit</v-icon>
         </v-btn>
       </div>
     </v-toolbar>
 
     <room-detail
-      :room-state="room.roomState.value"
-      :users-in-room="usersInRoom"
-      :developer-done="developerDone"
-      :user-role="userRole"
-      :round-state="roundState"
-      :ticket-to-guess="ticketToGuess"
-      :guess="guess"
-      :did-skip="didSkip"
-      :show-all-guesses="showAllGuesses"
+      v-if="isSuccess(estimationStore.roomState.users)"
+      :room-state="estimationStore.roomState"
+      :users="estimationStore.roomState.users.data"
       :possible-guesses="possibleGuesses"
       @estimate="sendMessage('estimate', $event)"
       @guess="sendMessage('guess', $event)"
@@ -307,20 +255,12 @@ onMounted(async () => {
         <v-divider />
       </template>
       <v-list>
-        <v-list-item
-          v-for="issue in room.roomState.value.issues"
-          :key="issue"
-        >
-          <v-card
-            variant="tonal"
-            class="pa-2"
-          >
+        <v-list-item v-for="issue in estimationStore.roomState.issues" :key="issue">
+          <v-card variant="tonal" class="pa-2">
             <v-card-title>{{ issue }}</v-card-title>
 
             <v-card-actions>
-              <v-btn variant="tonal">
-                Vote this issue
-              </v-btn>
+              <v-btn variant="tonal"> Vote this issue </v-btn>
               <v-spacer />
               <span>-</span>
             </v-card-actions>
@@ -332,19 +272,11 @@ onMounted(async () => {
         <v-container>
           <v-card>
             <v-card-text>
-              <v-text-field
-                v-model.trim="issueToAdd"
-                variant="outlined"
-                placeholder="New issue"
-              />
+              <v-text-field v-model.trim="issueToAdd" variant="outlined" placeholder="New issue" />
 
               <v-card-actions>
                 <v-spacer />
-                <v-btn
-                  variant="outlined"
-                  color="green-darken-2"
-                  @click="addIssue"
-                >
+                <v-btn variant="outlined" color="green-darken-2" @click="addIssue">
                   Add Issue
                 </v-btn>
               </v-card-actions>
@@ -355,7 +287,7 @@ onMounted(async () => {
     </v-navigation-drawer>
 
     <v-snackbar-queue
-      v-model="room.roomState.value.notifications"
+      v-model="estimationStore.roomState.notifications"
       :timeout="2000"
       color="gray"
     />

@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import {
-  type PossibleGuess,
-  Role,
-} from "@/components/types";
+import { type PossibleGuess, Role, type UserOverview } from "@/components/types";
 import { computed, ref, watch } from "vue";
 import TableOverview from "@/components/TableOverview.vue";
 import DeveloperRoundView from "@/components/DeveloperRoundView.vue";
 import RoundSummary from "@/components/RoundSummary.vue";
 import type { RoomState } from "@/types/room.ts";
-import {isJust} from "@kaumlaut/pure/maybe";
+import { isJust } from "@kaumlaut/pure/maybe";
 
 type Props = {
   roomState: RoomState;
-  userRole: Role;
+  users: Readonly<UserOverview>;
   possibleGuesses: PossibleGuess[];
 };
 
@@ -27,7 +24,9 @@ const emit = defineEmits<{
 const showRoundSummary = ref(false);
 const delay = 500;
 
-const userIsDeveloper = computed(() => props.userRole === Role.Developer);
+const userIsDeveloper = computed(
+  () => isJust(props.roomState.role) && props.roomState.role.value === Role.Developer,
+);
 const hasTicketToGuess = computed(() => isJust(props.roomState.issueToGuess));
 
 watch(
@@ -45,19 +44,16 @@ watch(
 </script>
 
 <template>
-  <round-summary
-    v-if="showRoundSummary"
-    :developer-done="props.roomState.developerDone"
-  />
+  <round-summary v-if="showRoundSummary" :developer-done="props.roomState.developerDone" />
 
   <v-container fluid>
     <v-col cols="12">
       <v-row>
         <table-overview
           :show-all-guesses="props.roomState.showAllGuesses"
-          :users-in-room="props.roomState.users"
+          :users-in-room="props.users"
           :round-state="props.roomState.roundState"
-          :user-role="props.userRole"
+          :user-role="props.roomState.role"
           :developer-done="props.roomState.developerDone"
           :issue-to-guess="props.roomState.issueToGuess"
           @estimate="emit('estimate', $event)"
@@ -66,10 +62,7 @@ watch(
         />
       </v-row>
 
-      <v-row
-        align="center"
-        justify="center"
-      >
+      <v-row align="center" justify="center">
         <developer-round-view
           v-if="userIsDeveloper"
           class="developer-command-center"

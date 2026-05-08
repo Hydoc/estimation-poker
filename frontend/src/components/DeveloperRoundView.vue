@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type PossibleGuess } from "@/components/types";
-import {isJust, type Maybe} from "@kaumlaut/pure/maybe";
+import { isJust, type Maybe } from "@kaumlaut/pure/maybe";
 
 type Props = {
   guess: Maybe<number>;
@@ -45,10 +45,7 @@ function isGuessActive(possibleGuess: PossibleGuess): boolean {
           <h2>{{ possibleGuess.guess }}</h2>
           <span class="guess-description">{{ possibleGuess.description }}</span>
         </div>
-        <div
-          :class="{ card: true, 'active-guess': props.didSkip }"
-          @click="skip"
-        >
+        <div :class="{ card: true, 'active-guess': props.didSkip }" @click="skip">
           <h2><v-icon>mdi-coffee</v-icon></h2>
           <span class="guess-description">Skip round</span>
         </div>
