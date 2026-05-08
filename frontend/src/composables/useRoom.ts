@@ -8,20 +8,22 @@ export type UseRoom = {
   roomState: ComputedRef<RoomState>;
   setRoomId: (id: Maybe<string>) => void;
   join(name: string, role: Role, roomId: string): Promise<void>;
+  leave(): void;
 };
 
 export function useRoom(): UseRoom {
   const websocket = useWebsocket();
   const roomId = ref<Maybe<string>>(nothing());
   const guess = ref<Maybe<number>>(nothing());
-  const doSkip = ref<Maybe<boolean>>(nothing());
   const issueToGuess = ref<Maybe<string>>(nothing());
+  const doSkip = ref<boolean>(false);
   const roundState = ref<RoundState>(RoundState.Waiting);
-  const users = ref<UserOverview[]>([]);
+  const users = ref<UserOverview>([]);
   const notifications = ref<string[]>([]);
   const showAllGuesses = ref<boolean>(false);
   const roomIsLocked = ref<boolean>(false);
   const developerDone: Ref<DeveloperDone[]> = ref([]);
+  const issues = ref<any[]>([]);
 
   const roomState = computed((): RoomState => ({
     id: roomId.value,
@@ -34,12 +36,13 @@ export function useRoom(): UseRoom {
     showAllGuesses: showAllGuesses.value,
     roomIsLocked: roomIsLocked.value,
     developerDone: developerDone.value,
+    issues: issues.value,
   }));
   
   function resetRound() {
     issueToGuess.value = nothing();
     guess.value = nothing();
-    doSkip.value = nothing();
+    doSkip.value = false;
     roundState.value = RoundState.Waiting;
     showAllGuesses.value = false;
     developerDone.value = [];
@@ -76,11 +79,11 @@ export function useRoom(): UseRoom {
         break;
       case "you-guessed":
         guess.value = decoded.data;
-        doSkip.value = just(false);
+        doSkip.value = false;
         break;
       case "you-skipped":
         guess.value = nothing();
-        doSkip.value = just(true);
+        doSkip.value = true;
         break;
       case "everyone-done":
         await fetchUsersInRoom();
@@ -116,6 +119,12 @@ export function useRoom(): UseRoom {
 
     users.value = await response.json();
   }
+  
+  function leave() {
+    websocket.disconnect();
+    notifications.value = [];
+    resetRound();
+  }
 
   // async function fetchRoomState() {
   //     state.value = load();
@@ -129,5 +138,6 @@ export function useRoom(): UseRoom {
     roomState,
     setRoomId,
     join,
+    leave,
   };
 }

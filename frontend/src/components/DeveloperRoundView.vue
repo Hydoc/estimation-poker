@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { type PossibleGuess } from "@/components/types";
+import {isJust, type Maybe} from "@kaumlaut/pure/maybe";
 
 type Props = {
-  guess: number;
+  guess: Maybe<number>;
   didSkip: boolean;
   showAllGuesses: boolean;
-  hasTicketToGuess: boolean;
+  hasIssueToGuess: boolean;
   possibleGuesses: PossibleGuess[];
 };
 
@@ -22,25 +23,32 @@ function doGuess(value: number) {
 function skip() {
   emit("skip");
 }
+
+function isGuessActive(possibleGuess: PossibleGuess): boolean {
+  return isJust(props.guess) && props.guess.value === possibleGuess.guess && !props.didSkip;
+}
 </script>
 
 <template>
   <div class="d-flex flex-column justify-center align-center">
-    <div v-if="props.hasTicketToGuess && !props.showAllGuesses">
+    <div v-if="props.hasIssueToGuess && !props.showAllGuesses">
       <div class="d-flex ga-2">
         <div
           v-for="possibleGuess in props.possibleGuesses"
           :key="possibleGuess.guess"
           :class="{
             card: true,
-            'active-guess': props.guess === possibleGuess.guess && !props.didSkip,
+            'active-guess': isGuessActive(possibleGuess),
           }"
           @click="doGuess(possibleGuess.guess)"
         >
           <h2>{{ possibleGuess.guess }}</h2>
           <span class="guess-description">{{ possibleGuess.description }}</span>
         </div>
-        <div :class="{ card: true, 'active-guess': props.didSkip }" @click="skip">
+        <div
+          :class="{ card: true, 'active-guess': props.didSkip }"
+          @click="skip"
+        >
           <h2><v-icon>mdi-coffee</v-icon></h2>
           <span class="guess-description">Skip round</span>
         </div>

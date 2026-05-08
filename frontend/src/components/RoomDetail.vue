@@ -1,25 +1,18 @@
 <script setup lang="ts">
 import {
-  type DeveloperDone,
   type PossibleGuess,
   Role,
-  RoundState,
-  type UserOverview,
 } from "@/components/types";
 import { computed, ref, watch } from "vue";
 import TableOverview from "@/components/TableOverview.vue";
 import DeveloperRoundView from "@/components/DeveloperRoundView.vue";
 import RoundSummary from "@/components/RoundSummary.vue";
+import type { RoomState } from "@/types/room.ts";
+import {isJust} from "@kaumlaut/pure/maybe";
 
 type Props = {
-  usersInRoom: UserOverview;
-  developerDone: DeveloperDone[];
+  roomState: RoomState;
   userRole: Role;
-  roundState: RoundState;
-  ticketToGuess: string;
-  guess: number;
-  didSkip: boolean;
-  showAllGuesses: boolean;
   possibleGuesses: PossibleGuess[];
 };
 
@@ -35,10 +28,10 @@ const showRoundSummary = ref(false);
 const delay = 500;
 
 const userIsDeveloper = computed(() => props.userRole === Role.Developer);
-const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
+const hasTicketToGuess = computed(() => isJust(props.roomState.issueToGuess));
 
 watch(
-  () => props.showAllGuesses,
+  () => props.roomState.showAllGuesses,
   (doShowAllGuesses: boolean) => {
     if (doShowAllGuesses) {
       setTimeout(() => {
@@ -52,32 +45,38 @@ watch(
 </script>
 
 <template>
-  <round-summary v-if="showRoundSummary" :developer-done="props.developerDone" />
+  <round-summary
+    v-if="showRoundSummary"
+    :developer-done="props.roomState.developerDone"
+  />
 
   <v-container fluid>
     <v-col cols="12">
       <v-row>
         <table-overview
-          :show-all-guesses="props.showAllGuesses"
-          :users-in-room="props.usersInRoom"
-          :round-state="props.roundState"
+          :show-all-guesses="props.roomState.showAllGuesses"
+          :users-in-room="props.roomState.users"
+          :round-state="props.roomState.roundState"
           :user-role="props.userRole"
-          :developer-done="developerDone"
-          :ticket-to-guess="props.ticketToGuess"
+          :developer-done="props.roomState.developerDone"
+          :issue-to-guess="props.roomState.issueToGuess"
           @estimate="emit('estimate', $event)"
           @reveal="emit('reveal')"
           @new-round="emit('new-round')"
         />
       </v-row>
 
-      <v-row align="center" justify="center">
+      <v-row
+        align="center"
+        justify="center"
+      >
         <developer-round-view
           v-if="userIsDeveloper"
           class="developer-command-center"
-          :show-all-guesses="props.showAllGuesses"
-          :guess="props.guess"
-          :did-skip="props.didSkip"
-          :has-ticket-to-guess="hasTicketToGuess"
+          :show-all-guesses="props.roomState.showAllGuesses"
+          :guess="props.roomState.guess"
+          :did-skip="props.roomState.doSkip"
+          :has-issue-to-guess="hasTicketToGuess"
           :possible-guesses="props.possibleGuesses"
           @guess="emit('guess', $event)"
           @skip="emit('skip')"

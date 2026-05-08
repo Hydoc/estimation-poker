@@ -2,11 +2,11 @@
 import { computed, type Ref, ref } from "vue";
 import type { VForm } from "vuetify/components";
 import { type Developer, RoundState } from "@/components/types.ts";
+import {isJust, type Maybe} from "@kaumlaut/pure/maybe";
 
 type Props = {
   roundState: RoundState;
-  hasTicketToGuess: boolean;
-  actualTicketToGuess: string;
+  issueToGuess: Maybe<string>;
   showAllGuesses: boolean;
   developerList: Developer[];
 };
@@ -53,7 +53,7 @@ function doLetEstimate() {
   <v-container fluid>
     <div class="text-center">
       <v-form
-        v-if="roundIsWaiting && hasDevelopersInRoom && !props.hasTicketToGuess"
+        v-if="roundIsWaiting && hasDevelopersInRoom && !isJust(props.issueToGuess)"
         ref="form"
         :fast-fail="true"
         @submit.prevent="doLetEstimate"
@@ -66,10 +66,16 @@ function doLetEstimate() {
           placeholder="CC-0000"
           required
         />
-        <v-btn width="100%" type="submit" :disabled="!canEstimate"> Estimate </v-btn>
+        <v-btn
+          width="100%"
+          type="submit"
+          :disabled="!canEstimate"
+        >
+          Estimate
+        </v-btn>
       </v-form>
       <v-progress-circular
-        v-if="props.hasTicketToGuess && !props.showAllGuesses"
+        v-if="isJust(props.issueToGuess) && !props.showAllGuesses"
         v-model="percentageDone"
         class=""
         rotate="360"
@@ -78,15 +84,29 @@ function doLetEstimate() {
         color="teal"
       >
         <template #default>
-          <v-btn color="teal" :disabled="!roundCanBeRevealed" @click="emit('reveal')">
+          <v-btn
+            color="teal"
+            :disabled="!roundCanBeRevealed"
+            @click="emit('reveal')"
+          >
             Reveal
           </v-btn>
         </template>
       </v-progress-circular>
-      <v-btn v-if="props.showAllGuesses" width="100%" color="blue-grey" @click="emit('new-round')">
+      <v-btn
+        v-if="props.showAllGuesses"
+        width="100%"
+        color="blue-grey"
+        @click="emit('new-round')"
+      >
         New round
       </v-btn>
-      <p v-else-if="!hasDevelopersInRoom" class="text-center">Waiting for developers...</p>
+      <p
+        v-else-if="!hasDevelopersInRoom"
+        class="text-center"
+      >
+        Waiting for developers...
+      </p>
     </div>
   </v-container>
 </template>

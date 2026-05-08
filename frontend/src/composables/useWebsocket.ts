@@ -18,6 +18,7 @@ export function useWebsocket(): UseWebsocket {
         connection.value = just(new WebSocket(wsUrl));
         const connected = await waitForOpenConnection();
         if (!connected) {
+            disconnect();
             return false;
         }
 

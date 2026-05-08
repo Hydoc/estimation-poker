@@ -4,14 +4,15 @@ import type {DeveloperDone, RoundState, UserOverview} from "@/components/types.t
 export type RoomState = Readonly<{
   id: Maybe<string>;
   guess: Maybe<number>;
-  doSkip: Maybe<boolean>;
+  doSkip: boolean;
   issueToGuess: Maybe<string>;
   roundState: RoundState;
-  users: UserOverview[];
+  users: UserOverview;
   notifications: string[]
   showAllGuesses: boolean;
   roomIsLocked: boolean;
   developerDone: DeveloperDone[];
+  issues: any[];
 }>;
 
 export type ReceivableWebsocketMessage = {

@@ -2,14 +2,21 @@
 import { useWebsocketStore } from "@/stores/websocket";
 import { onBeforeMount, type Ref, ref } from "vue";
 import RoomDialog from "@/components/RoomDialog.vue";
-import { type ActiveRoom, Role } from "@/components/types.ts";
+import { Role } from "@/components/types.ts";
 import { useRouter } from "vue-router";
+import {useRoom} from "@/composables/useRoom.ts";
+import {useRooms} from "@/composables/useRooms.ts";
+import {isSuccess} from "@kaumlaut/pure/fetch-state";
+
+const rooms = useRooms();
+const room = useRoom();
+// leave room when component renders to avoid weird behavior
+room.leave();
 const websocketStore = useWebsocketStore();
 websocketStore.disconnect();
 websocketStore.resetRound();
 
 const router = useRouter();
-const activeRooms: Ref<ActiveRoom[]> = ref([]);
 const errorMessage: Ref<string | undefined> = ref();
 const role: Ref<Role> = ref(Role.Empty);
 const name: Ref<string> = ref("");
@@ -19,7 +26,8 @@ const showPasswordInput: Ref<boolean> = ref(false);
 async function connect(chosenRoomId: string | undefined) {
   errorMessage.value = "";
 
-  const actualRoomId = chosenRoomId ? chosenRoomId : await websocketStore.createRoom(name.value);
+  // TODO
+  const actualRoomId = chosenRoomId ? chosenRoomId : await rooms.create(name.value);
   const roomState = await websocketStore.roomState(actualRoomId);
 
   if (roomState.isLocked && passwordForRoom.value === "") {
@@ -58,17 +66,20 @@ function playerCountAsStringForRoom(playerCount: number): string {
 }
 
 onBeforeMount(async () => {
-  activeRooms.value = await websocketStore.fetchActiveRooms();
+  await rooms.fetchActiveRooms();
 });
 </script>
 
 <template>
   <main>
     <v-container>
-      <div v-if="activeRooms.length > 0" class="d-flex flex-column">
+      <div
+        v-if="isSuccess(rooms.roomsState.value.availableActiveRooms) && rooms.roomsState.value.availableActiveRooms.data.rooms.length > 0"
+        class="d-flex flex-column"
+      >
         <div class="align-self-end">
           <room-dialog
-            v-if="activeRooms.length > 0"
+            v-if="rooms.roomsState.value.availableActiveRooms.data.rooms.length > 0"
             v-model:role="role"
             v-model:name="name"
             activator-text="Create a new room"
@@ -79,7 +90,7 @@ onBeforeMount(async () => {
         </div>
         <div class="d-flex ga-5 flex-wrap">
           <v-card
-            v-for="(room, index) in activeRooms"
+            v-for="(room, index) in rooms.roomsState.value.availableActiveRooms.data.rooms"
             :key="room.id"
             variant="outlined"
             prepend-icon="mdi-poker-chip"
@@ -109,8 +120,15 @@ onBeforeMount(async () => {
         </div>
       </div>
 
-      <div v-else class="d-flex align-center flex-column ga-7">
-        <v-icon icon="mdi-magnify" class="opacity-50" size="80" />
+      <div
+        v-else
+        class="d-flex align-center flex-column ga-7"
+      >
+        <v-icon
+          icon="mdi-magnify"
+          class="opacity-50"
+          size="80"
+        />
 
         <span class="text-h4 opacity-90">There are currently no rooms</span>
 

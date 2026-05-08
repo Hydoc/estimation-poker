@@ -178,7 +178,8 @@ func (app *application) handleUserInRoomExists(writer http.ResponseWriter, reque
 }
 
 func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
-	var overviewRooms []internal.Overview
+	//goland:noinspection GoPreferNilSlice
+	overviewRooms := []internal.Overview{}
 	for _, room := range app.rooms {
 		if !room.IsLocked() {
 			overviewRooms = append(overviewRooms, room.AsOverview())

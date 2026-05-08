@@ -10,6 +10,7 @@ import {
 } from "./types";
 import DeveloperCard from "@/components/DeveloperCard.vue";
 import ProductOwnerRoundView from "@/components/ProductOwnerRoundView.vue";
+import {isJust, type Maybe} from "@kaumlaut/pure/maybe";
 
 type Props = {
   usersInRoom: UserOverview;
@@ -17,13 +18,13 @@ type Props = {
   developerDone: DeveloperDone[];
   showAllGuesses: boolean;
   userRole: Role;
-  ticketToGuess: string;
+  issueToGuess: Maybe<string>;
 };
 const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "reveal"): void;
   (e: "new-round"): void;
-  (e: "estimate", ticket: string): void;
+  (e: "estimate", issue: string): void;
 }>();
 const radius = 250;
 const cy = 300;
@@ -32,7 +33,7 @@ const developerList = computed(() => props.usersInRoom.filter((it) => it.role ==
 
 const userIsProductOwner = computed(() => props.userRole === Role.ProductOwner);
 const userIsDeveloper = computed(() => props.userRole === Role.Developer);
-const hasTicketToGuess = computed(() => props.ticketToGuess !== "");
+const hasIssueToGuess = computed(() => isJust(props.issueToGuess));
 
 function isDeveloper(user: ProductOwner | Developer): user is Developer {
   return user.role === "developer";
@@ -62,16 +63,18 @@ function leftForElement(index: number, username: string): string {
         v-if="userIsProductOwner"
         :round-state="props.roundState"
         :developer-list="developerList"
-        :actual-ticket-to-guess="props.ticketToGuess"
-        :has-ticket-to-guess="hasTicketToGuess"
+        :issue-to-guess="props.issueToGuess"
         :show-all-guesses="props.showAllGuesses"
         @estimate="emit('estimate', $event)"
         @reveal="emit('reveal')"
         @new-round="emit('new-round')"
       />
-      <span v-if="!hasTicketToGuess && !userIsProductOwner">Waiting for ticket…</span>
-      <span v-if="hasTicketToGuess && userIsDeveloper" class="text-h5">{{
-        props.ticketToGuess
+      <span v-if="!hasIssueToGuess && !userIsProductOwner">Waiting for issue…</span>
+      <span
+        v-if="isJust(props.issueToGuess) && userIsDeveloper"
+        class="text-h5"
+      >{{
+        props.issueToGuess.value
       }}</span>
     </div>
     <div

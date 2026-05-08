@@ -266,6 +266,7 @@ onMounted(async () => {
     </v-toolbar>
 
     <room-detail
+      :room-state="room.roomState.value"
       :users-in-room="usersInRoom"
       :developer-done="developerDone"
       :user-role="userRole"
@@ -307,7 +308,7 @@ onMounted(async () => {
       </template>
       <v-list>
         <v-list-item
-          v-for="issue in issues"
+          v-for="issue in room.roomState.value.issues"
           :key="issue"
         >
           <v-card
@@ -354,7 +355,7 @@ onMounted(async () => {
     </v-navigation-drawer>
 
     <v-snackbar-queue
-      v-model="websocketStore.notifications"
+      v-model="room.roomState.value.notifications"
       :timeout="2000"
       color="gray"
     />
