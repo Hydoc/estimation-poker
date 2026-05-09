@@ -4,7 +4,6 @@ import RoomDetail from "@/components/RoomDetail.vue";
 import { computed, onMounted, ref } from "vue";
 import RoomForm from "@/components/RoomForm.vue";
 import { isJust } from "@kaumlaut/pure/maybe";
-import { isSuccess } from "@kaumlaut/pure/fetch-state";
 import { useEstimationStore } from "@/stores/estimation.ts";
 import { Role, RoundState, type SendableWebsocketMessageType } from "@/types/room.ts";
 
@@ -13,7 +12,6 @@ const router = useRouter();
 const route = useRoute();
 const showSetRoomPasswordDialog = ref(false);
 const showPassword = ref(false);
-const showSnackbar = ref(false);
 const roomPassword = ref("");
 const name = ref("");
 const role = ref(Role.Empty);
@@ -28,7 +26,6 @@ const queryRoomId = computed((): string => {
   }
   return route.params.id;
 });
-const possibleGuesses = computed(() => estimationStore.roomState.possibleGuesses);
 
 const permissions = computed(() => estimationStore.roomState.permissions);
 const isConnected = computed(() => estimationStore.roomState.isConnected);
@@ -92,7 +89,6 @@ async function writeToClipboard(text: string) {
   } else {
     estimationStore.roomNotifications.push("Could not copy");
   }
-  showSnackbar.value = true;
 }
 
 async function copyPassword() {

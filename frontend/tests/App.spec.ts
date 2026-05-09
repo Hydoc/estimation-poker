@@ -2,17 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, shallowMount } from "@vue/test-utils";
 import App from "../src/App.vue";
 import { createTestingPinia, TestingPinia } from "@pinia/testing";
-import { useWebsocketStore } from "../src/stores/websocket";
 import { RouterView } from "vue-router";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 import { createVuetify } from "vuetify";
 import { VApp, VAppBar, VAppBarTitle } from "vuetify/components";
+import { useEstimationStore } from "../src/stores/estimation";
 
 vi.mock("vue-router");
 
 let pinia: TestingPinia;
-let websocketStore: ReturnType<typeof useWebsocketStore>;
+let estimationStore: ReturnType<typeof useEstimationStore>;
 let vuetify: ReturnType<typeof createVuetify>;
 
 const ResizeObserverMock = vi.fn(() => ({
@@ -24,7 +24,7 @@ const ResizeObserverMock = vi.fn(() => ({
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 beforeEach(() => {
   pinia = createTestingPinia();
-  websocketStore = useWebsocketStore(pinia);
+  estimationStore = useEstimationStore(pinia);
   vuetify = createVuetify({
     components,
     directives,
@@ -62,7 +62,8 @@ describe("App", () => {
       });
 
       wrapper.unmount();
-      expect(websocketStore.disconnect).toHaveBeenCalledOnce();
+      // @ts-ignore
+      expect(estimationStore.leaveRoom).toHaveBeenCalledOnce();
     });
   });
 });

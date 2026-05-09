@@ -1,18 +1,19 @@
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import HomeView from "../../src/views/HomeView.vue";
 import { createTestingPinia, TestingPinia } from "@pinia/testing";
-import { useWebsocketStore } from "../../src/stores/websocket";
 import { vuetifyMount } from "../vuetifyMount";
 import { VCard, VCardText, VIcon } from "vuetify/components";
 import RoomDialog from "../../src/components/RoomDialog.vue";
-import { Role } from "../../src/components/types";
 import { nextTick } from "vue";
 import { useRouter } from "vue-router";
+import { useEstimationStore } from "../../src/stores/estimation";
+import { Role } from "../../src/types/room";
+import { succeed } from "@kaumlaut/pure/fetch-state";
 
 vi.mock("vue-router");
 
 let pinia: TestingPinia;
-let websocketStore: ReturnType<typeof useWebsocketStore>;
+let estimationStore: ReturnType<typeof useEstimationStore>;
 
 beforeEach(() => {
   (useRouter as Mock).mockReturnValue({
@@ -20,9 +21,11 @@ beforeEach(() => {
   });
 
   pinia = createTestingPinia();
-  websocketStore = useWebsocketStore(pinia);
-  websocketStore.fetchActiveRooms = vi.fn(() => Promise.resolve([]));
-  websocketStore.connect = vi.fn();
+  estimationStore = useEstimationStore(pinia);
+  // @ts-ignore
+  estimationStore.fetchActiveRooms = vi.fn(() => Promise.resolve([]));
+  // @ts-ignore
+  estimationStore.joinRoom = vi.fn();
 });
 describe("HomeView", () => {
   describe("rendering", () => {
@@ -48,8 +51,9 @@ describe("HomeView", () => {
     });
 
     it("should render with rooms", async () => {
-      websocketStore.fetchActiveRooms = vi.fn(() =>
-        Promise.resolve([
+      // @ts-ignore
+      estimationStore.roomsState.availableActiveRooms = succeed({
+        rooms: [
           {
             id: "first-id",
             playerCount: 1,
@@ -58,8 +62,8 @@ describe("HomeView", () => {
             id: "second-id",
             playerCount: 3,
           },
-        ]),
-      );
+        ],
+      });
 
       const wrapper = createWrapper();
 
@@ -97,19 +101,22 @@ describe("HomeView", () => {
     it("should reset round and close websocket on render", () => {
       createWrapper();
 
-      expect(websocketStore.disconnect).toHaveBeenCalledOnce();
-      expect(websocketStore.resetRound).toHaveBeenCalledOnce();
+      // @ts-ignore
+      expect(estimationStore.leaveRoom).toHaveBeenCalledOnce();
     });
 
     it("should create a new room", async () => {
-      websocketStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
-      websocketStore.roomState = vi.fn(() =>
+      // @ts-ignore
+      estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
+      // @ts-ignore
+      estimationStore.fetchRoomState = vi.fn(() =>
         Promise.resolve({
           isLocked: false,
           inProgress: false,
         }),
       );
-      websocketStore.userExistsInRoom = vi.fn(() => Promise.resolve(false));
+      // @ts-ignore
+      estimationStore.userExists = vi.fn(() => Promise.resolve(false));
 
       const wrapper = createWrapper();
 
@@ -123,9 +130,17 @@ describe("HomeView", () => {
       await nextTick();
       await nextTick();
 
-      expect(websocketStore.createRoom).toHaveBeenNthCalledWith(1, "Name");
-      expect(websocketStore.userExistsInRoom).toHaveBeenNthCalledWith(1, "Name", "room-id");
-      expect(websocketStore.connect).toHaveBeenNthCalledWith(1, "Name", Role.Developer, "room-id");
+      // @ts-ignore
+      expect(estimationStore.createRoom).toHaveBeenNthCalledWith(1, "Name");
+      // @ts-ignore
+      expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "room-id", "Name");
+      // @ts-ignore
+      expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(
+        1,
+        "Name",
+        Role.Developer,
+        "room-id",
+      );
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/room-id");
     });
   });
