@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { type PossibleGuess, Role, type UserOverview } from "@/components/types";
 import { computed, ref, watch } from "vue";
 import TableOverview from "@/components/TableOverview.vue";
 import DeveloperRoundView from "@/components/DeveloperRoundView.vue";
 import RoundSummary from "@/components/RoundSummary.vue";
-import type { RoomState } from "@/types/room.ts";
+import { type PossibleGuess, Role, type RoomState, type UserOverview } from "@/types/room.ts";
 import { isJust } from "@kaumlaut/pure/maybe";
 
 type Props = {

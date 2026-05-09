@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Developer, DeveloperDone } from "@/components/types.ts";
+import type { Developer, DeveloperDone } from "@/types/room.ts";
 
 type Props = {
   developer: Developer;

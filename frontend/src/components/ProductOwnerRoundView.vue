@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, type Ref, ref } from "vue";
 import type { VForm } from "vuetify/components";
-import { type Developer, RoundState } from "@/components/types.ts";
 import { isJust, type Maybe } from "@kaumlaut/pure/maybe";
+import { type Developer, RoundState } from "@/types/room.ts";
 
 type Props = {
   roundState: RoundState;

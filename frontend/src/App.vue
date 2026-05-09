@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { RouterView } from "vue-router";
-import { useWebsocketStore } from "@/stores/websocket";
 import { onBeforeUnmount } from "vue";
-const websocketStore = useWebsocketStore();
+import { useEstimationStore } from "@/stores/estimation.ts";
+const estimationStore = useEstimationStore();
 onBeforeUnmount(() => {
-  websocketStore.disconnect();
+  estimationStore.leaveRoom();
 });
 </script>
 

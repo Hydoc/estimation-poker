@@ -1,31 +1,55 @@
 import type { Maybe } from "@kaumlaut/pure/maybe";
 import {
-  type Developer,
-  type DeveloperDone,
-  type Permissions,
-  type ProductOwner,
-  Role,
-  type RoundState,
-  type UserOverview,
-} from "@/components/types.ts";
-import {
   isBool,
   isExactString,
   isListOf,
   isNonEmptyString,
+  isNumber,
   isObjectWithKeysMatchingGuard,
   isOneOf,
-  isString,
-  isUndefined,
 } from "@kaumlaut/pure/error-aware-guard";
 import type { FetchState } from "@kaumlaut/pure/fetch-state";
 
-export type Round = Readonly<{
-  state: RoundState;
-  issueToGuess: string;
-  users: Readonly<UserOverview>;
-  developerDone: DeveloperDone[];
-}>;
+export type User = {
+  name: string;
+};
+
+export type ProductOwner = User & {
+  role: Role.ProductOwner;
+};
+
+export type Developer = User & {
+  isDone: boolean;
+  role: Role.Developer;
+};
+
+export type DeveloperDone = {
+  doSkip: boolean;
+  guess: number;
+  name: string;
+  role: Role.Developer;
+};
+
+export type UserOverview = (ProductOwner | Developer)[];
+
+export enum Role {
+  ProductOwner = "product-owner",
+  Developer = "developer",
+  Empty = "",
+}
+
+export type Permissions = {
+  room: {
+    canLock: boolean;
+    key?: string;
+  };
+};
+
+export enum RoundState {
+  Waiting,
+  InProgress,
+  End,
+}
 
 export type RoomState = Readonly<{
   id: Maybe<string>;
@@ -43,17 +67,18 @@ export type RoomState = Readonly<{
   issues: any[];
   isConnected: boolean;
   permissions: Permissions;
+  possibleGuesses: PossibleGuess[];
 }>;
 
 export type SendableWebsocketMessageType =
-    | "estimate"
-    | "guess"
-    | "reveal"
-    | "new-round"
-    | "lock-room"
-    | "skip"
-    | "open-room"
-    | "add-issue";
+  | "estimate"
+  | "guess"
+  | "reveal"
+  | "new-round"
+  | "lock-room"
+  | "skip"
+  | "open-room"
+  | "add-issue";
 
 export type SendableWebsocketMessage = {
   type: SendableWebsocketMessageType;
@@ -78,6 +103,11 @@ export type ReceivableWebsocketMessage = {
   data?: any;
 };
 
+export type PossibleGuess = {
+  guess: number;
+  description: string;
+};
+
 const isProductOwner = isObjectWithKeysMatchingGuard<ProductOwner>({
   name: isNonEmptyString,
   role: isExactString(Role.ProductOwner),
@@ -92,6 +122,13 @@ const isDeveloper = isObjectWithKeysMatchingGuard<Developer>({
 export const isUserOverview = isListOf<ProductOwner | Developer>(
   isOneOf(isDeveloper, isProductOwner),
 );
+
+const isPossibleGuess = isObjectWithKeysMatchingGuard<PossibleGuess>({
+  description: isNonEmptyString,
+  guess: isNumber,
+});
+
+export const isPossibleGuesses = isListOf(isPossibleGuess);
 
 export const isRoomStateResponse = isObjectWithKeysMatchingGuard<{
   isLocked: boolean;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type PossibleGuess } from "@/components/types";
+import { type PossibleGuess } from "@/types/room";
 import { isJust, type Maybe } from "@kaumlaut/pure/maybe";
 
 type Props = {

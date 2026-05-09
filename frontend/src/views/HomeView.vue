@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { useWebsocketStore } from "@/stores/websocket";
 import { onBeforeMount, type Ref, ref } from "vue";
 import RoomDialog from "@/components/RoomDialog.vue";
-import { Role } from "@/components/types.ts";
 import { useRouter } from "vue-router";
 import { isSuccess } from "@kaumlaut/pure/fetch-state";
 import { useEstimationStore } from "@/stores/estimation.ts";
+import { Role } from "@/types/room.ts";
 
 const estimationStore = useEstimationStore();
 // leave room when component renders to avoid weird behavior
 estimationStore.leaveRoom();
-const websocketStore = useWebsocketStore();
 
 const router = useRouter();
 const errorMessage: Ref<string | undefined> = ref();
@@ -46,7 +44,7 @@ async function connect(chosenRoomId: string | undefined) {
     return;
   }
 
-  const userAlreadyExistsInRoom = await websocketStore.userExistsInRoom(name.value, actualRoomId);
+  const userAlreadyExistsInRoom = await estimationStore.userExists(actualRoomId, name.value);
   if (userAlreadyExistsInRoom) {
     errorMessage.value = "A user with this name already exists in the room";
     return;

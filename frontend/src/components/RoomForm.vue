@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Role } from "@/components/types";
 import { computed, ref } from "vue";
+import { Role } from "@/types/room.ts";
 
 type Props = {
   title: string;

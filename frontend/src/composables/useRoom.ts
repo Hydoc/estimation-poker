@@ -1,28 +1,22 @@
 import { computed, type ComputedRef, type Ref, ref } from "vue";
 import { isJust, just, type Maybe, nothing } from "@kaumlaut/pure/maybe";
 import {
+  type DeveloperDone,
   isPermissions,
+  isPossibleGuesses,
   isRoomStateResponse,
   isUserOverview,
+  type Permissions,
+  type PossibleGuess,
   type ReceivableWebsocketMessage,
+  Role,
   type RoomState,
-  type Round, type SendableWebsocketMessage,
+  RoundState,
+  type SendableWebsocketMessage,
+  type UserOverview,
 } from "@/types/room.ts";
 import { useWebsocket } from "@/composables/useWebsocket.ts";
-import {
-  type DeveloperDone,
-  type Permissions,
-  Role,
-  RoundState,
-  type UserOverview,
-} from "@/components/types.ts";
-import {
-  attemptErrorAware,
-  fail,
-  type FetchState,
-  isSuccess,
-  none,
-} from "@kaumlaut/pure/fetch-state";
+import { attemptErrorAware, fail, type FetchState, none } from "@kaumlaut/pure/fetch-state";
 import { isBool, isObjectWithKeysMatchingGuard } from "@kaumlaut/pure/error-aware-guard";
 
 export type UseRoom = {
@@ -32,6 +26,8 @@ export type UseRoom = {
   leaveRoom(): void;
   send(message: SendableWebsocketMessage): void;
   authenticate(roomId: string, password: string): Promise<boolean>;
+  userExists(roomId: string, name: string): Promise<boolean>;
+  fetchPossibleGuesses(): Promise<void>;
   fetchRoomState(roomId: string): Promise<{ isLocked: boolean; inProgress: boolean }>;
   fetchPermissions(): void;
 };
@@ -52,6 +48,7 @@ export function useRoom(): UseRoom {
   const roundInProgress = ref<boolean>(false);
   const developerDone: Ref<DeveloperDone[]> = ref([]);
   const issues = ref<any[]>([]);
+  const possibleGuesses = ref<PossibleGuess[]>([]);
   const permissions = ref<Permissions>({
     room: {
       canLock: false,
@@ -75,21 +72,9 @@ export function useRoom(): UseRoom {
       issues: issues.value,
       isConnected: websocket.isConnected.value,
       permissions: permissions.value,
+      possibleGuesses: possibleGuesses.value,
     }),
   );
-
-  const roomStateAsRound = computed((): Round => {
-    if (!isJust(issueToGuess.value) || !isSuccess(users.value)) {
-      throw new Error("round is invalid");
-    }
-
-    return {
-      developerDone: developerDone.value,
-      issueToGuess: issueToGuess.value.value,
-      state: roundState.value,
-      users: users.value.data,
-    };
-  });
 
   function resetRound() {
     issueToGuess.value = nothing();
@@ -112,7 +97,7 @@ export function useRoom(): UseRoom {
     role.value = just(userRole);
     name.value = just(username);
   }
-  
+
   function send(message: SendableWebsocketMessage) {
     websocket.send(message);
   }
@@ -207,28 +192,62 @@ export function useRoom(): UseRoom {
 
     return result.value;
   }
-  
+
+  // TODO refactor so that everything happens in joinRoom
   async function authenticate(roomId: string, password: string): Promise<boolean> {
     const response = await fetch(`/v1/room/${roomId}/authenticate`, {
       method: "POST",
       body: JSON.stringify({ password }),
     });
-    
+
     if (!response.ok) {
       return false;
     }
-    
+
     const result = isObjectWithKeysMatchingGuard<{ ok: boolean }>({
       ok: isBool,
     })(await response.json());
-    
+
     if (!result.success) {
       console.error(result.errors);
       throw new Error("authentication response is not valid");
     }
-    
+
     return result.value.ok;
-  } 
+  }
+
+  // TODO refactor so that everything happens in joinRoom
+  async function userExists(roomId: string, name: string): Promise<boolean> {
+    const response = await fetch(`/v1/room/${roomId}/users/exists?name=${name}`);
+
+    const result = isObjectWithKeysMatchingGuard<{ exists: boolean }>({
+      exists: isBool,
+    })(await response.json());
+
+    if (!result.success) {
+      console.error(result.errors);
+      throw new Error("exists response is not valid");
+    }
+
+    return result.value.exists;
+  }
+
+  async function fetchPossibleGuesses() {
+    const response = await fetch("/v1/possible-guesses");
+    if (!response.ok) {
+      possibleGuesses.value = [];
+      return;
+    }
+
+    const result = isPossibleGuesses(await response.json());
+
+    if (!result.success) {
+      console.error(result.errors);
+      throw new Error("possible guesses is not valid");
+    }
+
+    possibleGuesses.value = result.value;
+  }
 
   async function fetchPermissions() {
     if (!isJust(roomId.value) || !isJust(name.value)) {
@@ -263,6 +282,8 @@ export function useRoom(): UseRoom {
     leaveRoom,
     send,
     authenticate,
+    userExists,
+    fetchPossibleGuesses,
     fetchRoomState,
     fetchPermissions,
   };

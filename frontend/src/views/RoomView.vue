@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { useWebsocketStore } from "@/stores/websocket";
 import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
-import {computed, onMounted, ref, watch} from "vue";
-import { Role, RoundState } from "@/components/types.ts";
+import { computed, onMounted, ref } from "vue";
 import RoomForm from "@/components/RoomForm.vue";
 import { isJust } from "@kaumlaut/pure/maybe";
 import { isSuccess } from "@kaumlaut/pure/fetch-state";
 import { useEstimationStore } from "@/stores/estimation.ts";
-import type { SendableWebsocketMessageType } from "@/types/room.ts";
+import { Role, RoundState, type SendableWebsocketMessageType } from "@/types/room.ts";
 
 const estimationStore = useEstimationStore();
-const websocketStore = useWebsocketStore();
 const router = useRouter();
 const route = useRoute();
 const showSetRoomPasswordDialog = ref(false);
@@ -31,7 +28,7 @@ const queryRoomId = computed((): string => {
   }
   return route.params.id;
 });
-const possibleGuesses = computed(() => websocketStore.possibleGuesses);
+const possibleGuesses = computed(() => estimationStore.roomState.possibleGuesses);
 
 const permissions = computed(() => estimationStore.roomState.permissions);
 const isConnected = computed(() => estimationStore.roomState.isConnected);
@@ -41,7 +38,10 @@ const roundIsWaiting = computed(() => estimationStore.roomState.roundState === R
 const roundStateAsReadableString = computed(() => {
   if (roundState.value === RoundState.Waiting) {
     return "Waiting for people to join…";
-  } else if (roundState.value === RoundState.InProgress && isJust(estimationStore.roomState.issueToGuess)) {
+  } else if (
+    roundState.value === RoundState.InProgress &&
+    isJust(estimationStore.roomState.issueToGuess)
+  ) {
     return `Currently guessing ${estimationStore.roomState.issueToGuess.value}`;
   } else {
     return "Everyone guessed!";
@@ -118,25 +118,28 @@ async function tryJoin() {
     return;
   }
 
-  const userAlreadyExistsInRoom = await websocketStore.userExistsInRoom(name.value, actualRoomId);
+  const userAlreadyExistsInRoom = await estimationStore.userExists(actualRoomId, name.value);
   if (userAlreadyExistsInRoom) {
     errorMessage.value = "A user with this name already exists in the room";
     return;
   }
 
   await estimationStore.joinRoom(name.value, role.value, actualRoomId);
-  await Promise.all([websocketStore.fetchPossibleGuesses(), estimationStore.fetchPermissions()]);
+  await Promise.all([estimationStore.fetchPossibleGuesses(), estimationStore.fetchPermissions()]);
 }
 
 onMounted(async () => {
-  await estimationStore.fetchRoomState(queryRoomId.value).then((response) => {
-    roomIsLocked.value = response.isLocked;
-  }).catch(async () => {
-    await router.push("/");
-  });
+  await estimationStore
+    .fetchRoomState(queryRoomId.value)
+    .then((response) => {
+      roomIsLocked.value = response.isLocked;
+    })
+    .catch(async () => {
+      await router.push("/");
+    });
 
   if (isConnected.value) {
-    await Promise.all([websocketStore.fetchPossibleGuesses(), estimationStore.fetchPermissions()]);
+    await Promise.all([estimationStore.fetchPossibleGuesses(), estimationStore.fetchPermissions()]);
   }
 });
 </script>

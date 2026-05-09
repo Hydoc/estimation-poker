@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import DeveloperCard from "@/components/DeveloperCard.vue";
+import ProductOwnerRoundView from "@/components/ProductOwnerRoundView.vue";
+import { isJust, type Maybe } from "@kaumlaut/pure/maybe";
 import {
   type Developer,
   type DeveloperDone,
   type ProductOwner,
   Role,
-  RoundState,
+  type RoundState,
   type UserOverview,
-} from "./types";
-import DeveloperCard from "@/components/DeveloperCard.vue";
-import ProductOwnerRoundView from "@/components/ProductOwnerRoundView.vue";
-import { isJust, type Maybe } from "@kaumlaut/pure/maybe";
+} from "@/types/room.ts";
 
 type Props = {
   usersInRoom: Readonly<UserOverview>;

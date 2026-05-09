@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Role } from "@/components/types.ts";
 import RoomForm from "./RoomForm.vue";
+import { Role } from "@/types/room.ts";
 
 type Props = {
   activatorText: string;

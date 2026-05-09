@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { DeveloperDone } from "@/components/types.ts";
 import { computed } from "vue";
+import type { DeveloperDone } from "@/types/room.ts";
 
 type Props = {
   developerDone: DeveloperDone[];
