@@ -1,7 +1,7 @@
 import { Role, RoomState, RoundState, UserOverview } from "../../src/types/room";
 import { just, nothing } from "@kaumlaut/pure/maybe";
 import { Permissions } from "../../src/types/room";
-import {succeed} from "@kaumlaut/pure/fetch-state";
+import { succeed } from "@kaumlaut/pure/fetch-state";
 
 export class RoomStateBuilder {
   private constructor(private roomState: RoomState) {}

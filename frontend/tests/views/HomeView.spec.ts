@@ -161,25 +161,26 @@ describe("HomeView", () => {
 
       // @ts-ignore
       estimationStore.fetchRoomState = vi.fn(() =>
-          Promise.resolve({
-            isLocked: false,
-            inProgress: false,
-          }),
+        Promise.resolve({
+          isLocked: false,
+          inProgress: false,
+        }),
       );
       // @ts-ignore
       estimationStore.userExists = vi.fn(() => Promise.resolve(false));
 
       const wrapper = createWrapper();
-      
+
       // @ts-ignore
       wrapper.vm.role = Role.Developer;
       // @ts-ignore
       wrapper.vm.name = "Tester";
-      
-      wrapper.findAllComponents(RoomDialog)
-          .find((dialog) => dialog.props("activatorText") === "Create a new room")
-          .vm.$emit("submit");
-      
+
+      wrapper
+        .findAllComponents(RoomDialog)
+        .find((dialog) => dialog.props("activatorText") === "Create a new room")
+        .vm.$emit("submit");
+
       await nextTick();
       await nextTick();
       await nextTick();
@@ -194,7 +195,12 @@ describe("HomeView", () => {
       // @ts-ignore
       expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "room-id", "Tester");
       // @ts-ignore
-      expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(1, "Tester", Role.Developer, "room-id");
+      expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(
+        1,
+        "Tester",
+        Role.Developer,
+        "room-id",
+      );
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/room-id");
     });
 
@@ -211,33 +217,35 @@ describe("HomeView", () => {
 
       // @ts-ignore
       estimationStore.fetchRoomState = vi.fn(() =>
-          Promise.resolve({
-            isLocked: false,
-            inProgress: false,
-          }),
+        Promise.resolve({
+          isLocked: false,
+          inProgress: false,
+        }),
       );
       // @ts-ignore
       estimationStore.userExists = vi.fn(() => Promise.resolve(false));
 
       const wrapper = createWrapper();
-      
-      await wrapper.findComponent(VCard)
-          .findAllComponents(VBtn)
-          .find((btn) => btn.text() === "Join")
-          .trigger("click");
-      
+
+      await wrapper
+        .findComponent(VCard)
+        .findAllComponents(VBtn)
+        .find((btn) => btn.text() === "Join")
+        .trigger("click");
+
       // @ts-ignore
       wrapper.vm.role = Role.Developer;
       // @ts-ignore
       wrapper.vm.name = "Tester";
-      
-      wrapper.findAllComponents(RoomDialog)
-          .find((dialog) => dialog.props("activatorText") === "Join")
-          .vm.$emit("submit");
-      
+
+      wrapper
+        .findAllComponents(RoomDialog)
+        .find((dialog) => dialog.props("activatorText") === "Join")
+        .vm.$emit("submit");
+
       await nextTick();
       await nextTick();
-      
+
       // @ts-ignore
       expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "first-id");
       // @ts-ignore
@@ -245,7 +253,12 @@ describe("HomeView", () => {
       // @ts-ignore
       expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "first-id", "Tester");
       // @ts-ignore
-      expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(1, "Tester", Role.Developer, "first-id");
+      expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(
+        1,
+        "Tester",
+        Role.Developer,
+        "first-id",
+      );
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/first-id");
     });
 
@@ -259,21 +272,21 @@ describe("HomeView", () => {
           },
         ],
       });
- 
+
       // @ts-ignore
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
       // @ts-ignore
       estimationStore.fetchRoomState = vi.fn(() =>
-          Promise.resolve({
-            isLocked: true,
-            inProgress: false,
-          }),
+        Promise.resolve({
+          isLocked: true,
+          inProgress: false,
+        }),
       );
       const wrapper = createWrapper();
 
       // @ts-ignore
       await wrapper.vm.connect("");
-      
+
       expect(wrapper.findAllComponents(RoomDialog).at(1)!.props("showPasswordInput")).to.be.true;
     });
 
@@ -294,10 +307,10 @@ describe("HomeView", () => {
       estimationStore.authenticate = vi.fn(() => Promise.resolve(false));
       // @ts-ignore
       estimationStore.fetchRoomState = vi.fn(() =>
-          Promise.resolve({
-            isLocked: true,
-            inProgress: false,
-          }),
+        Promise.resolve({
+          isLocked: true,
+          inProgress: false,
+        }),
       );
       const wrapper = createWrapper();
 
@@ -306,7 +319,7 @@ describe("HomeView", () => {
 
       // @ts-ignore
       await wrapper.vm.connect("");
-      
+
       // @ts-ignore
       expect(wrapper.vm.errorMessage).equal("The provided password is wrong");
     });
@@ -326,13 +339,13 @@ describe("HomeView", () => {
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
       // @ts-ignore
       estimationStore.fetchRoomState = vi.fn(() =>
-          Promise.resolve({
-            isLocked: false,
-            inProgress: true,
-          }),
+        Promise.resolve({
+          isLocked: false,
+          inProgress: true,
+        }),
       );
       const wrapper = createWrapper();
-      
+
       // @ts-ignore
       await wrapper.vm.connect("");
 
@@ -355,10 +368,10 @@ describe("HomeView", () => {
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
       // @ts-ignore
       estimationStore.fetchRoomState = vi.fn(() =>
-          Promise.resolve({
-            isLocked: false,
-            inProgress: false,
-          }),
+        Promise.resolve({
+          isLocked: false,
+          inProgress: false,
+        }),
       );
       // @ts-ignore
       estimationStore.userExists = vi.fn(() => Promise.resolve(true));
