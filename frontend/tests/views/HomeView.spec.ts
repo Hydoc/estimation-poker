@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import HomeView from "../../src/views/HomeView.vue";
 import { createTestingPinia, TestingPinia } from "@pinia/testing";
 import { vuetifyMount } from "../vuetifyMount";
-import { VCard, VCardText, VIcon } from "vuetify/components";
+import { VBtn, VCard, VCardText, VIcon } from "vuetify/components";
 import RoomDialog from "../../src/components/RoomDialog.vue";
 import { nextTick } from "vue";
 import { useRouter } from "vue-router";
@@ -11,6 +11,7 @@ import { Role } from "../../src/types/room";
 import { succeed } from "@kaumlaut/pure/fetch-state";
 
 vi.mock("vue-router");
+vi.stubGlobal("visualViewport", new EventTarget());
 
 let pinia: TestingPinia;
 let estimationStore: ReturnType<typeof useEstimationStore>;
@@ -142,6 +143,232 @@ describe("HomeView", () => {
         "room-id",
       );
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/room-id");
+    });
+
+    it("should be able to create a new room when rooms are given", async () => {
+      // @ts-ignore
+      estimationStore.roomsState.availableActiveRooms = succeed({
+        rooms: [
+          {
+            id: "first-id",
+            playerCount: 1,
+          },
+        ],
+      });
+
+      // @ts-ignore
+      estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
+
+      // @ts-ignore
+      estimationStore.fetchRoomState = vi.fn(() =>
+          Promise.resolve({
+            isLocked: false,
+            inProgress: false,
+          }),
+      );
+      // @ts-ignore
+      estimationStore.userExists = vi.fn(() => Promise.resolve(false));
+
+      const wrapper = createWrapper();
+      
+      // @ts-ignore
+      wrapper.vm.role = Role.Developer;
+      // @ts-ignore
+      wrapper.vm.name = "Tester";
+      
+      wrapper.findAllComponents(RoomDialog)
+          .find((dialog) => dialog.props("activatorText") === "Create a new room")
+          .vm.$emit("submit");
+      
+      await nextTick();
+      await nextTick();
+      await nextTick();
+      await nextTick();
+
+      // @ts-ignore
+      expect(estimationStore.createRoom).toHaveBeenNthCalledWith(1, "Tester");
+      // @ts-ignore
+      expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "room-id");
+      // @ts-ignore
+      expect(estimationStore.authenticate).not.toHaveBeenCalled();
+      // @ts-ignore
+      expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "room-id", "Tester");
+      // @ts-ignore
+      expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(1, "Tester", Role.Developer, "room-id");
+      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/room-id");
+    });
+
+    it("should join an already created room", async () => {
+      // @ts-ignore
+      estimationStore.roomsState.availableActiveRooms = succeed({
+        rooms: [
+          {
+            id: "first-id",
+            playerCount: 1,
+          },
+        ],
+      });
+
+      // @ts-ignore
+      estimationStore.fetchRoomState = vi.fn(() =>
+          Promise.resolve({
+            isLocked: false,
+            inProgress: false,
+          }),
+      );
+      // @ts-ignore
+      estimationStore.userExists = vi.fn(() => Promise.resolve(false));
+
+      const wrapper = createWrapper();
+      
+      await wrapper.findComponent(VCard)
+          .findAllComponents(VBtn)
+          .find((btn) => btn.text() === "Join")
+          .trigger("click");
+      
+      // @ts-ignore
+      wrapper.vm.role = Role.Developer;
+      // @ts-ignore
+      wrapper.vm.name = "Tester";
+      
+      wrapper.findAllComponents(RoomDialog)
+          .find((dialog) => dialog.props("activatorText") === "Join")
+          .vm.$emit("submit");
+      
+      await nextTick();
+      await nextTick();
+      
+      // @ts-ignore
+      expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "first-id");
+      // @ts-ignore
+      expect(estimationStore.authenticate).not.toHaveBeenCalled();
+      // @ts-ignore
+      expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "first-id", "Tester");
+      // @ts-ignore
+      expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(1, "Tester", Role.Developer, "first-id");
+      expect(useRouter().push).toHaveBeenNthCalledWith(1, "/room/first-id");
+    });
+
+    it("should show password input when trying to join but room is locked", async () => {
+      // @ts-ignore
+      estimationStore.roomsState.availableActiveRooms = succeed({
+        rooms: [
+          {
+            id: "first-id",
+            playerCount: 1,
+          },
+        ],
+      });
+ 
+      // @ts-ignore
+      estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
+      // @ts-ignore
+      estimationStore.fetchRoomState = vi.fn(() =>
+          Promise.resolve({
+            isLocked: true,
+            inProgress: false,
+          }),
+      );
+      const wrapper = createWrapper();
+
+      // @ts-ignore
+      await wrapper.vm.connect("");
+      
+      expect(wrapper.findAllComponents(RoomDialog).at(1)!.props("showPasswordInput")).to.be.true;
+    });
+
+    it("should show correct error when room is locked and provided password is incorrect", async () => {
+      // @ts-ignore
+      estimationStore.roomsState.availableActiveRooms = succeed({
+        rooms: [
+          {
+            id: "first-id",
+            playerCount: 1,
+          },
+        ],
+      });
+
+      // @ts-ignore
+      estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
+      // @ts-ignore
+      estimationStore.authenticate = vi.fn(() => Promise.resolve(false));
+      // @ts-ignore
+      estimationStore.fetchRoomState = vi.fn(() =>
+          Promise.resolve({
+            isLocked: true,
+            inProgress: false,
+          }),
+      );
+      const wrapper = createWrapper();
+
+      // @ts-ignore
+      wrapper.vm.passwordForRoom = "incorrect";
+
+      // @ts-ignore
+      await wrapper.vm.connect("");
+      
+      // @ts-ignore
+      expect(wrapper.vm.errorMessage).equal("The provided password is wrong");
+    });
+
+    it("should show correct error when round in room has started", async () => {
+      // @ts-ignore
+      estimationStore.roomsState.availableActiveRooms = succeed({
+        rooms: [
+          {
+            id: "first-id",
+            playerCount: 1,
+          },
+        ],
+      });
+
+      // @ts-ignore
+      estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
+      // @ts-ignore
+      estimationStore.fetchRoomState = vi.fn(() =>
+          Promise.resolve({
+            isLocked: false,
+            inProgress: true,
+          }),
+      );
+      const wrapper = createWrapper();
+      
+      // @ts-ignore
+      await wrapper.vm.connect("");
+
+      // @ts-ignore
+      expect(wrapper.vm.errorMessage).equal("The round has already started");
+    });
+
+    it("should show correct error when user with passed name already exists in room", async () => {
+      // @ts-ignore
+      estimationStore.roomsState.availableActiveRooms = succeed({
+        rooms: [
+          {
+            id: "first-id",
+            playerCount: 1,
+          },
+        ],
+      });
+
+      // @ts-ignore
+      estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
+      // @ts-ignore
+      estimationStore.fetchRoomState = vi.fn(() =>
+          Promise.resolve({
+            isLocked: false,
+            inProgress: false,
+          }),
+      );
+      // @ts-ignore
+      estimationStore.userExists = vi.fn(() => Promise.resolve(true));
+      const wrapper = createWrapper();
+
+      // @ts-ignore
+      await wrapper.vm.connect("");
+
+      // @ts-ignore
+      expect(wrapper.vm.errorMessage).equal("A user with this name already exists in the room");
     });
   });
 });

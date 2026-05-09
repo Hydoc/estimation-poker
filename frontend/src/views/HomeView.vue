@@ -28,10 +28,10 @@ async function connect(chosenRoomId: string | undefined) {
     return;
   }
 
-  const passwordMatches = estimationStore.roomState.roomIsLocked
+  const passwordMatches = roomState.isLocked
     ? await estimationStore.authenticate(actualRoomId, passwordForRoom.value)
     : true;
-  if (estimationStore.roomState.roomIsLocked && !passwordMatches) {
+  if (roomState.isLocked && !passwordMatches) {
     showPasswordInput.value = true;
     errorMessage.value = "The provided password is wrong";
     return;
@@ -39,7 +39,7 @@ async function connect(chosenRoomId: string | undefined) {
 
   showPasswordInput.value = false;
 
-  if (estimationStore.roomState.roundInProgress) {
+  if (roomState.inProgress) {
     errorMessage.value = "The round has already started";
     return;
   }
