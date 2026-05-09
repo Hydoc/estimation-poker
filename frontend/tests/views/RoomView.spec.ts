@@ -9,7 +9,7 @@ import { vuetifyMount } from "../vuetifyMount";
 import RoomForm from "../../src/components/RoomForm.vue";
 import { useEstimationStore } from "../../src/stores/estimation";
 import { RoomStateBuilder } from "../builder/RoomStateBuilder";
-import { Role } from "../../src/types/room";
+import { Role, RoundState } from "../../src/types/room";
 
 vi.mock("vue-router");
 
@@ -499,6 +499,43 @@ describe("RoomView", () => {
       // @ts-ignore
       expect(estimationStore.fetchPermissions).not.toHaveBeenCalled();
     });
+  });
+
+  it("should return first id in params when array is given", () => {
+    (useRoute as Mock).mockReturnValue({
+      params: {
+        id: ["first", "second"],
+      },
+    });
+
+    const wrapper = createWrapper();
+
+    // @ts-ignore
+    expect(wrapper.vm.queryRoomId).equal("first");
+  });
+
+  it("should return correct roundStateAsReadableString when round is in Progress an there is an issue to guess", () => {
+    // @ts-ignore
+    estimationStore.roomState = defaultRoomState
+      .withRoundState(RoundState.InProgress)
+      .withIssueToGuess("AC-2")
+      .build();
+    const wrapper = createWrapper();
+
+    // @ts-ignore
+    expect(wrapper.vm.roundStateAsReadableString).equal("Currently guessing AC-2");
+  });
+
+  it("should return correct roundStateAsReadableString when round is done", () => {
+    // @ts-ignore
+    estimationStore.roomState = defaultRoomState
+      .withRoundState(RoundState.End)
+      .withIssueToGuess("AC-2")
+      .build();
+    const wrapper = createWrapper();
+
+    // @ts-ignore
+    expect(wrapper.vm.roundStateAsReadableString).equal("Everyone guessed!");
   });
 });
 

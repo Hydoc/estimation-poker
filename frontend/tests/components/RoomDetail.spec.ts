@@ -5,9 +5,9 @@ import DeveloperRoundView from "../../src/components/DeveloperRoundView.vue";
 import RoundSummary from "../../src/components/RoundSummary.vue";
 import { nextTick } from "vue";
 import { vuetifyMount } from "../vuetifyMount";
-import { Role, RoomState, RoundState } from "../../src/types/room";
-import { nothing, just, Maybe } from "@kaumlaut/pure/maybe";
-import { succeed } from "@kaumlaut/pure/fetch-state";
+import { RoundState } from "../../src/types/room";
+import { nothing } from "@kaumlaut/pure/maybe";
+import { RoomStateBuilder } from "../builder/RoomStateBuilder";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
@@ -91,14 +91,14 @@ describe("RoomDetail", () => {
 
     it("should show round summary depending if showAllGuesses is true", async () => {
       vi.useFakeTimers();
-      const wrapper = createWrapper(just("CC-1"));
+      const wrapper = createWrapper(RoomStateBuilder.init().withIssueToGuess("CC-1"));
 
       // @ts-ignore
       expect(wrapper.vm.showRoundSummary).to.be.false;
       expect(wrapper.findComponent(RoundSummary).exists()).to.be.false;
 
       await wrapper.setProps({
-        roomState: createRoomState(nothing(), nothing(), true),
+        roomState: RoomStateBuilder.init().withShowAllGuesses(true).build(),
       });
 
       vi.runAllTimers();
@@ -109,7 +109,7 @@ describe("RoomDetail", () => {
       expect(wrapper.findComponent(RoundSummary).exists()).to.be.true;
 
       await wrapper.setProps({
-        roomState: createRoomState(nothing(), nothing(), false),
+        roomState: RoomStateBuilder.init().build(),
       });
 
       vi.runAllTimers();
@@ -122,48 +122,10 @@ describe("RoomDetail", () => {
   });
 });
 
-function createWrapper(issueToGuess: Maybe<string> = nothing(), guess: Maybe<number> = nothing()) {
+function createWrapper(roomStateBuilder: RoomStateBuilder = RoomStateBuilder.init()) {
   return vuetifyMount(RoomDetail, {
     props: {
-      roomState: createRoomState(issueToGuess, guess),
+      roomState: roomStateBuilder.build(),
     },
   });
-}
-
-function createRoomState(
-  issueToGuess: Maybe<string> = nothing(),
-  guess: Maybe<number> = nothing(),
-  showAllGuesses = false,
-): RoomState {
-  return {
-    users: succeed([
-      { name: "Test", isDone: false, role: Role.Developer },
-      { name: "Product Owner Test", role: Role.ProductOwner },
-    ]),
-    role: just(Role.Developer),
-    roundState: RoundState.Waiting,
-    issueToGuess,
-    guess,
-    doSkip: false,
-    showAllGuesses,
-    roomIsLocked: false,
-    permissions: {
-      room: {
-        canLock: false,
-      },
-    },
-    isConnected: true,
-    name: "",
-    roundInProgress: false,
-    id: "",
-    issues: [],
-    developerDone: [],
-    possibleGuesses: [
-      { guess: 1, description: "Bis zu 4 Std." },
-      { guess: 2, description: "Bis zu 8 Std." },
-      { guess: 3, description: "Bis zu 3 Tagen" },
-      { guess: 4, description: "Bis zu 5 Tagen" },
-      { guess: 5, description: "Mehr als 5 Tage" },
-    ],
-  };
 }

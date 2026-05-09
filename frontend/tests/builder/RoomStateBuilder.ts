@@ -1,9 +1,31 @@
 import { Role, RoomState, RoundState, UserOverview } from "../../src/types/room";
 import { just, nothing } from "@kaumlaut/pure/maybe";
 import { Permissions } from "../../src/types/room";
+import {succeed} from "@kaumlaut/pure/fetch-state";
 
 export class RoomStateBuilder {
   private constructor(private roomState: RoomState) {}
+
+  withShowAllGuesses(showAllGuesses: boolean): RoomStateBuilder {
+    return new RoomStateBuilder({
+      ...this.roomState,
+      showAllGuesses,
+    });
+  }
+
+  withIssueToGuess(issue: string): RoomStateBuilder {
+    return new RoomStateBuilder({
+      ...this.roomState,
+      issueToGuess: just(issue),
+    });
+  }
+
+  withRoundState(state: RoundState): RoomStateBuilder {
+    return new RoomStateBuilder({
+      ...this.roomState,
+      roundState: state,
+    });
+  }
 
   withRoomIsLocked(isLocked: boolean): RoomStateBuilder {
     return new RoomStateBuilder({
@@ -22,7 +44,7 @@ export class RoomStateBuilder {
   withUsers(users: UserOverview): RoomStateBuilder {
     return new RoomStateBuilder({
       ...this.roomState,
-      users: users,
+      users: succeed(users),
     });
   }
 
@@ -62,7 +84,10 @@ export class RoomStateBuilder {
       name: "Tester",
       isConnected: true,
       roomIsLocked: false,
-      users: [],
+      users: succeed([
+        { name: "Test", isDone: false, role: Role.Developer },
+        { name: "Product Owner Test", role: Role.ProductOwner },
+      ]),
       possibleGuesses: [
         { guess: 1, description: "Bis zu 4 Std." },
         { guess: 2, description: "Bis zu 8 Std." },
