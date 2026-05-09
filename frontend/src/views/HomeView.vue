@@ -22,7 +22,6 @@ const showPasswordInput: Ref<boolean> = ref(false);
 async function connect(chosenRoomId: string | undefined) {
   errorMessage.value = "";
 
-  // TODO
   const actualRoomId = chosenRoomId ? chosenRoomId : await estimationStore.createRoom(name.value);
   const roomState = await estimationStore.fetchRoomState(actualRoomId);
 
@@ -32,7 +31,7 @@ async function connect(chosenRoomId: string | undefined) {
   }
 
   const passwordMatches = estimationStore.roomState.roomIsLocked
-    ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
+    ? await estimationStore.authenticate(actualRoomId, passwordForRoom.value)
     : true;
   if (estimationStore.roomState.roomIsLocked && !passwordMatches) {
     showPasswordInput.value = true;

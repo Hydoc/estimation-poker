@@ -36,7 +36,6 @@ export type RoomState = Readonly<{
   issueToGuess: Maybe<string>;
   roundState: RoundState;
   users: FetchState<UserOverview>;
-  notifications: string[];
   showAllGuesses: boolean;
   roomIsLocked: boolean;
   roundInProgress: boolean;

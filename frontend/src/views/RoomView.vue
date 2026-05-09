@@ -2,7 +2,7 @@
 import { useWebsocketStore } from "@/stores/websocket";
 import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
-import { computed, onMounted, ref } from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 import { Role, RoundState } from "@/components/types.ts";
 import RoomForm from "@/components/RoomForm.vue";
 import { isJust } from "@kaumlaut/pure/maybe";
@@ -18,14 +18,13 @@ const showSetRoomPasswordDialog = ref(false);
 const showPassword = ref(false);
 const showSnackbar = ref(false);
 const roomPassword = ref("");
-const snackbarText = ref("");
 const name = ref("");
 const role = ref(Role.Empty);
 const passwordForRoom = ref("");
 const errorMessage = ref("");
 const issueToAdd = ref("");
 const showIssuesDrawer = ref(false);
-const roomIsLocked = computed(() => estimationStore.roomState.roomIsLocked);
+const roomIsLocked = ref(false);
 const queryRoomId = computed((): string => {
   if (Array.isArray(route.params.id)) {
     return route.params.id[0];
@@ -89,9 +88,9 @@ async function writeToClipboard(text: string) {
   const clipboardPermission = await navigator.permissions.query({ name: "clipboard-write" });
   if (clipboardPermission.state === "granted") {
     await navigator.clipboard.writeText(text);
-    snackbarText.value = "Copied!";
+    estimationStore.roomNotifications.push("Copied!");
   } else {
-    snackbarText.value = "Could not copy";
+    estimationStore.roomNotifications.push("Could not copy");
   }
   showSnackbar.value = true;
 }
@@ -107,7 +106,7 @@ async function tryJoin() {
   const roomState = await estimationStore.fetchRoomState(actualRoomId);
 
   const passwordMatches = roomState.isLocked
-    ? await websocketStore.passwordMatchesRoom(actualRoomId, passwordForRoom.value)
+    ? await estimationStore.authenticate(actualRoomId, passwordForRoom.value)
     : true;
   if (roomState.isLocked && !passwordMatches) {
     errorMessage.value = "The provided password is wrong";
@@ -130,7 +129,9 @@ async function tryJoin() {
 }
 
 onMounted(async () => {
-  await estimationStore.fetchRoomState(queryRoomId.value).catch(async () => {
+  await estimationStore.fetchRoomState(queryRoomId.value).then((response) => {
+    roomIsLocked.value = response.isLocked;
+  }).catch(async () => {
     await router.push("/");
   });
 
@@ -210,7 +211,7 @@ onMounted(async () => {
           <v-icon>mdi-text-box-outline</v-icon>
         </v-btn>
         <v-btn
-          v-if="permissions.room.canLock && roomIsLocked"
+          v-if="permissions.room.canLock && estimationStore.roomState.roomIsLocked"
           @click="copyPassword"
         >
           <v-tooltip
@@ -223,7 +224,7 @@ onMounted(async () => {
         </v-btn>
 
         <v-btn
-          v-if="permissions.room.canLock && roomIsLocked"
+          v-if="permissions.room.canLock && estimationStore.roomState.roomIsLocked"
           @click="openRoom"
         >
           <v-tooltip
@@ -236,7 +237,7 @@ onMounted(async () => {
         </v-btn>
 
         <v-btn
-          v-if="permissions.room.canLock && !roomIsLocked"
+          v-if="permissions.room.canLock && !estimationStore.roomState.roomIsLocked"
           @click="showSetRoomPasswordDialog = true"
         >
           <v-tooltip
@@ -344,8 +345,8 @@ onMounted(async () => {
     </v-navigation-drawer>
 
     <v-snackbar-queue
-      v-model="estimationStore.roomState.notifications"
-      :timeout="2000"
+      v-model="estimationStore.roomNotifications"
+      :timeout="1500"
       color="gray"
     />
   </div>

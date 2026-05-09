@@ -23,12 +23,15 @@ import {
   isSuccess,
   none,
 } from "@kaumlaut/pure/fetch-state";
+import { isBool, isObjectWithKeysMatchingGuard } from "@kaumlaut/pure/error-aware-guard";
 
 export type UseRoom = {
   roomState: ComputedRef<RoomState>;
+  roomNotifications: Ref<string[]>;
   joinRoom(name: string, role: Role, roomId: string): Promise<void>;
   leaveRoom(): void;
   send(message: SendableWebsocketMessage): void;
+  authenticate(roomId: string, password: string): Promise<boolean>;
   fetchRoomState(roomId: string): Promise<{ isLocked: boolean; inProgress: boolean }>;
   fetchPermissions(): void;
 };
@@ -43,7 +46,7 @@ export function useRoom(): UseRoom {
   const doSkip = ref<boolean>(false);
   const roundState = ref<RoundState>(RoundState.Waiting);
   const users = ref<FetchState<UserOverview>>(none());
-  const notifications = ref<string[]>([]);
+  const roomNotifications = ref<string[]>([]);
   const showAllGuesses = ref<boolean>(false);
   const roomIsLocked = ref<boolean>(false);
   const roundInProgress = ref<boolean>(false);
@@ -65,7 +68,6 @@ export function useRoom(): UseRoom {
       issueToGuess: issueToGuess.value,
       roundState: roundState.value,
       users: users.value,
-      notifications: notifications.value,
       showAllGuesses: showAllGuesses.value,
       roomIsLocked: roomIsLocked.value,
       roundInProgress: roundInProgress.value,
@@ -120,7 +122,7 @@ export function useRoom(): UseRoom {
     switch (decoded.type) {
       case "leave":
         await fetchUsersInRoom();
-        notifications.value.push(`${decoded.data} has left the room…`);
+        roomNotifications.value.push(`${decoded.data} has left the room…`);
         break;
       case "join":
       case "developer-skipped":
@@ -177,7 +179,7 @@ export function useRoom(): UseRoom {
   function leaveRoom() {
     websocket.disconnect();
     roomId.value = nothing();
-    notifications.value = [];
+    roomNotifications.value = [];
     name.value = nothing();
     role.value = nothing();
     permissions.value = {
@@ -205,6 +207,28 @@ export function useRoom(): UseRoom {
 
     return result.value;
   }
+  
+  async function authenticate(roomId: string, password: string): Promise<boolean> {
+    const response = await fetch(`/v1/room/${roomId}/authenticate`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    });
+    
+    if (!response.ok) {
+      return false;
+    }
+    
+    const result = isObjectWithKeysMatchingGuard<{ ok: boolean }>({
+      ok: isBool,
+    })(await response.json());
+    
+    if (!result.success) {
+      console.error(result.errors);
+      throw new Error("authentication response is not valid");
+    }
+    
+    return result.value.ok;
+  } 
 
   async function fetchPermissions() {
     if (!isJust(roomId.value) || !isJust(name.value)) {
@@ -225,7 +249,7 @@ export function useRoom(): UseRoom {
 
     const result = isPermissions(await response.json());
     if (!result.success) {
-      console.log(result.errors);
+      console.error(result.errors);
       throw new Error("permissions is not valid");
     }
 
@@ -234,9 +258,11 @@ export function useRoom(): UseRoom {
 
   return {
     roomState,
+    roomNotifications,
     joinRoom,
     leaveRoom,
     send,
+    authenticate,
     fetchRoomState,
     fetchPermissions,
   };

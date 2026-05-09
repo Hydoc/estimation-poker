@@ -6,7 +6,6 @@ import {type PossibleGuess,} from "@/components/types";
 type WebsocketStore = {
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
   fetchPossibleGuesses(): Promise<void>;
-  passwordMatchesRoom(roomId: string, password: string): Promise<boolean>;
   possibleGuesses: Ref<PossibleGuess[]>;
 };
 
@@ -16,19 +15,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
     const response = await fetch(`/v1/room/${roomId}/users/exists?name=${name}`);
     return ((await response.json()) as { exists: boolean }).exists;
-  }
-
-  async function passwordMatchesRoom(roomId: string, password: string): Promise<boolean> {
-    const response = await fetch(`/v1/room/${roomId}/authenticate`, {
-      method: "POST",
-      body: JSON.stringify({ password }),
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    return ((await response.json()) as { ok: boolean }).ok;
   }
 
   async function fetchPossibleGuesses() {
@@ -45,6 +31,5 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     possibleGuesses,
     userExistsInRoom,
     fetchPossibleGuesses,
-    passwordMatchesRoom,
   };
 });
