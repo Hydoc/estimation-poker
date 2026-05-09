@@ -6,7 +6,7 @@ import {
   isUserOverview,
   type ReceivableWebsocketMessage,
   type RoomState,
-  type Round,
+  type Round, type SendableWebsocketMessage,
 } from "@/types/room.ts";
 import { useWebsocket } from "@/composables/useWebsocket.ts";
 import {
@@ -28,6 +28,7 @@ export type UseRoom = {
   roomState: ComputedRef<RoomState>;
   joinRoom(name: string, role: Role, roomId: string): Promise<void>;
   leaveRoom(): void;
+  send(message: SendableWebsocketMessage): void;
   fetchRoomState(roomId: string): Promise<{ isLocked: boolean; inProgress: boolean }>;
   fetchPermissions(): void;
 };
@@ -109,6 +110,10 @@ export function useRoom(): UseRoom {
     role.value = just(userRole);
     name.value = just(username);
   }
+  
+  function send(message: SendableWebsocketMessage) {
+    websocket.send(message);
+  }
 
   async function onWebsocketMessage(message: MessageEvent): Promise<void> {
     const decoded = JSON.parse(message.data) as ReceivableWebsocketMessage;
@@ -124,10 +129,10 @@ export function useRoom(): UseRoom {
         break;
       case "estimate":
         roundState.value = RoundState.InProgress;
-        issueToGuess.value = decoded.data;
+        issueToGuess.value = just(decoded.data);
         break;
       case "you-guessed":
-        guess.value = decoded.data;
+        guess.value = just(decoded.data);
         doSkip.value = false;
         break;
       case "you-skipped":
@@ -231,6 +236,7 @@ export function useRoom(): UseRoom {
     roomState,
     joinRoom,
     leaveRoom,
+    send,
     fetchRoomState,
     fetchPermissions,
   };

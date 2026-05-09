@@ -11,8 +11,6 @@ const estimationStore = useEstimationStore();
 // leave room when component renders to avoid weird behavior
 estimationStore.leaveRoom();
 const websocketStore = useWebsocketStore();
-websocketStore.disconnect();
-websocketStore.resetRound();
 
 const router = useRouter();
 const errorMessage: Ref<string | undefined> = ref();
@@ -56,7 +54,6 @@ async function connect(chosenRoomId: string | undefined) {
   }
 
   await estimationStore.joinRoom(name.value, role.value, actualRoomId);
-  // await websocketStore.connect(name.value, role.value, actualRoomId);
   await router.push(`/room/${actualRoomId}`);
 }
 

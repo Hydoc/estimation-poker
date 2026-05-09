@@ -5,12 +5,20 @@ export type UseWebsocket = {
   isConnected: ComputedRef<boolean>;
   connect(url: string, onMessage: (message: MessageEvent) => Promise<void>): Promise<boolean>;
   disconnect(): void;
+  send<T extends Record<string, any>>(message: T): void;
 };
 
 export function useWebsocket(): UseWebsocket {
   const connection = ref<Maybe<WebSocket>>(nothing());
 
   const isConnected = computed(() => isJust(connection.value));
+  
+  function send<T extends Record<string, any>>(message: T) {
+    if (!isJust(connection.value)) {
+      throw new Error("Can not send message without a connection");
+    }
+    connection.value.value.send(JSON.stringify(message));
+  }
 
   async function connect(
     url: string,
@@ -74,5 +82,6 @@ export function useWebsocket(): UseWebsocket {
     connect,
     disconnect,
     isConnected,
+    send,
   };
 }

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { type SendableWebsocketMessageType, useWebsocketStore } from "@/stores/websocket";
+import { useWebsocketStore } from "@/stores/websocket";
 import { useRoute, useRouter } from "vue-router";
 import RoomDetail from "@/components/RoomDetail.vue";
 import { computed, onMounted, ref } from "vue";
 import { Role, RoundState } from "@/components/types.ts";
 import RoomForm from "@/components/RoomForm.vue";
-import { useRoom } from "@/composables/useRoom.ts";
 import { isJust } from "@kaumlaut/pure/maybe";
 import { isSuccess } from "@kaumlaut/pure/fetch-state";
 import { useEstimationStore } from "@/stores/estimation.ts";
+import type { SendableWebsocketMessageType } from "@/types/room.ts";
 
 const estimationStore = useEstimationStore();
 const websocketStore = useWebsocketStore();
@@ -32,20 +32,18 @@ const queryRoomId = computed((): string => {
   }
   return route.params.id;
 });
-// TODO refactor to use both composables instead of the store
 const possibleGuesses = computed(() => websocketStore.possibleGuesses);
-const permissions = computed(() => websocketStore.permissions);
 
+const permissions = computed(() => estimationStore.roomState.permissions);
 const isConnected = computed(() => estimationStore.roomState.isConnected);
 const roundState = computed(() => estimationStore.roomState.roundState);
-const ticketToGuess = computed(() => estimationStore.roomState.issueToGuess);
 const roundIsWaiting = computed(() => estimationStore.roomState.roundState === RoundState.Waiting);
 
 const roundStateAsReadableString = computed(() => {
   if (roundState.value === RoundState.Waiting) {
     return "Waiting for people to join…";
-  } else if (roundState.value === RoundState.InProgress) {
-    return `Currently guessing ${ticketToGuess.value}`;
+  } else if (roundState.value === RoundState.InProgress && isJust(estimationStore.roomState.issueToGuess)) {
+    return `Currently guessing ${estimationStore.roomState.issueToGuess.value}`;
   } else {
     return "Everyone guessed!";
   }
@@ -55,7 +53,7 @@ function sendMessage(
   type: SendableWebsocketMessageType,
   data: string | number | null | { password?: string; key: string },
 ) {
-  websocketStore.send({ type, data });
+  estimationStore.send({ type, data });
 }
 
 function lockRoom() {

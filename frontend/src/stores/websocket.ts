@@ -1,226 +1,21 @@
-import type { Ref } from "vue";
-import { computed, ref } from "vue";
-import { defineStore } from "pinia";
-import {
-  type PossibleGuess,
-  type UserOverview,
-  type Permissions,
-  type DeveloperDone,
-  type ActiveRoom,
-  type FetchActiveRoomsResponse,
-  type RoomState,
-} from "@/components/types";
-import { Role, RoundState } from "@/components/types";
+import type {Ref} from "vue";
+import {ref} from "vue";
+import {defineStore} from "pinia";
+import {type PossibleGuess,} from "@/components/types";
 
 type WebsocketStore = {
-  connect(name: string, role: string, roomId: string): Promise<void>;
-  createRoom(name: string): Promise<string>;
-  disconnect(): void;
-  resetRound(): void;
   userExistsInRoom(name: string, roomId: string): Promise<boolean>;
-  fetchActiveRooms(): Promise<ActiveRoom[]>;
-  send(message: SendableWebsocketMessage): void;
   fetchPossibleGuesses(): Promise<void>;
-  fetchPermissions(): Promise<void>;
   passwordMatchesRoom(roomId: string, password: string): Promise<boolean>;
-  roomState(roomId: string): Promise<RoomState>;
-  username: Ref<string>;
-  isConnected: Ref<boolean>;
-  usersInRoom: Ref<UserOverview>;
-  roomId: Ref<string>;
-  userRole: Ref<Role>;
-  roundState: Ref<RoundState>;
-  ticketToGuess: Ref<string>;
-  guess: Ref<number>;
-  didSkip: Ref<boolean>;
-  showAllGuesses: Ref<boolean>;
   possibleGuesses: Ref<PossibleGuess[]>;
-  permissions: Ref<Permissions>;
-  roomIsLocked: Ref<boolean>;
-  developerDone: Ref<DeveloperDone[]>;
-  notifications: Ref<string[]>;
-  issues: Ref<any[]>;
-};
-
-export type SendableWebsocketMessageType =
-  | "estimate"
-  | "guess"
-  | "reveal"
-  | "new-round"
-  | "lock-room"
-  | "skip"
-  | "open-room"
-  | "add-issue";
-
-type SendableWebsocketMessage = {
-  type: SendableWebsocketMessageType;
-  data?: any;
-};
-
-type ReceivableWebsocketMessage = {
-  type:
-    | "join"
-    | "leave"
-    | "estimate"
-    | "reveal"
-    | "developer-guessed"
-    | "everyone-done"
-    | "you-guessed"
-    | "you-skipped"
-    | "new-round"
-    | "room-locked"
-    | "developer-skipped"
-    | "room-opened"
-    | "issues";
-  data?: any;
 };
 
 export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => {
-  const username = ref("");
-  const userRole: Ref<Role> = ref(Role.Empty);
-  const userRoomId = ref("");
-  const websocket: Ref<WebSocket | null> = ref(null);
-  const usersInRoom: Ref<UserOverview> = ref([]);
-  const roundState: Ref<RoundState> = ref(RoundState.Waiting);
-  const ticketToGuess = ref("");
-  const guess = ref(0);
-  const didSkip = ref(false);
-  const showAllGuesses = ref(false);
   const possibleGuesses: Ref<PossibleGuess[]> = ref([]);
-  const permissions: Ref<Permissions> = ref({ room: { canLock: false } });
-  const roomIsLocked: Ref<boolean> = ref(false);
-  const developerDone: Ref<DeveloperDone[]> = ref([]);
-  const notifications: Ref<string[]> = ref([]);
-  const issues: Ref<any[]> = ref([]);
-
-  const isConnected = computed(() => websocket.value !== null);
-
-  function disconnect() {
-    websocket.value?.close();
-    websocket.value = null;
-    permissions.value = { room: { canLock: false } };
-    notifications.value = [];
-  }
-
-  async function connect(name: string, role: Role, roomId: string): Promise<void> {
-    username.value = name;
-    userRole.value = role;
-    userRoomId.value = roomId;
-
-    const roleUrl = role === Role.Developer ? "developer" : "product-owner";
-    let wsUrl = `wss://${window.location.host}/v1/room/${roomId}/${roleUrl}?name=${name}`;
-    if (window.location.protocol !== "https:") {
-      wsUrl = `ws://${window.location.host}/v1/room/${roomId}/${roleUrl}?name=${name}`;
-    }
-    websocket.value = new WebSocket(wsUrl);
-    await waitForOpenConnection(websocket.value);
-
-    websocket.value!.onerror = () => {
-      websocket.value!.close();
-    };
-
-    websocket.value!.onclose = () => {
-      websocket.value?.close();
-    };
-
-    websocket.value!.onmessage = async (message: MessageEvent) => {
-      const decoded = JSON.parse(message.data) as ReceivableWebsocketMessage;
-      switch (decoded.type) {
-        case "leave":
-          await fetchUsersInRoom();
-          notifications.value.push(`${decoded.data} has left the room…`);
-          break;
-        case "join":
-        case "developer-skipped":
-        case "developer-guessed":
-          await fetchUsersInRoom();
-          break;
-        case "estimate":
-          roundState.value = RoundState.InProgress;
-          ticketToGuess.value = decoded.data;
-          break;
-        case "you-guessed":
-          guess.value = decoded.data;
-          didSkip.value = false;
-          break;
-        case "you-skipped":
-          guess.value = 0;
-          didSkip.value = true;
-          break;
-        case "everyone-done":
-          await fetchUsersInRoom();
-          roundState.value = RoundState.End;
-          break;
-        case "reveal":
-          developerDone.value = decoded.data;
-          showAllGuesses.value = true;
-          break;
-        case "room-locked":
-          roomIsLocked.value = true;
-          break;
-        case "room-opened":
-          roomIsLocked.value = false;
-          break;
-        case "new-round":
-          resetRound();
-          await fetchUsersInRoom();
-          break;
-      }
-    };
-  }
-
-  function waitForOpenConnection(socket: WebSocket): Promise<boolean> {
-    return new Promise((resolve) => {
-      if (socket.readyState !== socket.OPEN) {
-        socket.addEventListener("open", () => {
-          resolve(true);
-        });
-      } else {
-        resolve(true);
-      }
-    });
-  }
-
-  async function createRoom(name: string): Promise<string> {
-    const response = await fetch("/v1/room", {
-      method: "POST",
-      body: JSON.stringify({
-        creator: name,
-        guesses: {},
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Could not create room");
-    }
-    return (await response.json()).id;
-  }
-
-  function send(message: SendableWebsocketMessage) {
-    if (!websocket.value) {
-      throw new Error("Can not send message without a connection");
-    }
-
-    websocket.value?.send(JSON.stringify(message));
-  }
-
-  function resetRound() {
-    ticketToGuess.value = "";
-    guess.value = 0;
-    roundState.value = RoundState.Waiting;
-    showAllGuesses.value = false;
-    didSkip.value = false;
-    developerDone.value = [];
-  }
 
   async function userExistsInRoom(name: string, roomId: string): Promise<boolean> {
     const response = await fetch(`/v1/room/${roomId}/users/exists?name=${name}`);
     return ((await response.json()) as { exists: boolean }).exists;
-  }
-
-  async function roomState(roomId: string): Promise<RoomState> {
-    const response = await fetch(`/v1/room/${roomId}/state`);
-    return await response.json();
   }
 
   async function passwordMatchesRoom(roomId: string, password: string): Promise<boolean> {
@@ -236,26 +31,6 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     return ((await response.json()) as { ok: boolean }).ok;
   }
 
-  async function fetchUsersInRoom() {
-    const response = await fetch(`/v1/room/${userRoomId.value}/users`);
-    if (!response.ok) {
-      usersInRoom.value = [];
-      return;
-    }
-
-    usersInRoom.value = await response.json();
-  }
-
-  async function fetchActiveRooms(): Promise<ActiveRoom[]> {
-    const response = await fetch("/v1/rooms");
-    if (!response.ok) {
-      throw new Error("Could not find active rooms");
-    }
-
-    const json = (await response.json()) as FetchActiveRoomsResponse;
-    return json.rooms || [];
-  }
-
   async function fetchPossibleGuesses() {
     const response = await fetch("/v1/possible-guesses");
     if (!response.ok) {
@@ -266,47 +41,10 @@ export const useWebsocketStore = defineStore("websocket", (): WebsocketStore => 
     possibleGuesses.value = await response.json();
   }
 
-  async function fetchPermissions(): Promise<void> {
-    const response = await fetch(`/v1/room/${userRoomId.value}/permissions?name=${username.value}`);
-    if (!response.ok) {
-      permissions.value = {
-        room: {
-          canLock: false,
-        },
-      };
-      return;
-    }
-    permissions.value = (await response.json()).permissions;
-    return;
-  }
-
   return {
-    connect,
-    disconnect,
-    isConnected,
-    usersInRoom,
-    roomId: userRoomId,
     possibleGuesses,
-    username,
     userExistsInRoom,
-    userRole,
-    roundState,
-    send,
-    ticketToGuess,
-    guess,
-    didSkip,
-    resetRound,
-    showAllGuesses,
-    fetchActiveRooms,
     fetchPossibleGuesses,
-    fetchPermissions,
     passwordMatchesRoom,
-    permissions,
-    roomIsLocked,
-    developerDone,
-    createRoom,
-    notifications,
-    issues,
-    roomState,
   };
 });

@@ -46,6 +46,21 @@ export type RoomState = Readonly<{
   permissions: Permissions;
 }>;
 
+export type SendableWebsocketMessageType =
+    | "estimate"
+    | "guess"
+    | "reveal"
+    | "new-round"
+    | "lock-room"
+    | "skip"
+    | "open-room"
+    | "add-issue";
+
+export type SendableWebsocketMessage = {
+  type: SendableWebsocketMessageType;
+  data?: any;
+};
+
 export type ReceivableWebsocketMessage = {
   type:
     | "join"
