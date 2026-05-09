@@ -483,7 +483,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 			name:  "no rooms",
 			rooms: make(map[internal.RoomId]*internal.Room),
 			want: map[string][]map[string]any{
-				"rooms": nil,
+				"rooms": {},
 			},
 		},
 	}
