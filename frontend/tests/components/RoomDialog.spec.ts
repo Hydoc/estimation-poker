@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { vuetifyMount } from "../vuetifyMount";
 import RoomDialog from "../../src/components/RoomDialog.vue";
-import { Role } from "../../src/components/types";
 import { VBtn, VDialog } from "vuetify/components";
 import RoomForm from "../../src/components/RoomForm.vue";
+import { Role } from "../../src/types/room";
 
 vi.stubGlobal("visualViewport", new EventTarget());
 describe("RoomDialog", () => {

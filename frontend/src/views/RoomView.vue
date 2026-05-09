@@ -265,10 +265,7 @@ onMounted(async () => {
     </v-toolbar>
 
     <room-detail
-      v-if="isSuccess(estimationStore.roomState.users)"
       :room-state="estimationStore.roomState"
-      :users="estimationStore.roomState.users.data"
-      :possible-guesses="possibleGuesses"
       @estimate="sendMessage('estimate', $event)"
       @guess="sendMessage('guess', $event)"
       @reveal="sendMessage('reveal', null)"

@@ -19,14 +19,14 @@ const emit = defineEmits<{
   (e: "new-round"): void;
 }>();
 
-const ticketToGuess = ref("");
+const newIssueToGuess = ref("");
 const form: Ref<VForm | undefined> = ref();
 
 const ticketRules = [
   (value: string) => !!value || "Error: Can not be empty",
   (value: string) => /^[A-Z]{2,}-\d+$/.test(value) || "Error: ^[A-Z]{2,}-\\d+$ required",
 ];
-const canEstimate = computed(() => ticketToGuess.value !== "" && form.value?.isValid);
+const canEstimate = computed(() => newIssueToGuess.value !== "" && form.value?.isValid);
 
 const roundIsWaiting = computed(() => props.roundState === RoundState.Waiting);
 
@@ -44,8 +44,8 @@ function doLetEstimate() {
   if (!canEstimate.value) {
     return;
   }
-  emit("estimate", ticketToGuess.value);
-  ticketToGuess.value = "";
+  emit("estimate", newIssueToGuess.value);
+  newIssueToGuess.value = "";
 }
 </script>
 
@@ -59,7 +59,7 @@ function doLetEstimate() {
         @submit.prevent="doLetEstimate"
       >
         <v-text-field
-          v-model="ticketToGuess"
+          v-model="newIssueToGuess"
           bg-color="white"
           label="Ticket to guess"
           :rules="ticketRules"

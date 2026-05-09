@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { VIcon } from "vuetify/components";
 import DeveloperCard from "../../src/components/DeveloperCard.vue";
-import { Developer, DeveloperDone, Role } from "../../src/components/types";
 import { vuetifyMount } from "../vuetifyMount";
+import { Developer, DeveloperDone, Role } from "../../src/types/room";
 
 describe("DeveloperCard", () => {
   describe("rendering", () => {

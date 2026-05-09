@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { VBottomSheet, VCard, VProgressCircular } from "vuetify/components";
 import RoundSummary from "../../src/components/RoundSummary.vue";
-import { DeveloperDone, Role } from "../../src/components/types";
 import { vuetifyMount } from "../vuetifyMount";
+import { DeveloperDone, Role } from "../../src/types/room";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),

@@ -1,15 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import TableOverview from "../../src/components/TableOverview.vue";
+import ProductOwnerRoundView from "../../src/components/ProductOwnerRoundView.vue";
+import DeveloperCard from "../../src/components/DeveloperCard.vue";
+import { vuetifyMount } from "../vuetifyMount";
 import {
   Developer,
   DeveloperDone,
   ProductOwner,
   Role,
   RoundState,
-} from "../../src/components/types";
-import ProductOwnerRoundView from "../../src/components/ProductOwnerRoundView.vue";
-import DeveloperCard from "../../src/components/DeveloperCard.vue";
-import { vuetifyMount } from "../vuetifyMount";
+  UserOverview,
+} from "../../src/types/room";
+import { just, Maybe, nothing } from "@kaumlaut/pure/maybe";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
@@ -29,8 +31,7 @@ describe("TableOverview", () => {
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
-        Role.ProductOwner,
-        "",
+        just(Role.ProductOwner),
       );
 
       expect(wrapper.find(".virtual-table").exists()).to.be.true;
@@ -43,10 +44,12 @@ describe("TableOverview", () => {
       expect(wrapper.findComponent(ProductOwnerRoundView).props("developerList")).deep.equal([
         { name: "Test Dev", isDone: false, role: "developer" } as Developer,
       ]);
-      expect(wrapper.findComponent(ProductOwnerRoundView).props("hasTicketToGuess")).to.be.false;
+      expect(wrapper.findComponent(ProductOwnerRoundView).props("issueToGuess")).deep.equal(
+        nothing(),
+      );
       expect(wrapper.findComponent(ProductOwnerRoundView).props("showAllGuesses")).to.be.false;
 
-      expect(wrapper.text()).not.contains("Waiting for ticket…");
+      expect(wrapper.text()).not.contains("Waiting for issue…");
 
       expect(wrapper.findAll(".seat")).length(2);
       expect(wrapper.findAll(".seat").at(0).attributes("style")).equal("left: 285px; top: 50px;");
@@ -70,7 +73,7 @@ describe("TableOverview", () => {
       const wrapper = createWrapper();
 
       expect(wrapper.findComponent(ProductOwnerRoundView).exists()).to.be.false;
-      expect(wrapper.text()).contains("Waiting for ticket…");
+      expect(wrapper.text()).contains("Waiting for issue…");
       expect(wrapper.findAllComponents(DeveloperCard)).length(1);
     });
   });
@@ -85,8 +88,7 @@ describe("TableOverview", () => {
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
-        Role.ProductOwner,
-        "",
+        just(Role.ProductOwner),
       );
 
       wrapper.findComponent(ProductOwnerRoundView).vm.$emit("estimate", "WH-12");
@@ -102,8 +104,7 @@ describe("TableOverview", () => {
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
-        Role.ProductOwner,
-        "",
+        just(Role.ProductOwner),
       );
 
       wrapper.findComponent(ProductOwnerRoundView).vm.$emit("reveal");
@@ -119,8 +120,8 @@ describe("TableOverview", () => {
         RoundState.Waiting,
         [] as DeveloperDone[],
         false,
-        Role.ProductOwner,
-        "WH-2",
+        just(Role.ProductOwner),
+        just("WH-2"),
       );
 
       wrapper.findComponent(ProductOwnerRoundView).vm.$emit("new-round");
@@ -130,15 +131,15 @@ describe("TableOverview", () => {
 });
 
 function createWrapper(
-  usersInRoom = [
+  usersInRoom: Readonly<UserOverview> = [
     { name: "Test PO", role: "product-owner" } as ProductOwner,
     { name: "Test Dev", isDone: false, role: "developer" } as Developer,
   ],
   roundState = RoundState.Waiting,
   developerDone = [] as DeveloperDone[],
   showAllGuesses = false,
-  role = Role.Developer,
-  ticketToGuess = "",
+  role: Maybe<Role> = just(Role.Developer),
+  issueToGuess: Maybe<string> = nothing(),
 ) {
   return vuetifyMount(TableOverview, {
     props: {
@@ -147,7 +148,7 @@ function createWrapper(
       developerDone,
       showAllGuesses,
       userRole: role,
-      ticketToGuess,
+      issueToGuess,
     },
   });
 }

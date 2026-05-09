@@ -2,16 +2,17 @@ import { describe, expect, it } from "vitest";
 import DeveloperRoundView from "../../src/components/DeveloperRoundView.vue";
 import { VIcon } from "vuetify/components";
 import { vuetifyMount } from "../vuetifyMount";
+import { just, nothing } from "@kaumlaut/pure/maybe";
 
 describe("DeveloperRoundView", () => {
   describe("rendering", () => {
     it("should render", () => {
       const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
-          guess: 0,
+          guess: nothing(),
           showAllGuesses: false,
           didSkip: false,
-          hasTicketToGuess: true,
+          hasIssueToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Up to 4h" },
             { guess: 2, description: "Up to 8h" },
@@ -47,10 +48,10 @@ describe("DeveloperRoundView", () => {
     it("should render with correct guess when developer did guess", async () => {
       const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
-          guess: 2,
+          guess: just(2),
           showAllGuesses: false,
           didSkip: false,
-          hasTicketToGuess: true,
+          hasIssueToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Up to 4h" },
             { guess: 2, description: "Up to 8h" },
@@ -68,10 +69,10 @@ describe("DeveloperRoundView", () => {
     it("should render with correct color when developer didSkip", () => {
       const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
-          guess: 0,
+          guess: nothing(),
           showAllGuesses: false,
           didSkip: true,
-          hasTicketToGuess: true,
+          hasIssueToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Up to 4h" },
             { guess: 2, description: "Up to 8h" },
@@ -93,10 +94,10 @@ describe("DeveloperRoundView", () => {
     it("should emit guess on card click submit", async () => {
       const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
-          guess: 0,
+          guess: nothing(),
           showAllGuesses: false,
           didSkip: false,
-          hasTicketToGuess: true,
+          hasIssueToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Up to 4h" },
             { guess: 2, description: "Up to 8h" },
@@ -117,10 +118,10 @@ describe("DeveloperRoundView", () => {
     it("should emit skip on skip card press", async () => {
       const wrapper = vuetifyMount(DeveloperRoundView, {
         props: {
-          guess: 0,
+          guess: nothing(),
           showAllGuesses: false,
           didSkip: false,
-          hasTicketToGuess: true,
+          hasIssueToGuess: true,
           possibleGuesses: [
             { guess: 1, description: "Up to 4h" },
             { guess: 2, description: "Up to 8h" },

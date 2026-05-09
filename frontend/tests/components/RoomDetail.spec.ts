@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import RoomDetail from "../../src/components/RoomDetail.vue";
-import { Role, RoundState } from "../../src/components/types";
 import TableOverview from "../../src/components/TableOverview.vue";
 import DeveloperRoundView from "../../src/components/DeveloperRoundView.vue";
 import RoundSummary from "../../src/components/RoundSummary.vue";
 import { nextTick } from "vue";
 import { vuetifyMount } from "../vuetifyMount";
+import { Role, RoomState, RoundState } from "../../src/types/room";
+import { nothing, just, Maybe } from "@kaumlaut/pure/maybe";
+import { succeed } from "@kaumlaut/pure/fetch-state";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
@@ -18,30 +20,7 @@ vi.stubGlobal("visualViewport", new EventTarget());
 describe("RoomDetail", () => {
   describe("rendering", () => {
     it("should render", () => {
-      const currentUsername = "Test";
-      const usersInRoom = [
-        { name: currentUsername, isDone: false, role: Role.Developer },
-        { name: "Product Owner Test", role: Role.ProductOwner },
-      ];
-      const wrapper = vuetifyMount(RoomDetail, {
-        props: {
-          usersInRoom,
-          userRole: Role.Developer,
-          roundState: RoundState.Waiting,
-          ticketToGuess: "",
-          guess: 0,
-          didSkip: false,
-          showAllGuesses: false,
-          developerDone: [],
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-      });
+      const wrapper = createWrapper();
 
       expect(wrapper.findComponent(TableOverview).exists()).to.be.true;
       expect(wrapper.findComponent(TableOverview).props("showAllGuesses")).to.be.false;
@@ -56,14 +35,14 @@ describe("RoomDetail", () => {
           role: "product-owner",
         },
       ]);
-      expect(wrapper.findComponent(TableOverview).props("ticketToGuess")).equal("");
+      expect(wrapper.findComponent(TableOverview).props("issueToGuess")).deep.equal(nothing());
       expect(wrapper.findComponent(TableOverview).props("roundState")).equal(RoundState.Waiting);
 
       expect(wrapper.findComponent(DeveloperRoundView).exists()).to.be.true;
       expect(wrapper.findComponent(DeveloperRoundView).props("showAllGuesses")).to.be.false;
-      expect(wrapper.findComponent(DeveloperRoundView).props("guess")).equal(0);
+      expect(wrapper.findComponent(DeveloperRoundView).props("guess")).deep.equal(nothing());
       expect(wrapper.findComponent(DeveloperRoundView).props("didSkip")).to.be.false;
-      expect(wrapper.findComponent(DeveloperRoundView).props("hasTicketToGuess")).to.be.false;
+      expect(wrapper.findComponent(DeveloperRoundView).props("hasIssueToGuess")).to.be.false;
       expect(wrapper.findComponent(DeveloperRoundView).props("possibleGuesses")).deep.equal([
         { guess: 1, description: "Bis zu 4 Std." },
         { guess: 2, description: "Bis zu 8 Std." },
@@ -76,140 +55,35 @@ describe("RoomDetail", () => {
 
   describe("functionality", () => {
     it("should emit estimate when table overview emits estimate", () => {
-      const wrapper = vuetifyMount(RoomDetail, {
-        props: {
-          developerDone: [],
-          usersInRoom: [
-            { name: "Test", guess: 0, role: Role.Developer },
-            { name: "Product Owner Test", role: Role.ProductOwner },
-          ],
-          userRole: Role.Developer,
-          roundState: RoundState.Waiting,
-          ticketToGuess: "",
-          didSkip: false,
-          guess: 0,
-          showAllGuesses: false,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(TableOverview).vm.$emit("estimate", "WR-1");
       expect(wrapper.emitted("estimate")).deep.equal([["WR-1"]]);
     });
 
-    it("should emit skip when developer command center emits skip", () => {
-      const wrapper = vuetifyMount(RoomDetail, {
-        props: {
-          developerDone: [],
-          usersInRoom: [
-            { name: "Test", isDone: false, role: Role.Developer },
-            { name: "Product Owner Test", role: Role.ProductOwner },
-          ],
-          userRole: Role.Developer,
-          roundState: RoundState.Waiting,
-          ticketToGuess: "",
-          didSkip: false,
-          guess: 0,
-          showAllGuesses: false,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-      });
+    it("should emit skip when developer round view emits skip", () => {
+      const wrapper = createWrapper();
 
       wrapper.findComponent(DeveloperRoundView).vm.$emit("skip", 1);
       expect(wrapper.emitted("skip")).deep.equal([[]]);
     });
 
-    it("should emit guess when developer command center emits guess", () => {
-      const wrapper = vuetifyMount(RoomDetail, {
-        props: {
-          developerDone: [],
-          usersInRoom: [
-            { name: "Test", isDone: false, role: Role.Developer },
-            { name: "Product Owner Test", role: Role.ProductOwner },
-          ],
-          userRole: Role.Developer,
-          roundState: RoundState.Waiting,
-          ticketToGuess: "",
-          didSkip: false,
-          guess: 0,
-          showAllGuesses: false,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-      });
+    it("should emit guess when developer round view emits guess", () => {
+      const wrapper = createWrapper();
 
       wrapper.findComponent(DeveloperRoundView).vm.$emit("guess", 1);
       expect(wrapper.emitted("guess")).deep.equal([[1]]);
     });
 
     it("should emit reveal when table overview emits reveal", () => {
-      const wrapper = vuetifyMount(RoomDetail, {
-        props: {
-          developerDone: [],
-          usersInRoom: [
-            { name: "Test", guess: 0, role: Role.Developer },
-            { name: "Product Owner Test", role: Role.ProductOwner },
-          ],
-          userRole: Role.Developer,
-          roundState: RoundState.Waiting,
-          ticketToGuess: "CC-1",
-          didSkip: false,
-          guess: 0,
-          showAllGuesses: false,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(TableOverview).vm.$emit("reveal");
       expect(wrapper.emitted("reveal")).deep.equal([[]]);
     });
 
     it("should emit new round when table overview emits new round", () => {
-      const wrapper = vuetifyMount(RoomDetail, {
-        props: {
-          developerDone: [],
-          usersInRoom: [
-            { name: "Test", guess: 0, role: Role.Developer },
-            { name: "Product Owner Test", role: Role.ProductOwner },
-          ],
-          userRole: Role.Developer,
-          roundState: RoundState.Waiting,
-          ticketToGuess: "CC-1",
-          didSkip: false,
-          guess: 0,
-          showAllGuesses: false,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-      });
+      const wrapper = createWrapper();
 
       wrapper.findComponent(TableOverview).vm.$emit("new-round");
       expect(wrapper.emitted("new-round")).deep.equal([[]]);
@@ -217,35 +91,14 @@ describe("RoomDetail", () => {
 
     it("should show round summary depending if showAllGuesses is true", async () => {
       vi.useFakeTimers();
-      const wrapper = vuetifyMount(RoomDetail, {
-        props: {
-          developerDone: [],
-          usersInRoom: [
-            { name: "Test", guess: 0, role: Role.Developer },
-            { name: "Product Owner Test", role: Role.ProductOwner },
-          ],
-          userRole: Role.Developer,
-          roundState: RoundState.Waiting,
-          ticketToGuess: "CC-1",
-          didSkip: false,
-          guess: 0,
-          showAllGuesses: false,
-          possibleGuesses: [
-            { guess: 1, description: "Bis zu 4 Std." },
-            { guess: 2, description: "Bis zu 8 Std." },
-            { guess: 3, description: "Bis zu 3 Tagen" },
-            { guess: 4, description: "Bis zu 5 Tagen" },
-            { guess: 5, description: "Mehr als 5 Tage" },
-          ],
-        },
-      });
+      const wrapper = createWrapper(just("CC-1"));
 
       // @ts-ignore
       expect(wrapper.vm.showRoundSummary).to.be.false;
       expect(wrapper.findComponent(RoundSummary).exists()).to.be.false;
 
       await wrapper.setProps({
-        showAllGuesses: true,
+        roomState: createRoomState(nothing(), nothing(), true),
       });
 
       vi.runAllTimers();
@@ -256,7 +109,7 @@ describe("RoomDetail", () => {
       expect(wrapper.findComponent(RoundSummary).exists()).to.be.true;
 
       await wrapper.setProps({
-        showAllGuesses: false,
+        roomState: createRoomState(nothing(), nothing(), false),
       });
 
       vi.runAllTimers();
@@ -268,3 +121,49 @@ describe("RoomDetail", () => {
     });
   });
 });
+
+function createWrapper(issueToGuess: Maybe<string> = nothing(), guess: Maybe<number> = nothing()) {
+  return vuetifyMount(RoomDetail, {
+    props: {
+      roomState: createRoomState(issueToGuess, guess),
+    },
+  });
+}
+
+function createRoomState(
+  issueToGuess: Maybe<string> = nothing(),
+  guess: Maybe<number> = nothing(),
+  showAllGuesses = false,
+): RoomState {
+  return {
+    users: succeed([
+      { name: "Test", isDone: false, role: Role.Developer },
+      { name: "Product Owner Test", role: Role.ProductOwner },
+    ]),
+    role: just(Role.Developer),
+    roundState: RoundState.Waiting,
+    issueToGuess,
+    guess,
+    doSkip: false,
+    showAllGuesses,
+    roomIsLocked: false,
+    permissions: {
+      room: {
+        canLock: false,
+      },
+    },
+    isConnected: true,
+    name: "",
+    roundInProgress: false,
+    id: "",
+    issues: [],
+    developerDone: [],
+    possibleGuesses: [
+      { guess: 1, description: "Bis zu 4 Std." },
+      { guess: 2, description: "Bis zu 8 Std." },
+      { guess: 3, description: "Bis zu 3 Tagen" },
+      { guess: 4, description: "Bis zu 5 Tagen" },
+      { guess: 5, description: "Mehr als 5 Tage" },
+    ],
+  };
+}

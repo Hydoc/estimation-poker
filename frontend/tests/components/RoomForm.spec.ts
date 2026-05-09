@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { Role } from "../../src/components/types";
 import RoomForm from "../../src/components/RoomForm.vue";
 import {
   VAlert,
@@ -12,6 +11,7 @@ import {
 } from "vuetify/components";
 import { nextTick } from "vue";
 import { vuetifyMount } from "../vuetifyMount";
+import { Role } from "../../src/types/room";
 
 const defaultProps = {
   subtitle: "Room form subtitle",

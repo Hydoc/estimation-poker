@@ -3,13 +3,12 @@ import { computed, ref, watch } from "vue";
 import TableOverview from "@/components/TableOverview.vue";
 import DeveloperRoundView from "@/components/DeveloperRoundView.vue";
 import RoundSummary from "@/components/RoundSummary.vue";
-import { type PossibleGuess, Role, type RoomState, type UserOverview } from "@/types/room.ts";
+import { Role, type RoomState } from "@/types/room.ts";
 import { isJust } from "@kaumlaut/pure/maybe";
+import { isSuccess } from "@kaumlaut/pure/fetch-state";
 
 type Props = {
   roomState: RoomState;
-  users: Readonly<UserOverview>;
-  possibleGuesses: PossibleGuess[];
 };
 
 const props = defineProps<Props>();
@@ -52,8 +51,9 @@ watch(
     <v-col cols="12">
       <v-row>
         <table-overview
+          v-if="isSuccess(props.roomState.users)"
           :show-all-guesses="props.roomState.showAllGuesses"
-          :users-in-room="props.users"
+          :users-in-room="props.roomState.users.data"
           :round-state="props.roomState.roundState"
           :user-role="props.roomState.role"
           :developer-done="props.roomState.developerDone"
@@ -75,7 +75,7 @@ watch(
           :guess="props.roomState.guess"
           :did-skip="props.roomState.doSkip"
           :has-issue-to-guess="hasTicketToGuess"
-          :possible-guesses="props.possibleGuesses"
+          :possible-guesses="props.roomState.possibleGuesses"
           @guess="emit('guess', $event)"
           @skip="emit('skip')"
         />

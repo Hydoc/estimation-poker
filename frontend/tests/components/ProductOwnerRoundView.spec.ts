@@ -2,8 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import ProductOwnerRoundView from "../../src/components/ProductOwnerRoundView.vue";
 import { VBtn, VForm, VProgressCircular, VTextField } from "vuetify/components";
 import { nextTick } from "vue";
-import { Developer, RoundState } from "../../src/components/types";
 import { vuetifyMount } from "../vuetifyMount";
+import { Developer, RoundState } from "../../src/types/room";
+import { just, nothing } from "@kaumlaut/pure/maybe";
 
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
@@ -18,8 +19,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
-          hasTicketToGuess: false,
-          actualTicketToGuess: "",
+          issueToGuess: nothing(),
           showAllGuesses: false,
           developerList: [{ name: "Test", isDone: false, role: "developer" } as Developer],
         },
@@ -44,8 +44,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
-          hasTicketToGuess: false,
-          actualTicketToGuess: "",
+          issueToGuess: nothing(),
           showAllGuesses: false,
           developerList: [],
         },
@@ -59,8 +58,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.InProgress,
-          hasTicketToGuess: true,
-          actualTicketToGuess: "WH-2",
+          issueToGuess: just("WH-2"),
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -84,8 +82,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.End,
-          hasTicketToGuess: true,
-          actualTicketToGuess: "WH-2",
+          issueToGuess: just("WH-2"),
           showAllGuesses: true,
           developerList: [
             { name: "Test", isDone: true, role: "developer" } as Developer,
@@ -107,8 +104,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
-          hasTicketToGuess: false,
-          actualTicketToGuess: "",
+          issueToGuess: nothing(),
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -127,8 +123,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
-          hasTicketToGuess: false,
-          actualTicketToGuess: "",
+          issueToGuess: nothing(),
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -147,8 +142,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
-          hasTicketToGuess: false,
-          actualTicketToGuess: "",
+          issueToGuess: nothing(),
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -167,8 +161,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
-          hasTicketToGuess: false,
-          actualTicketToGuess: "",
+          issueToGuess: nothing(),
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
@@ -189,8 +182,7 @@ describe("ProductOwnerRoundView", () => {
       const wrapper = vuetifyMount(ProductOwnerRoundView, {
         props: {
           roundState: RoundState.Waiting,
-          hasTicketToGuess: false,
-          actualTicketToGuess: "",
+          issueToGuess: nothing(),
           showAllGuesses: false,
           developerList: [
             { name: "Test", isDone: false, role: "developer" } as Developer,
