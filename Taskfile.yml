@@ -18,8 +18,15 @@ tasks:
   down-prod:
     cmd: docker compose -f docker-compose.prop.yml down
 
-  check-backend-test:
-    cmd: docker compose exec backend go test ./...
+  check-backend:
+    dir: 'backend'
+    desc: Run code quality tools
+    cmds:
+      - go mod tidy -diff
+      - go mod verify
+      - go vet ./...
+      - go tool staticcheck ./...
+      - go test -cover -coverprofile=coverage -covermode=atomic -v -race -vet=off ./...
 
   logs-backend:
     cmd: docker compose logs -tf backend
@@ -29,7 +36,7 @@ tasks:
 
   check-frontend-lint:
     cmd: docker compose exec frontend pnpm lint
-    
+
   check-frontend-format:
     cmd: docker compose exec frontend pnpm format
 

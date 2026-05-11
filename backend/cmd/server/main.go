@@ -12,7 +12,7 @@ import (
 
 	"github.com/Hydoc/go-message"
 
-	"github.com/Hydoc/guess-dev/backend/internal"
+	"github.com/Hydoc/estimation-poker/backend/internal"
 )
 
 const (

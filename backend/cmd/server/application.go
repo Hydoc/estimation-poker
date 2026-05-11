@@ -12,7 +12,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 
-	"github.com/Hydoc/guess-dev/backend/internal"
+	"github.com/Hydoc/estimation-poker/backend/internal"
 )
 
 func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, request *http.Request) {
@@ -115,18 +115,6 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 
 func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
 	app.writeJSON(writer, http.StatusOK, app.guessConfig.Guesses, nil)
-}
-
-func (app *application) handleRoomExists(writer http.ResponseWriter, request *http.Request) {
-	app.mu.Lock()
-	defer app.mu.Unlock()
-	roomId, err := app.readIdParam(request)
-	if err != nil {
-		app.badRequestResponse(writer, request, err)
-		return
-	}
-	_, ok := app.rooms[internal.RoomId(roomId.String())]
-	app.writeJSON(writer, http.StatusOK, envelope{"exists": ok}, nil)
 }
 
 func (app *application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {

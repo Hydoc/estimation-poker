@@ -1,9 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"net/http"
-)
+import "net/http"
 
 func (app *application) logError(request *http.Request, err error) {
 	var (
@@ -36,20 +33,6 @@ func (app *application) notFoundResponse(writer http.ResponseWriter, request *ht
 	app.errorResponse(writer, request, http.StatusNotFound, message)
 }
 
-func (app *application) methodNotAllowedResponse(writer http.ResponseWriter, request *http.Request) {
-	message := fmt.Sprintf("the %s method is not supported for this resource", request.Method)
-	app.errorResponse(writer, request, http.StatusMethodNotAllowed, message)
-}
-
 func (app *application) badRequestResponse(writer http.ResponseWriter, request *http.Request, err error) {
 	app.errorResponse(writer, request, http.StatusBadRequest, err.Error())
-}
-
-func (app *application) failedValidationResponse(writer http.ResponseWriter, request *http.Request, errors map[string]string) {
-	app.errorResponse(writer, request, http.StatusUnprocessableEntity, errors)
-}
-
-func (app *application) editConflictResponse(writer http.ResponseWriter, request *http.Request) {
-	message := "unable to update the record due to an edit conflict, please try again"
-	app.errorResponse(writer, request, http.StatusConflict, message)
 }

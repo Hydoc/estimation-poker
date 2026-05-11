@@ -14,22 +14,42 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.25'
+        go-version: '1.26'
         cache-dependency-path: 'backend/go.sum'
     - name: Install dependencies
       run: |
         cd backend
         go mod download
 
-    - name: Build
+    - name: go mod tidy -diff
+      run: |
+        cd backend
+        go mod tidy -diff
+
+    - name: go mod verify
+      run: |
+        cd backend
+        go mod verify
+
+    - name: go vet ./...
+      run: |
+        cd backend
+        go vet ./...
+
+    - name: go tool staticcheck ./...
+      run: |
+        cd backend
+        go tool staticcheck ./...
+
+    - name: go test -cover -coverprofile=coverage -covermode=atomic -v -race -vet=off ./...
+      run: |
+        cd backend
+        go test -cover -coverprofile=coverage -covermode=atomic -v -race -vet=off ./...
+
+    - name: go build -v ./...
       run: |
         cd backend
         go build -v ./...
-
-    - name: Test
-      run: |
-        cd backend
-        go test -cover -coverprofile=coverage -covermode=atomic -v ./...
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

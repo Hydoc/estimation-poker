@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Hydoc/guess-dev/backend/internal/assert"
+	"github.com/Hydoc/estimation-poker/backend/internal/assert"
 )
 
 func TestNewRoom(t *testing.T) {

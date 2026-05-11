@@ -3,7 +3,7 @@ package internal
 import (
 	"testing"
 
-	"github.com/Hydoc/guess-dev/backend/internal/assert"
+	"github.com/Hydoc/estimation-poker/backend/internal/assert"
 )
 
 func TestMessage(t *testing.T) {

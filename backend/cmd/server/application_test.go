@@ -17,8 +17,8 @@ import (
 
 	"github.com/Hydoc/go-message"
 
-	"github.com/Hydoc/guess-dev/backend/internal"
-	"github.com/Hydoc/guess-dev/backend/internal/assert"
+	"github.com/Hydoc/estimation-poker/backend/internal"
+	"github.com/Hydoc/estimation-poker/backend/internal/assert"
 )
 
 func TestApplication_handleFetchRoomState(t *testing.T) {

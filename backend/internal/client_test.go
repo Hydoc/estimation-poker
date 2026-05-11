@@ -17,7 +17,7 @@ import (
 
 	"github.com/Hydoc/go-message"
 
-	"github.com/Hydoc/guess-dev/backend/internal/assert"
+	"github.com/Hydoc/estimation-poker/backend/internal/assert"
 )
 
 func TestClient_NewProductOwner(t *testing.T) {
@@ -232,7 +232,7 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *testing.T) {
 	broadcastChannel := make(chan *Message)
 	id := uuid.New()
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
 	nameOfCreator := "Test"
 	room := &Room{
 		broadcast:      broadcastChannel,
@@ -282,7 +282,7 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 	broadcastChannel := make(chan *Message)
 	id := uuid.New()
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
 	room := &Room{
 		broadcast:      broadcastChannel,
 		join:           make(chan *Client),
