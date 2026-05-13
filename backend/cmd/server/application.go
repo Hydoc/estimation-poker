@@ -39,16 +39,25 @@ func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, reque
 
 	err = app.readJSON(writer, request, &input)
 	if err != nil {
-		app.writeJSON(writer, http.StatusOK, envelope{"ok": false}, nil)
+		err = app.writeJSON(writer, http.StatusOK, envelope{"ok": false}, nil)
+		if err != nil {
+			app.serverErrorResponse(writer, request, err)
+		}
 		return
 	}
 
 	if actualRoom.Verify(input.Password) {
-		app.writeJSON(writer, http.StatusOK, envelope{"ok": true}, nil)
+		err = app.writeJSON(writer, http.StatusOK, envelope{"ok": true}, nil)
+		if err != nil {
+			app.serverErrorResponse(writer, request, err)
+		}
 		return
 	}
 
-	app.writeJSON(writer, http.StatusOK, envelope{"ok": false}, nil)
+	err = app.writeJSON(writer, http.StatusOK, envelope{"ok": false}, nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+	}
 }
 
 func (app *application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
@@ -81,13 +90,16 @@ func (app *application) handleFetchPermissions(writer http.ResponseWriter, reque
 		return
 	}
 
-	app.writeJSON(writer, http.StatusOK, map[string]map[string]map[string]any{
+	err = app.writeJSON(writer, http.StatusOK, map[string]map[string]map[string]any{
 		"permissions": {
 			"room": {
 				"canLock": false,
 			},
 		},
 	}, nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+	}
 }
 
 func (app *application) createNewRoom(writer http.ResponseWriter, request *http.Request) {
@@ -110,7 +122,10 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	app.rooms[room.Id] = room
 	go room.Run()
 
-	app.writeJSON(writer, http.StatusCreated, envelope{"id": roomId.String()}, nil)
+	err = app.writeJSON(writer, http.StatusCreated, envelope{"id": roomId.String()}, nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+	}
 }
 
 func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
@@ -152,20 +167,29 @@ func (app *application) handleUserInRoomExists(writer http.ResponseWriter, reque
 	name := request.URL.Query().Get("name")
 
 	if _, ok := app.rooms[internal.RoomId(roomId.String())]; !ok {
-		app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
+		err = app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
+		if err != nil {
+			app.serverErrorResponse(writer, request, err)
+		}
 		return
 	}
 
 	for client := range app.rooms[internal.RoomId(roomId.String())].Clients {
 		if client.Name == name {
-			app.writeJSON(writer, http.StatusConflict, envelope{"exists": true}, nil)
+			err = app.writeJSON(writer, http.StatusConflict, envelope{"exists": true}, nil)
+			if err != nil {
+				app.serverErrorResponse(writer, request, err)
+			}
 			return
 		}
 	}
-	app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
+	err = app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+	}
 }
 
-func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *http.Request) {
+func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, request *http.Request) {
 	//goland:noinspection GoPreferNilSlice
 	overviewRooms := []internal.Overview{}
 	for _, room := range app.rooms {
@@ -176,7 +200,10 @@ func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, _ *ht
 	sort.Slice(overviewRooms, func(i, j int) bool {
 		return overviewRooms[i].Created.Before(overviewRooms[j].Created)
 	})
-	app.writeJSON(writer, http.StatusOK, envelope{"rooms": overviewRooms}, nil)
+	err := app.writeJSON(writer, http.StatusOK, envelope{"rooms": overviewRooms}, nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+	}
 }
 
 func (app *application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
@@ -191,7 +218,10 @@ func (app *application) handleFetchUsers(writer http.ResponseWriter, request *ht
 
 	room, ok := app.rooms[internal.RoomId(roomId.String())]
 	if !ok {
-		app.writeJSON(writer, http.StatusOK, []map[string]any{}, nil)
+		err = app.writeJSON(writer, http.StatusOK, []map[string]any{}, nil)
+		if err != nil {
+			app.serverErrorResponse(writer, request, err)
+		}
 		return
 	}
 
@@ -209,7 +239,10 @@ func (app *application) handleFetchUsers(writer http.ResponseWriter, request *ht
 		out = append(out, client.ToJson())
 	}
 
-	app.writeJSON(writer, http.StatusOK, out, nil)
+	err = app.writeJSON(writer, http.StatusOK, out, nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+	}
 }
 
 func (app *application) handleWs(writer http.ResponseWriter, request *http.Request) {
