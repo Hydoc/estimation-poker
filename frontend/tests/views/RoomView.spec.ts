@@ -77,16 +77,6 @@ describe("RoomView", () => {
   });
 
   describe("functionality", () => {
-    it("should fetch possible guesses on mounted", async () => {
-      createWrapper();
-
-      await nextTick();
-      await nextTick();
-
-      // @ts-ignore
-      expect(estimationStore.fetchPossibleGuesses).toHaveBeenCalledOnce();
-    });
-
     it("should render room form when user is not connected to the room", async () => {
       // @ts-ignore
       estimationStore.roomState = defaultRoomState.withConnected(false).build();

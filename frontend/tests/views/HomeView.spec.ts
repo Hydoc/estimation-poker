@@ -110,10 +110,10 @@ describe("HomeView", () => {
       // @ts-ignore
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.connectionState = vi.fn(() =>
         Promise.resolve({
-          isLocked: false,
-          inProgress: false,
+          canConnect: true,
+          reason: "",
         }),
       );
       // @ts-ignore
@@ -133,8 +133,6 @@ describe("HomeView", () => {
 
       // @ts-ignore
       expect(estimationStore.createRoom).toHaveBeenNthCalledWith(1, "Name");
-      // @ts-ignore
-      expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "room-id", "Name");
       // @ts-ignore
       expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(
         1,
@@ -160,14 +158,12 @@ describe("HomeView", () => {
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
 
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.connectionState = vi.fn(() =>
         Promise.resolve({
-          isLocked: false,
-          inProgress: false,
+          canConnect: true,
+          reason: "",
         }),
       );
-      // @ts-ignore
-      estimationStore.userExists = vi.fn(() => Promise.resolve(false));
 
       const wrapper = createWrapper();
 
@@ -189,11 +185,7 @@ describe("HomeView", () => {
       // @ts-ignore
       expect(estimationStore.createRoom).toHaveBeenNthCalledWith(1, "Tester");
       // @ts-ignore
-      expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "room-id");
-      // @ts-ignore
-      expect(estimationStore.authenticate).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "room-id", "Tester");
+      expect(estimationStore.connectionState).toHaveBeenNthCalledWith(1, "room-id", "Tester", "");
       // @ts-ignore
       expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(
         1,
@@ -216,14 +208,12 @@ describe("HomeView", () => {
       });
 
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.connectionState = vi.fn(() =>
         Promise.resolve({
-          isLocked: false,
-          inProgress: false,
+          canConnect: true,
+          reason: "",
         }),
       );
-      // @ts-ignore
-      estimationStore.userExists = vi.fn(() => Promise.resolve(false));
 
       const wrapper = createWrapper();
 
@@ -247,11 +237,7 @@ describe("HomeView", () => {
       await nextTick();
 
       // @ts-ignore
-      expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "first-id");
-      // @ts-ignore
-      expect(estimationStore.authenticate).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "first-id", "Tester");
+      expect(estimationStore.connectionState).toHaveBeenNthCalledWith(1, "first-id", "Tester", "");
       // @ts-ignore
       expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(
         1,
@@ -276,10 +262,10 @@ describe("HomeView", () => {
       // @ts-ignore
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.connectionState = vi.fn(() =>
         Promise.resolve({
-          isLocked: true,
-          inProgress: false,
+          canConnect: false,
+          reason: "wrong password",
         }),
       );
       const wrapper = createWrapper();
@@ -304,22 +290,24 @@ describe("HomeView", () => {
       // @ts-ignore
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
       // @ts-ignore
-      estimationStore.authenticate = vi.fn(() => Promise.resolve(false));
-      // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.connectionState = vi.fn(() =>
         Promise.resolve({
-          isLocked: true,
-          inProgress: false,
+          canConnect: false,
+          reason: "wrong password",
         }),
       );
       const wrapper = createWrapper();
 
       // @ts-ignore
-      wrapper.vm.passwordForRoom = "incorrect";
+      await wrapper.vm.connect("");
+      // @ts-ignore
+      expect(wrapper.vm.errorMessage).equal("");
+
+      // @ts-ignore
+      wrapper.vm.password = "incorrect";
 
       // @ts-ignore
       await wrapper.vm.connect("");
-
       // @ts-ignore
       expect(wrapper.vm.errorMessage).equal("The provided password is wrong");
     });
@@ -338,10 +326,10 @@ describe("HomeView", () => {
       // @ts-ignore
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.connectionState = vi.fn(() =>
         Promise.resolve({
-          isLocked: false,
-          inProgress: true,
+          canConnect: false,
+          reason: "round already started",
         }),
       );
       const wrapper = createWrapper();
@@ -367,14 +355,12 @@ describe("HomeView", () => {
       // @ts-ignore
       estimationStore.createRoom = vi.fn(() => Promise.resolve("room-id"));
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.connectionState = vi.fn(() =>
         Promise.resolve({
-          isLocked: false,
-          inProgress: false,
+          canConnect: false,
+          reason: "username already taken",
         }),
       );
-      // @ts-ignore
-      estimationStore.userExists = vi.fn(() => Promise.resolve(true));
       const wrapper = createWrapper();
 
       // @ts-ignore

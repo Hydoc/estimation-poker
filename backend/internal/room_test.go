@@ -8,15 +8,123 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Hydoc/estimation-poker/backend/internal/assert"
 )
 
 func TestNewRoom(t *testing.T) {
 	expectedRoomId := RoomId("Test")
-	room := NewRoom(expectedRoomId, make(chan<- RoomId), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
+	room := NewRoom(expectedRoomId, make(chan<- RoomId), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), new(GuessConfig))
 	assert.Equal(t, room.Id, expectedRoomId)
 	assert.False(t, room.InProgress)
+}
+
+func TestRoom_ConnectionStatus(t *testing.T) {
+	tests := []struct {
+		name     string
+		username string
+		password string
+		room     func() *Room
+		want     ConnectionStatus
+	}{
+		{
+			name:     "room in progress",
+			username: "Test",
+			password: "",
+			room: func() *Room {
+				return &Room{
+					InProgress: true,
+				}
+			},
+			want: ConnectionStatus{
+				CanConnect: false,
+				Reason:     ErrRoundStarted.Error(),
+			},
+		},
+		{
+			name:     "locked but password incorrect",
+			username: "Test",
+			password: "incorrect",
+			room: func() *Room {
+				hashed, err := bcrypt.GenerateFromPassword([]byte("correct"), bcrypt.DefaultCost)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return &Room{
+					InProgress:     false,
+					HashedPassword: hashed,
+				}
+			},
+			want: ConnectionStatus{
+				CanConnect: false,
+				Reason:     ErrWrongPassword.Error(),
+			},
+		},
+		{
+			name:     "username already taken",
+			username: "Test",
+			password: "",
+			room: func() *Room {
+				return &Room{
+					InProgress:     false,
+					HashedPassword: make([]byte, 0),
+					Clients: map[*Client]bool{
+						&Client{
+							Name: "Test",
+						}: true,
+					},
+				}
+			},
+			want: ConnectionStatus{
+				CanConnect: false,
+				Reason:     ErrUsernameTaken.Error(),
+			},
+		},
+		{
+			name:     "can connect",
+			username: "Test",
+			password: "",
+			room: func() *Room {
+				return &Room{
+					InProgress:     false,
+					HashedPassword: make([]byte, 0),
+					Clients:        make(map[*Client]bool),
+				}
+			},
+			want: ConnectionStatus{
+				CanConnect: true,
+				Reason:     "",
+			},
+		},
+		{
+			name:     "can connect through password validation",
+			username: "Test",
+			password: "correct",
+			room: func() *Room {
+				hashed, err := bcrypt.GenerateFromPassword([]byte("correct"), bcrypt.DefaultCost)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return &Room{
+					InProgress:     false,
+					HashedPassword: hashed,
+				}
+			},
+			want: ConnectionStatus{
+				CanConnect: true,
+				Reason:     "",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.room().ConnectionStatus(tt.username, tt.password)
+
+			assert.DeepEqual(t, got, tt.want)
+		})
+	}
 }
 
 func TestRoom_everyDevGuessed(t *testing.T) {
@@ -80,7 +188,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_RegisteringAClient(t *testing.T) {
-	room := NewRoom("Test", make(chan<- RoomId), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
+	room := NewRoom("Test", make(chan<- RoomId), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), new(GuessConfig))
 	client := &Client{}
 	go room.Run()
 
@@ -182,7 +290,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 	var logBuffer bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&logBuffer, nil))
-	room := NewRoom("Test", make(chan<- RoomId), "Tester", logger)
+	room := NewRoom("Test", make(chan<- RoomId), "Tester", logger, new(GuessConfig))
 	go room.Run()
 
 	clientSendChannel := make(chan *Message)

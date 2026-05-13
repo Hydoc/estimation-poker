@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -8,6 +9,12 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrUsernameTaken = errors.New("username already taken")
+	ErrRoundStarted  = errors.New("round already started")
+	ErrWrongPassword = errors.New("wrong password")
 )
 
 type RoomId string
@@ -33,11 +40,19 @@ type Room struct {
 	HashedPassword []byte
 	Created        time.Time
 	Issues         []Issue
+	GuessConfig    *GuessConfig
+}
+
+type ConnectionStatus struct {
+	CanConnect bool   `json:"canConnect"`
+	Reason     string `json:"reason"`
 }
 
 type State struct {
-	InProgress bool `json:"inProgress"`
-	IsLocked   bool `json:"isLocked"`
+	InProgress      bool               `json:"inProgress"`
+	IsLocked        bool               `json:"isLocked"`
+	Issues          []Issue            `json:"issues"`
+	PossibleGuesses []GuessConfigEntry `json:"possibleGuesses"`
 }
 
 type Overview struct {
@@ -48,8 +63,10 @@ type Overview struct {
 
 func (room *Room) State() State {
 	return State{
-		InProgress: room.InProgress,
-		IsLocked:   len(room.HashedPassword) > 0,
+		InProgress:      room.InProgress,
+		IsLocked:        room.IsLocked(),
+		Issues:          room.Issues,
+		PossibleGuesses: room.GuessConfig.Guesses,
 	}
 }
 
@@ -61,7 +78,7 @@ func (room *Room) AsOverview() Overview {
 	}
 }
 
-func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *slog.Logger) *Room {
+func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *slog.Logger, guessConfig *GuessConfig) *Room {
 	return &Room{
 		Id:             name,
 		logger:         logger,
@@ -75,6 +92,8 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *s
 		Key:            uuid.New(),
 		HashedPassword: make([]byte, 0),
 		Created:        time.Now(),
+		Issues:         make([]Issue, 0),
+		GuessConfig:    guessConfig,
 	}
 }
 
@@ -105,7 +124,40 @@ func (room *Room) open(username, key string) bool {
 	return false
 }
 
-func (room *Room) Verify(password string) bool {
+func (room *Room) ConnectionStatus(username string, password string) ConnectionStatus {
+	if room.InProgress {
+		return ConnectionStatus{
+			CanConnect: false,
+			Reason:     ErrRoundStarted.Error(),
+		}
+	}
+
+	if room.IsLocked() && !room.verify(password) {
+		return ConnectionStatus{
+			CanConnect: false,
+			Reason:     ErrWrongPassword.Error(),
+		}
+	}
+
+	room.clientMu.Lock()
+	defer room.clientMu.Unlock()
+
+	for client := range room.Clients {
+		if client.Name == username {
+			return ConnectionStatus{
+				CanConnect: false,
+				Reason:     ErrUsernameTaken.Error(),
+			}
+		}
+	}
+
+	return ConnectionStatus{
+		CanConnect: true,
+		Reason:     "",
+	}
+}
+
+func (room *Room) verify(password string) bool {
 	err := bcrypt.CompareHashAndPassword(room.HashedPassword, []byte(password))
 	return err == nil
 }

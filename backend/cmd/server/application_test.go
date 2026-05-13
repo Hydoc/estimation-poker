@@ -11,11 +11,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Hydoc/go-message"
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
-
-	"github.com/Hydoc/go-message"
 
 	"github.com/Hydoc/estimation-poker/backend/internal"
 	"github.com/Hydoc/estimation-poker/backend/internal/assert"
@@ -40,13 +38,17 @@ func TestApplication_handleFetchRoomState(t *testing.T) {
 			name:           "in progress when room is set",
 			expectedStatus: http.StatusOK,
 			expectation: internal.State{
-				InProgress: true,
-				IsLocked:   false,
+				InProgress:      true,
+				IsLocked:        false,
+				Issues:          make([]internal.Issue, 0),
+				PossibleGuesses: nil,
 			},
 			rooms: map[internal.RoomId]*internal.Room{
 				"9c874aaa-c628-4688-a72d-0b1afc708a7d": {
 					InProgress:     true,
 					HashedPassword: make([]byte, 0),
+					Issues:         make([]internal.Issue, 0),
+					GuessConfig:    &internal.GuessConfig{},
 				},
 			},
 			room: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
@@ -122,107 +124,9 @@ func TestApplication_createNewRoom(t *testing.T) {
 	}
 }
 
-func TestApplication_handleUserInRoomExists(t *testing.T) {
-	client := &internal.Client{
-		Name: "Test",
-	}
-	roomId := "9c874aaa-c628-4688-a72d-0b1afc708a7d"
-	tests := []struct {
-		url               string
-		name              string
-		rooms             map[internal.RoomId]*internal.Room
-		expectation       map[string]any
-		expectedErrorBody map[string]any
-		statusCode        int
-	}{
-		{
-			name: "not find client when clients are empty",
-			url:  fmt.Sprintf("/v1/room/%s/users/exists?name=Bla", roomId),
-			expectation: map[string]any{
-				"exists": false,
-			},
-			rooms: map[internal.RoomId]*internal.Room{
-				internal.RoomId(roomId): {
-					Clients: make(map[*internal.Client]bool),
-				},
-			},
-			statusCode: 200,
-		},
-		{
-			name: "find client when client exists",
-			url:  fmt.Sprintf("/v1/room/%s/users/exists?name=%s", roomId, client.Name),
-			expectation: map[string]any{
-				"exists": true,
-			},
-			rooms: map[internal.RoomId]*internal.Room{
-				internal.RoomId(roomId): {
-					Clients: map[*internal.Client]bool{
-						client: true,
-					},
-				},
-			},
-			statusCode: 409,
-		},
-		{
-			name:        "error when trying to access without name",
-			url:         fmt.Sprintf("/v1/room/%s/users/exists?name=", roomId),
-			expectation: nil,
-			rooms: map[internal.RoomId]*internal.Room{
-				internal.RoomId(roomId): {
-					Clients: map[*internal.Client]bool{
-						client: true,
-					},
-				},
-			},
-			expectedErrorBody: map[string]any{
-				"message": "name is missing in query",
-			},
-			statusCode: 400,
-		},
-		{
-			name: "not find client when no room with id was found",
-			url:  fmt.Sprintf("/v1/room/%s/users/exists?name=Test", roomId),
-			expectation: map[string]any{
-				"exists": false,
-			},
-			rooms:             map[internal.RoomId]*internal.Room{},
-			expectedErrorBody: nil,
-			statusCode:        200,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			app := &application{
-				rooms: test.rooms,
-			}
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, test.url, nil)
-
-			router.ServeHTTP(recorder, request)
-
-			var got map[string]any
-			json.Unmarshal(recorder.Body.Bytes(), &got)
-
-			gotContentType := recorder.Header().Get("Content-Type")
-
-			assert.Equal(t, test.statusCode, recorder.Code)
-			assert.Equal(t, gotContentType, "application/json")
-			if test.expectedErrorBody != nil {
-				assert.DeepEqual(t, got, test.expectedErrorBody)
-			}
-
-			if test.expectation != nil {
-				assert.DeepEqual(t, got, test.expectation)
-			}
-		})
-	}
-}
-
 func TestApplication_handleFetchUsers(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil))
-	room := internal.NewRoom("9c874aaa-c628-4688-a72d-0b1afc708a7d", make(chan<- internal.RoomId), "", logger)
+	room := internal.NewRoom("9c874aaa-c628-4688-a72d-0b1afc708a7d", make(chan<- internal.RoomId), "", logger, new(internal.GuessConfig))
 	bus := message.NewBus()
 	dev := internal.NewClient("B", internal.Developer, room, nil, bus, logger)
 	otherDev := internal.NewClient("Another", internal.Developer, room, nil, bus, logger)
@@ -509,82 +413,6 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	}
 }
 
-func TestApplication_handlePossibleGuesses(t *testing.T) {
-	tests := []struct {
-		name   string
-		config *internal.GuessConfig
-		want   []map[string]any
-	}{
-		{
-			name: "multiple guesses",
-			config: &internal.GuessConfig{
-				Guesses: []internal.GuessConfigEntry{
-					{
-						Guess:       1,
-						Description: "Test 1",
-					},
-					{
-						Guess:       3,
-						Description: "Test 3",
-					},
-				},
-			},
-			want: []map[string]any{
-				{
-					"guess":       float64(1),
-					"description": "Test 1",
-				},
-				{
-					"guess":       float64(3),
-					"description": "Test 3",
-				},
-			},
-		},
-		{
-			name: "one guess",
-			config: &internal.GuessConfig{
-				Guesses: []internal.GuessConfigEntry{
-					{
-						Guess:       1,
-						Description: "Test 1",
-					},
-				},
-			},
-			want: []map[string]any{
-				{
-					"guess":       float64(1),
-					"description": "Test 1",
-				},
-			},
-		},
-		{
-			name: "no guess",
-			config: &internal.GuessConfig{
-				Guesses: make([]internal.GuessConfigEntry, 0),
-			},
-			want: make([]map[string]any, 0),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			app := &application{
-				guessConfig: test.config,
-			}
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, "/v1/possible-guesses", nil)
-
-			router.ServeHTTP(recorder, request)
-
-			var got []map[string]any
-			json.Unmarshal(recorder.Body.Bytes(), &got)
-
-			assert.DeepEqual(t, got, test.want)
-		})
-	}
-}
-
 func TestApplication_ListenForRoomDestroy(t *testing.T) {
 	destroyChannel := make(chan internal.RoomId)
 	roomToDestroy := internal.RoomId("Test")
@@ -606,103 +434,6 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 	defer app.mu.Unlock()
 	if _, ok := app.rooms[roomToDestroy]; ok {
 		t.Error("expected app to not have room")
-	}
-}
-
-func TestApplication_handleRoomAuthenticate(t *testing.T) {
-	tests := []struct {
-		name     string
-		wantCode int
-		wantBody map[string]any
-		request  string
-		body     func() *bytes.Buffer
-	}{
-		{
-			name:     "forbidden when room not found",
-			wantCode: http.StatusForbidden,
-			wantBody: nil,
-			body: func() *bytes.Buffer {
-				return nil
-			},
-			request: "/v1/room/50e15380-1475-4ec6-abb0-f1e22929a8e5/authenticate",
-		},
-		{
-			name:     "ok = false when body can not be decoded",
-			wantCode: http.StatusOK,
-			wantBody: envelope{"ok": false},
-			body: func() *bytes.Buffer {
-				return bytes.NewBuffer([]byte(""))
-			},
-			request: "/v1/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
-		},
-		{
-			name:     "ok = true when password matches",
-			wantCode: http.StatusOK,
-			wantBody: envelope{"ok": true},
-			body: func() *bytes.Buffer {
-				var buf bytes.Buffer
-				err := json.NewEncoder(&buf).Encode(map[string]string{
-					"password": "helo world",
-				})
-				if err != nil {
-					t.Error(err)
-				}
-				return &buf
-			},
-			request: "/v1/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
-		},
-		{
-			name:     "ok = false when password does not match",
-			wantCode: http.StatusOK,
-			wantBody: envelope{"ok": false},
-			body: func() *bytes.Buffer {
-				var buf bytes.Buffer
-				err := json.NewEncoder(&buf).Encode(map[string]string{
-					"password": "invalid",
-				})
-				if err != nil {
-					t.Error(err)
-				}
-				return &buf
-			},
-			request: "/v1/room/9c874aaa-c628-4688-a72d-0b1afc708a7d/authenticate",
-		},
-	}
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("helo world"), bcrypt.DefaultCost)
-	if err != nil {
-		t.Errorf("error hashing password: %v", err)
-	}
-	app := &application{
-		guessConfig: &internal.GuessConfig{},
-		rooms: map[internal.RoomId]*internal.Room{
-			"9c874aaa-c628-4688-a72d-0b1afc708a7d": {
-				Id:             "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-				HashedPassword: hashedPassword,
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodPost, test.request, nil)
-			body := test.body()
-
-			if body != nil {
-				request = httptest.NewRequest(http.MethodPost, test.request, body)
-			}
-
-			router.ServeHTTP(recorder, request)
-
-			var got map[string]any
-			json.Unmarshal(recorder.Body.Bytes(), &got)
-
-			gotCode := recorder.Code
-
-			assert.Equal(t, gotCode, test.wantCode)
-			assert.DeepEqual(t, got, test.wantBody)
-		})
 	}
 }
 

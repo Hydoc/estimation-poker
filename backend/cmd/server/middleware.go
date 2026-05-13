@@ -10,7 +10,10 @@ func (app *application) withRequiredQueryParam(param string, next http.HandlerFu
 		queryParam := request.URL.Query().Get(param)
 
 		if len(queryParam) == 0 || !request.URL.Query().Has(param) {
-			app.writeJSON(writer, http.StatusBadRequest, envelope{"message": fmt.Sprintf("%s is missing in query", param)}, nil)
+			err := app.writeJSON(writer, http.StatusBadRequest, envelope{"message": fmt.Sprintf("%s is missing in query", param)}, nil)
+			if err != nil {
+				app.serverErrorResponse(writer, request, err)
+			}
 			return
 		}
 

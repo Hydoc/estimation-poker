@@ -15,51 +15,6 @@ import (
 	"github.com/Hydoc/estimation-poker/backend/internal"
 )
 
-func (app *application) handleRoomAuthenticate(writer http.ResponseWriter, request *http.Request) {
-	app.mu.Lock()
-	defer app.mu.Unlock()
-
-	defer request.Body.Close()
-
-	roomId, err := app.readIdParam(request)
-	if err != nil {
-		app.badRequestResponse(writer, request, err)
-		return
-	}
-
-	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
-	if !ok {
-		writer.WriteHeader(http.StatusForbidden)
-		return
-	}
-
-	var input struct {
-		Password string `json:"password"`
-	}
-
-	err = app.readJSON(writer, request, &input)
-	if err != nil {
-		err = app.writeJSON(writer, http.StatusOK, envelope{"ok": false}, nil)
-		if err != nil {
-			app.serverErrorResponse(writer, request, err)
-		}
-		return
-	}
-
-	if actualRoom.Verify(input.Password) {
-		err = app.writeJSON(writer, http.StatusOK, envelope{"ok": true}, nil)
-		if err != nil {
-			app.serverErrorResponse(writer, request, err)
-		}
-		return
-	}
-
-	err = app.writeJSON(writer, http.StatusOK, envelope{"ok": false}, nil)
-	if err != nil {
-		app.serverErrorResponse(writer, request, err)
-	}
-}
-
 func (app *application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
 	app.mu.Lock()
 	defer app.mu.Unlock()
@@ -118,7 +73,7 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	}
 
 	roomId := uuid.New()
-	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, input.Creator, app.logger)
+	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, input.Creator, app.logger, app.guessConfig)
 	app.rooms[room.Id] = room
 	go room.Run()
 
@@ -128,8 +83,39 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	}
 }
 
-func (app *application) handlePossibleGuesses(writer http.ResponseWriter, _ *http.Request) {
-	app.writeJSON(writer, http.StatusOK, app.guessConfig.Guesses, nil)
+func (app *application) handleConnectionStatus(writer http.ResponseWriter, request *http.Request) {
+	app.mu.Lock()
+	defer app.mu.Unlock()
+
+	defer request.Body.Close()
+
+	roomId, err := app.readIdParam(request)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
+
+	var input struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	err = app.readJSON(writer, request, &input)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+		return
+	}
+
+	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
+	if !ok {
+		app.notFoundResponse(writer, request)
+		return
+	}
+
+	err = app.writeJSON(writer, http.StatusOK, actualRoom.ConnectionStatus(input.Username, input.Password), nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+	}
 }
 
 func (app *application) handleFetchRoomState(writer http.ResponseWriter, request *http.Request) {
@@ -149,41 +135,6 @@ func (app *application) handleFetchRoomState(writer http.ResponseWriter, request
 	}
 
 	err = app.writeJSON(writer, http.StatusOK, actualRoom.State(), nil)
-	if err != nil {
-		app.serverErrorResponse(writer, request, err)
-	}
-}
-
-func (app *application) handleUserInRoomExists(writer http.ResponseWriter, request *http.Request) {
-	app.mu.Lock()
-	defer app.mu.Unlock()
-
-	roomId, err := app.readIdParam(request)
-	if err != nil {
-		app.badRequestResponse(writer, request, err)
-		return
-	}
-
-	name := request.URL.Query().Get("name")
-
-	if _, ok := app.rooms[internal.RoomId(roomId.String())]; !ok {
-		err = app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
-		if err != nil {
-			app.serverErrorResponse(writer, request, err)
-		}
-		return
-	}
-
-	for client := range app.rooms[internal.RoomId(roomId.String())].Clients {
-		if client.Name == name {
-			err = app.writeJSON(writer, http.StatusConflict, envelope{"exists": true}, nil)
-			if err != nil {
-				app.serverErrorResponse(writer, request, err)
-			}
-			return
-		}
-	}
-	err = app.writeJSON(writer, http.StatusOK, envelope{"exists": false}, nil)
 	if err != nil {
 		app.serverErrorResponse(writer, request, err)
 	}

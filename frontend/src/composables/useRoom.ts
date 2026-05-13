@@ -1,9 +1,11 @@
 import { computed, type ComputedRef, type Ref, ref } from "vue";
 import { isJust, just, type Maybe, nothing } from "@kaumlaut/pure/maybe";
 import {
+  type ConnectionState,
   type DeveloperDone,
+  isConnectionStatus,
+  isIssues,
   isPermissions,
-  isPossibleGuesses,
   isRoomStateResponse,
   isUserOverview,
   type Permissions,
@@ -17,7 +19,6 @@ import {
 } from "@/types/room.ts";
 import { useWebsocket } from "@/composables/useWebsocket.ts";
 import { attemptErrorAware, fail, type FetchState, none } from "@kaumlaut/pure/fetch-state";
-import { isBool, isObjectWithKeysMatchingGuard } from "@kaumlaut/pure/error-aware-guard";
 
 export type UseRoom = {
   roomState: ComputedRef<RoomState>;
@@ -25,10 +26,8 @@ export type UseRoom = {
   joinRoom(name: string, role: Role, roomId: string): Promise<void>;
   leaveRoom(): void;
   send(message: SendableWebsocketMessage): void;
-  authenticate(roomId: string, password: string): Promise<boolean>;
-  userExists(roomId: string, name: string): Promise<boolean>;
-  fetchPossibleGuesses(): Promise<void>;
-  fetchRoomState(roomId: string): Promise<{ isLocked: boolean; inProgress: boolean }>;
+  connectionState(roomId: string, username: string, password: string): Promise<ConnectionState>;
+  fetchRoomState(): Promise<void>;
   fetchPermissions(): void;
 };
 
@@ -90,7 +89,7 @@ export function useRoom(): UseRoom {
     const url = `${window.location.host}/v1/room/${roomIdToJoin}/${roleUrl}?name=${username}`;
     const connected = await websocket.connect(url, onWebsocketMessage);
     if (!connected) {
-      throw new Error("could not connect");
+      throw new Error("Could not connect");
     }
 
     roomId.value = just(roomIdToJoin);
@@ -144,6 +143,11 @@ export function useRoom(): UseRoom {
         resetRound();
         await fetchUsersInRoom();
         break;
+      case "issues":
+        if (isJust(role.value) && role.value.value === Role.ProductOwner) {
+          await fetchIssues();
+        }
+        break;
     }
   }
 
@@ -167,6 +171,7 @@ export function useRoom(): UseRoom {
     roomNotifications.value = [];
     name.value = nothing();
     role.value = nothing();
+    issues.value = [];
     permissions.value = {
       room: {
         canLock: false,
@@ -175,10 +180,34 @@ export function useRoom(): UseRoom {
     resetRound();
   }
 
-  async function fetchRoomState(
+  async function connectionStatus(
     roomId: string,
-  ): Promise<{ isLocked: boolean; inProgress: boolean }> {
-    const response = await fetch(`/v1/room/${roomId}/state`);
+    username: string,
+    password: string,
+  ): Promise<ConnectionState> {
+    const response = await fetch(`/v1/room/${roomId}/connection-status`, {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Could not fetch connection status");
+    }
+
+    const result = isConnectionStatus(await response.json());
+    if (!result.success) {
+      console.log(result.errors);
+      throw new Error("Connection status is invalid");
+    }
+
+    return result.value;
+  }
+
+  async function fetchRoomState() {
+    if (!isJust(roomId.value)) {
+      throw new Error("Could not fetch room state");
+    }
+    const response = await fetch(`/v1/room/${roomId.value.value}/state`);
 
     if (!response.ok) {
       throw new Error("Could not fetch room state");
@@ -190,68 +219,35 @@ export function useRoom(): UseRoom {
       throw new Error("Room state is invalid");
     }
 
-    return result.value;
+    issues.value = result.value.issues;
+    roomIsLocked.value = result.value.isLocked;
+    roundInProgress.value = result.value.inProgress;
+    possibleGuesses.value = result.value.possibleGuesses;
   }
 
-  // TODO refactor so that everything happens in joinRoom
-  async function authenticate(roomId: string, password: string): Promise<boolean> {
-    const response = await fetch(`/v1/room/${roomId}/authenticate`, {
-      method: "POST",
-      body: JSON.stringify({ password }),
-    });
-
+  async function fetchIssues() {
+    if (!isJust(roomId.value)) {
+      throw new Error("Could not fetch issues");
+    }
+    const response = await fetch(`/v1/room/${roomId.value.value}/issues`);
     if (!response.ok) {
-      return false;
-    }
-
-    const result = isObjectWithKeysMatchingGuard<{ ok: boolean }>({
-      ok: isBool,
-    })(await response.json());
-
-    if (!result.success) {
-      console.error(result.errors);
-      throw new Error("authentication response is not valid");
-    }
-
-    return result.value.ok;
-  }
-
-  // TODO refactor so that everything happens in joinRoom
-  async function userExists(roomId: string, name: string): Promise<boolean> {
-    const response = await fetch(`/v1/room/${roomId}/users/exists?name=${name}`);
-
-    const result = isObjectWithKeysMatchingGuard<{ exists: boolean }>({
-      exists: isBool,
-    })(await response.json());
-
-    if (!result.success) {
-      console.error(result.errors);
-      throw new Error("exists response is not valid");
-    }
-
-    return result.value.exists;
-  }
-
-  async function fetchPossibleGuesses() {
-    const response = await fetch("/v1/possible-guesses");
-    if (!response.ok) {
-      possibleGuesses.value = [];
+      issues.value = [];
       return;
     }
 
-    const result = isPossibleGuesses(await response.json());
+    const result = isIssues(await response.json());
 
     if (!result.success) {
       console.error(result.errors);
-      throw new Error("possible guesses is not valid");
+      throw new Error("issues response is not valid");
     }
 
-    possibleGuesses.value = result.value;
+    issues.value = result.value;
   }
 
   async function fetchPermissions() {
     if (!isJust(roomId.value) || !isJust(name.value)) {
-      throw new Error("could not fetch permissions");
+      throw new Error("Could not fetch permissions");
     }
 
     const response = await fetch(
@@ -281,9 +277,7 @@ export function useRoom(): UseRoom {
     joinRoom,
     leaveRoom,
     send,
-    authenticate,
-    userExists,
-    fetchPossibleGuesses,
+    connectionState: connectionStatus,
     fetchRoomState,
     fetchPermissions,
   };

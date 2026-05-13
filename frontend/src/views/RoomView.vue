@@ -5,7 +5,14 @@ import { computed, onMounted, ref } from "vue";
 import RoomForm from "@/components/RoomForm.vue";
 import { isJust } from "@kaumlaut/pure/maybe";
 import { useEstimationStore } from "@/stores/estimation.ts";
-import { Role, RoundState, type SendableWebsocketMessageType } from "@/types/room.ts";
+import {
+  isRoundAlreadyStartedConnectionStatus,
+  isUsernameAlreadyTakenConnectionStatus,
+  isWrongPasswordConnectionStatus,
+  Role,
+  RoundState,
+  type SendableWebsocketMessageType,
+} from "@/types/room.ts";
 
 const estimationStore = useEstimationStore();
 const router = useRouter();
@@ -15,11 +22,11 @@ const showPassword = ref(false);
 const roomPassword = ref("");
 const name = ref("");
 const role = ref(Role.Empty);
-const passwordForRoom = ref("");
+const password = ref("");
 const errorMessage = ref("");
 const issueToAdd = ref("");
 const showIssuesDrawer = ref(false);
-const roomIsLocked = ref(false);
+const showPasswordInput = ref(false);
 const queryRoomId = computed((): string => {
   if (Array.isArray(route.params.id)) {
     return route.params.id[0];
@@ -99,43 +106,49 @@ async function tryJoin() {
   errorMessage.value = "";
 
   const actualRoomId = queryRoomId.value;
-  const roomState = await estimationStore.fetchRoomState(actualRoomId);
+  const connectionStatus = await estimationStore.connectionState(
+    actualRoomId,
+    name.value,
+    password.value,
+  );
 
-  const passwordMatches = roomState.isLocked
-    ? await estimationStore.authenticate(actualRoomId, passwordForRoom.value)
-    : true;
-  if (roomState.isLocked && !passwordMatches) {
+  if (isWrongPasswordConnectionStatus(connectionStatus).success && password.value === "") {
+    showPasswordInput.value = true;
+    return;
+  }
+
+  if (isWrongPasswordConnectionStatus(connectionStatus).success) {
     errorMessage.value = "The provided password is wrong";
     return;
   }
 
-  if (roomState.inProgress) {
+  if (isRoundAlreadyStartedConnectionStatus(connectionStatus).success) {
     errorMessage.value = "The round has already started";
     return;
   }
 
-  const userAlreadyExistsInRoom = await estimationStore.userExists(actualRoomId, name.value);
-  if (userAlreadyExistsInRoom) {
+  if (isUsernameAlreadyTakenConnectionStatus(connectionStatus).success) {
     errorMessage.value = "A user with this name already exists in the room";
     return;
   }
 
   await estimationStore.joinRoom(name.value, role.value, actualRoomId);
-  await Promise.all([estimationStore.fetchPossibleGuesses(), estimationStore.fetchPermissions()]);
+  await Promise.all([estimationStore.fetchRoomState(), estimationStore.fetchPermissions()]);
 }
 
 onMounted(async () => {
-  await estimationStore
+  // TODO maybe show password input initially by fetching the room state
+  /*await estimationStore
     .fetchRoomState(queryRoomId.value)
     .then((response) => {
       roomIsLocked.value = response.isLocked;
     })
     .catch(async () => {
       await router.push("/");
-    });
+    });*/
 
   if (isConnected.value) {
-    await Promise.all([estimationStore.fetchPossibleGuesses(), estimationStore.fetchPermissions()]);
+    await Promise.all([estimationStore.fetchRoomState(), estimationStore.fetchPermissions()]);
   }
 });
 </script>
@@ -145,8 +158,8 @@ onMounted(async () => {
     <room-form
       v-model:name="name"
       v-model:role="role"
-      v-model:password="passwordForRoom"
-      :show-password-input="roomIsLocked"
+      v-model:password="password"
+      :show-password-input="showPasswordInput"
       :error-message="errorMessage"
       title="Join room"
       subtitle="You are currently not connected to this room"

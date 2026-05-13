@@ -4,7 +4,12 @@ import RoomDialog from "@/components/RoomDialog.vue";
 import { useRouter } from "vue-router";
 import { isSuccess } from "@kaumlaut/pure/fetch-state";
 import { useEstimationStore } from "@/stores/estimation.ts";
-import { Role } from "@/types/room.ts";
+import {
+  isRoundAlreadyStartedConnectionStatus,
+  isUsernameAlreadyTakenConnectionStatus,
+  isWrongPasswordConnectionStatus,
+  Role,
+} from "@/types/room.ts";
 
 const estimationStore = useEstimationStore();
 // leave room when component renders to avoid weird behavior
@@ -14,24 +19,25 @@ const router = useRouter();
 const errorMessage: Ref<string | undefined> = ref();
 const role: Ref<Role> = ref(Role.Empty);
 const name: Ref<string> = ref("");
-const passwordForRoom: Ref<string> = ref("");
+const password: Ref<string> = ref("");
 const showPasswordInput: Ref<boolean> = ref(false);
 
 async function connect(chosenRoomId: string | undefined) {
   errorMessage.value = "";
 
   const actualRoomId = chosenRoomId ? chosenRoomId : await estimationStore.createRoom(name.value);
-  const roomState = await estimationStore.fetchRoomState(actualRoomId);
+  const connectionStatus = await estimationStore.connectionState(
+    actualRoomId,
+    name.value,
+    password.value,
+  );
 
-  if (roomState.isLocked && passwordForRoom.value === "") {
+  if (isWrongPasswordConnectionStatus(connectionStatus).success && password.value === "") {
     showPasswordInput.value = true;
     return;
   }
 
-  const passwordMatches = roomState.isLocked
-    ? await estimationStore.authenticate(actualRoomId, passwordForRoom.value)
-    : true;
-  if (roomState.isLocked && !passwordMatches) {
+  if (isWrongPasswordConnectionStatus(connectionStatus).success) {
     showPasswordInput.value = true;
     errorMessage.value = "The provided password is wrong";
     return;
@@ -39,13 +45,12 @@ async function connect(chosenRoomId: string | undefined) {
 
   showPasswordInput.value = false;
 
-  if (roomState.inProgress) {
+  if (isRoundAlreadyStartedConnectionStatus(connectionStatus).success) {
     errorMessage.value = "The round has already started";
     return;
   }
 
-  const userAlreadyExistsInRoom = await estimationStore.userExists(actualRoomId, name.value);
-  if (userAlreadyExistsInRoom) {
+  if (isUsernameAlreadyTakenConnectionStatus(connectionStatus).success) {
     errorMessage.value = "A user with this name already exists in the room";
     return;
   }
@@ -104,7 +109,7 @@ onBeforeMount(async () => {
               <room-dialog
                 v-model:role="role"
                 v-model:name="name"
-                v-model:password="passwordForRoom"
+                v-model:password="password"
                 :show-password-input="showPasswordInput"
                 activator-text="Join"
                 card-title="Join"

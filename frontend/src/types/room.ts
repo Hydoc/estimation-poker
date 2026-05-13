@@ -2,11 +2,13 @@ import type { Maybe } from "@kaumlaut/pure/maybe";
 import {
   isBool,
   isExactString,
+  isFalse,
   isListOf,
   isNonEmptyString,
   isNumber,
   isObjectWithKeysMatchingGuard,
   isOneOf,
+  isOneStringOf,
 } from "@kaumlaut/pure/error-aware-guard";
 import type { FetchState } from "@kaumlaut/pure/fetch-state";
 
@@ -37,6 +39,16 @@ export enum Role {
   Developer = "developer",
   Empty = "",
 }
+
+export type ConnectionState = {
+  canConnect: boolean;
+  reason: "wrong password" | "round already started" | "username already taken" | "";
+};
+
+export type Issue = {
+  title: string;
+  guess: number;
+};
 
 export type Permissions = {
   room: {
@@ -128,15 +140,47 @@ const isPossibleGuess = isObjectWithKeysMatchingGuard<PossibleGuess>({
   guess: isNumber,
 });
 
-export const isPossibleGuesses = isListOf(isPossibleGuess);
+const isIssue = isObjectWithKeysMatchingGuard<Issue>({
+  title: isNonEmptyString,
+  guess: isNumber,
+});
+
+export const isIssues = isListOf(isIssue);
 
 export const isRoomStateResponse = isObjectWithKeysMatchingGuard<{
   isLocked: boolean;
   inProgress: boolean;
+  issues: Issue[];
+  possibleGuesses: PossibleGuess[];
 }>({
   isLocked: isBool,
   inProgress: isBool,
+  issues: isListOf(isIssue),
+  possibleGuesses: isListOf(isPossibleGuess),
 });
+
+export const isConnectionStatus = isObjectWithKeysMatchingGuard<ConnectionState>({
+  canConnect: isBool,
+  reason: isOneStringOf(["round already started", "username already taken", "wrong password", ""]),
+});
+
+export const isWrongPasswordConnectionStatus = isObjectWithKeysMatchingGuard<ConnectionState>({
+  canConnect: isFalse,
+  reason: isExactString("wrong password"),
+});
+
+export const isRoundAlreadyStartedConnectionStatus = isObjectWithKeysMatchingGuard<ConnectionState>(
+  {
+    canConnect: isFalse,
+    reason: isExactString("round already started"),
+  },
+);
+
+export const isUsernameAlreadyTakenConnectionStatus =
+  isObjectWithKeysMatchingGuard<ConnectionState>({
+    canConnect: isFalse,
+    reason: isExactString("username already taken"),
+  });
 
 export const isPermissions = isObjectWithKeysMatchingGuard({
   permissions: isObjectWithKeysMatchingGuard({
