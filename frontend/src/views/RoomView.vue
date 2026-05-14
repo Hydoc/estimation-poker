@@ -112,11 +112,6 @@ async function tryJoin() {
     password.value,
   );
 
-  if (isWrongPasswordConnectionStatus(connectionStatus).success && password.value === "") {
-    showPasswordInput.value = true;
-    return;
-  }
-
   if (isWrongPasswordConnectionStatus(connectionStatus).success) {
     errorMessage.value = "The provided password is wrong";
     return;
@@ -137,19 +132,17 @@ async function tryJoin() {
 }
 
 onMounted(async () => {
-  // TODO maybe show password input initially by fetching the room state
-  /*await estimationStore
-    .fetchRoomState(queryRoomId.value)
-    .then((response) => {
-      roomIsLocked.value = response.isLocked;
-    })
-    .catch(async () => {
-      await router.push("/");
-    });*/
-
   if (isConnected.value) {
     await Promise.all([estimationStore.fetchRoomState(), estimationStore.fetchPermissions()]);
+    return;
   }
+
+  const metadata = await estimationStore.roomMetadata(queryRoomId.value);
+  if (!metadata.exists) {
+    await router.push("/");
+    return;
+  }
+  showPasswordInput.value = metadata.isLocked;
 });
 </script>
 

@@ -6,12 +6,15 @@ import {
   isConnectionStatus,
   isIssues,
   isPermissions,
+  isRoomMetadata,
   isRoomStateResponse,
+  type Issue,
   isUserOverview,
   type Permissions,
   type PossibleGuess,
   type ReceivableWebsocketMessage,
   Role,
+  type RoomMetadata,
   type RoomState,
   RoundState,
   type SendableWebsocketMessage,
@@ -26,6 +29,7 @@ export type UseRoom = {
   joinRoom(name: string, role: Role, roomId: string): Promise<void>;
   leaveRoom(): void;
   send(message: SendableWebsocketMessage): void;
+  roomMetadata(roomId: string): Promise<RoomMetadata>;
   connectionState(roomId: string, username: string, password: string): Promise<ConnectionState>;
   fetchRoomState(): Promise<void>;
   fetchPermissions(): void;
@@ -46,7 +50,7 @@ export function useRoom(): UseRoom {
   const roomIsLocked = ref<boolean>(false);
   const roundInProgress = ref<boolean>(false);
   const developerDone: Ref<DeveloperDone[]> = ref([]);
-  const issues = ref<any[]>([]);
+  const issues = ref<Issue[]>([]);
   const possibleGuesses = ref<PossibleGuess[]>([]);
   const permissions = ref<Permissions>({
     room: {
@@ -180,12 +184,29 @@ export function useRoom(): UseRoom {
     resetRound();
   }
 
-  async function connectionStatus(
+  async function roomMetadata(roomId: string): Promise<RoomMetadata> {
+    const response = await fetch(`/v1/room/${roomId}/metadata`);
+
+    if (!response.ok) {
+      throw new Error("Could not fetch room metadata");
+    }
+
+    const result = isRoomMetadata(await response.json());
+
+    if (!result.success) {
+      console.error(result.errors);
+      throw new Error("Room metadata is invalid");
+    }
+
+    return result.value;
+  }
+
+  async function connectionState(
     roomId: string,
     username: string,
     password: string,
   ): Promise<ConnectionState> {
-    const response = await fetch(`/v1/room/${roomId}/connection-status`, {
+    const response = await fetch(`/v1/room/${roomId}/connection-state`, {
       method: "POST",
       body: JSON.stringify({ username, password }),
     });
@@ -196,7 +217,7 @@ export function useRoom(): UseRoom {
 
     const result = isConnectionStatus(await response.json());
     if (!result.success) {
-      console.log(result.errors);
+      console.error(result.errors);
       throw new Error("Connection status is invalid");
     }
 
@@ -215,7 +236,7 @@ export function useRoom(): UseRoom {
 
     const result = isRoomStateResponse(await response.json());
     if (!result.success) {
-      console.log(result.errors);
+      console.error(result.errors);
       throw new Error("Room state is invalid");
     }
 
@@ -277,7 +298,8 @@ export function useRoom(): UseRoom {
     joinRoom,
     leaveRoom,
     send,
-    connectionState: connectionStatus,
+    roomMetadata,
+    connectionState,
     fetchRoomState,
     fetchPermissions,
   };

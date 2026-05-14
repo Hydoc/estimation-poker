@@ -26,7 +26,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 		username string
 		password string
 		room     func() *Room
-		want     ConnectionStatus
+		want     ConnectionState
 	}{
 		{
 			name:     "room in progress",
@@ -37,7 +37,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 					InProgress: true,
 				}
 			},
-			want: ConnectionStatus{
+			want: ConnectionState{
 				CanConnect: false,
 				Reason:     ErrRoundStarted.Error(),
 			},
@@ -56,7 +56,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 					HashedPassword: hashed,
 				}
 			},
-			want: ConnectionStatus{
+			want: ConnectionState{
 				CanConnect: false,
 				Reason:     ErrWrongPassword.Error(),
 			},
@@ -76,7 +76,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 					},
 				}
 			},
-			want: ConnectionStatus{
+			want: ConnectionState{
 				CanConnect: false,
 				Reason:     ErrUsernameTaken.Error(),
 			},
@@ -92,7 +92,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 					Clients:        make(map[*Client]bool),
 				}
 			},
-			want: ConnectionStatus{
+			want: ConnectionState{
 				CanConnect: true,
 				Reason:     "",
 			},
@@ -111,7 +111,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 					HashedPassword: hashed,
 				}
 			},
-			want: ConnectionStatus{
+			want: ConnectionState{
 				CanConnect: true,
 				Reason:     "",
 			},
@@ -120,7 +120,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.room().ConnectionStatus(tt.username, tt.password)
+			got := tt.room().ConnectionState(tt.username, tt.password)
 
 			assert.DeepEqual(t, got, tt.want)
 		})

@@ -43,7 +43,7 @@ type Room struct {
 	GuessConfig    *GuessConfig
 }
 
-type ConnectionStatus struct {
+type ConnectionState struct {
 	CanConnect bool   `json:"canConnect"`
 	Reason     string `json:"reason"`
 }
@@ -124,16 +124,16 @@ func (room *Room) open(username, key string) bool {
 	return false
 }
 
-func (room *Room) ConnectionStatus(username string, password string) ConnectionStatus {
+func (room *Room) ConnectionState(username string, password string) ConnectionState {
 	if room.InProgress {
-		return ConnectionStatus{
+		return ConnectionState{
 			CanConnect: false,
 			Reason:     ErrRoundStarted.Error(),
 		}
 	}
 
 	if room.IsLocked() && !room.verify(password) {
-		return ConnectionStatus{
+		return ConnectionState{
 			CanConnect: false,
 			Reason:     ErrWrongPassword.Error(),
 		}
@@ -144,14 +144,14 @@ func (room *Room) ConnectionStatus(username string, password string) ConnectionS
 
 	for client := range room.Clients {
 		if client.Name == username {
-			return ConnectionStatus{
+			return ConnectionState{
 				CanConnect: false,
 				Reason:     ErrUsernameTaken.Error(),
 			}
 		}
 	}
 
-	return ConnectionStatus{
+	return ConnectionState{
 		CanConnect: true,
 		Reason:     "",
 	}

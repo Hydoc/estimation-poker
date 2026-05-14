@@ -83,7 +83,35 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	}
 }
 
-func (app *application) handleConnectionStatus(writer http.ResponseWriter, request *http.Request) {
+func (app *application) handleFetchRoomMetadata(writer http.ResponseWriter, request *http.Request) {
+	roomId, err := app.readIdParam(request)
+	if err != nil {
+		app.badRequestResponse(writer, request, err)
+		return
+	}
+
+	app.mu.Lock()
+	defer app.mu.Unlock()
+
+	room, ok := app.rooms[internal.RoomId(roomId.String())]
+
+	if !ok {
+		err = app.writeJSON(writer, http.StatusOK, envelope{"exists": false, "isLocked": false}, nil)
+		if err != nil {
+			app.serverErrorResponse(writer, request, err)
+			return
+		}
+		return
+	}
+
+	err = app.writeJSON(writer, http.StatusOK, envelope{"exists": true, "isLocked": room.IsLocked()}, nil)
+	if err != nil {
+		app.serverErrorResponse(writer, request, err)
+		return
+	}
+}
+
+func (app *application) handleConnectionState(writer http.ResponseWriter, request *http.Request) {
 	app.mu.Lock()
 	defer app.mu.Unlock()
 
@@ -112,7 +140,7 @@ func (app *application) handleConnectionStatus(writer http.ResponseWriter, reque
 		return
 	}
 
-	err = app.writeJSON(writer, http.StatusOK, actualRoom.ConnectionStatus(input.Username, input.Password), nil)
+	err = app.writeJSON(writer, http.StatusOK, actualRoom.ConnectionState(input.Username, input.Password), nil)
 	if err != nil {
 		app.serverErrorResponse(writer, request, err)
 	}

@@ -53,10 +53,10 @@ beforeEach(() => {
   // @ts-ignore
   estimationStore.roomState = defaultRoomState.build();
   // @ts-ignore
-  estimationStore.fetchRoomState = vi.fn(() =>
+  estimationStore.roomMetadata = vi.fn(() =>
     Promise.resolve({
+      exists: true,
       isLocked: false,
-      inProgress: false,
     }),
   );
 });
@@ -96,10 +96,10 @@ describe("RoomView", () => {
       // @ts-ignore
       estimationStore.roomState = defaultRoomState.withConnected(false).build();
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.roomMetadata = vi.fn(() =>
         Promise.resolve({
+          exists: true,
           isLocked: true,
-          inProgress: false,
         }),
       );
       const wrapper = createWrapper();
@@ -146,10 +146,16 @@ describe("RoomView", () => {
 
     it("should redirect to '/' when room does not exists", async () => {
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() => Promise.reject(new Error("💥")));
+      estimationStore.roomState = defaultRoomState.withConnected(false).build();
+      // @ts-ignore
+      estimationStore.roomMetadata = vi.fn(() =>
+        Promise.resolve({
+          exists: false,
+          isLocked: false,
+        }),
+      );
       createWrapper();
 
-      await nextTick();
       await nextTick();
 
       expect(useRouter().push).toHaveBeenNthCalledWith(1, "/");
@@ -294,14 +300,12 @@ describe("RoomView", () => {
       // @ts-ignore
       estimationStore.roomState = defaultRoomState.withConnected(false).build();
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.roomMetadata = vi.fn(() =>
         Promise.resolve({
-          inProgress: false,
+          exists: true,
           isLocked: false,
         }),
       );
-      // @ts-ignore
-      estimationStore.userExists = vi.fn(() => Promise.resolve(false));
       // @ts-ignore
       estimationStore.joinRoom = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -320,11 +324,7 @@ describe("RoomView", () => {
       await nextTick();
 
       // @ts-ignore
-      expect(estimationStore.authenticate).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "room-id");
-      // @ts-ignore
-      expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "room-id", "Name");
+      expect(estimationStore.fetchRoomState).toHaveBeenCalledOnce();
       // @ts-ignore
       expect(estimationStore.joinRoom).toHaveBeenNthCalledWith(
         1,
@@ -333,8 +333,6 @@ describe("RoomView", () => {
         "room-id",
       );
       // @ts-ignore
-      expect(estimationStore.fetchPossibleGuesses).toHaveBeenCalledOnce();
-      // @ts-ignore
       expect(estimationStore.fetchPermissions).toHaveBeenCalledOnce();
     });
 
@@ -342,14 +340,21 @@ describe("RoomView", () => {
       // @ts-ignore
       estimationStore.roomState = defaultRoomState.withConnected(false).build();
       // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.roomMetadata = vi.fn(() =>
         Promise.resolve({
-          inProgress: false,
+          exists: true,
           isLocked: true,
         }),
       );
+
       // @ts-ignore
-      estimationStore.authenticate = vi.fn(() => Promise.resolve(false));
+      estimationStore.connectionState = vi.fn(() =>
+        Promise.resolve({
+          canConnect: false,
+          reason: "wrong password",
+        }),
+      );
+
       // @ts-ignore
       estimationStore.joinRoom = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -373,31 +378,27 @@ describe("RoomView", () => {
       );
 
       // @ts-ignore
-      expect(estimationStore.authenticate).toHaveBeenNthCalledWith(1, "room-id", "incorrect");
-      // @ts-ignore
-      expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "room-id");
-      // @ts-ignore
-      expect(estimationStore.userExists).not.toHaveBeenCalled();
+      expect(estimationStore.fetchRoomState).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.joinRoom).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.fetchPossibleGuesses).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.fetchPermissions).not.toHaveBeenCalled();
     });
 
     it("should not join when user is not connected, password matches but round already started", async () => {
       // @ts-ignore
-      estimationStore.roomState = defaultRoomState
-        .withConnected(false)
-        .withRoomIsLocked(true)
-        .build();
+      estimationStore.roomState = defaultRoomState.withConnected(false).build();
       // @ts-ignore
-      estimationStore.authenticate = vi.fn(() => Promise.resolve(true));
-      // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.connectionState = vi.fn(() =>
         Promise.resolve({
-          inProgress: true,
+          canConnect: false,
+          reason: "round already started",
+        }),
+      );
+      // @ts-ignore
+      estimationStore.roomMetadata = vi.fn(() =>
+        Promise.resolve({
+          exists: true,
           isLocked: true,
         }),
       );
@@ -424,36 +425,30 @@ describe("RoomView", () => {
       );
 
       // @ts-ignore
-      expect(estimationStore.authenticate).toHaveBeenNthCalledWith(1, "room-id", "correct");
-      // @ts-ignore
-      expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "room-id");
-      // @ts-ignore
-      expect(estimationStore.userExists).not.toHaveBeenCalled();
+      expect(estimationStore.fetchRoomState).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.joinRoom).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.fetchPossibleGuesses).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.fetchPermissions).not.toHaveBeenCalled();
     });
 
     it("should not join when user is not connected, password matches but user already exists in the room", async () => {
       // @ts-ignore
-      estimationStore.roomState = defaultRoomState
-        .withConnected(false)
-        .withRoomIsLocked(true)
-        .build();
+      estimationStore.roomState = defaultRoomState.withConnected(false).build();
       // @ts-ignore
-      estimationStore.authenticate = vi.fn(() => Promise.resolve(true));
-      // @ts-ignore
-      estimationStore.fetchRoomState = vi.fn(() =>
+      estimationStore.roomMetadata = vi.fn(() =>
         Promise.resolve({
-          inProgress: false,
+          exists: true,
           isLocked: true,
         }),
       );
       // @ts-ignore
-      estimationStore.userExists = vi.fn(() => Promise.resolve(true));
+      estimationStore.connectionState = vi.fn(() =>
+        Promise.resolve({
+          canConnect: false,
+          reason: "username already taken",
+        }),
+      );
       // @ts-ignore
       estimationStore.joinRoom = vi.fn();
       (useRoute as Mock).mockReturnValue({
@@ -477,15 +472,9 @@ describe("RoomView", () => {
       );
 
       // @ts-ignore
-      expect(estimationStore.authenticate).toHaveBeenNthCalledWith(1, "room-id", "correct");
-      // @ts-ignore
-      expect(estimationStore.fetchRoomState).toHaveBeenNthCalledWith(1, "room-id");
-      // @ts-ignore
-      expect(estimationStore.userExists).toHaveBeenNthCalledWith(1, "room-id", "Name");
+      expect(estimationStore.fetchRoomState).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.joinRoom).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.fetchPossibleGuesses).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.fetchPermissions).not.toHaveBeenCalled();
     });

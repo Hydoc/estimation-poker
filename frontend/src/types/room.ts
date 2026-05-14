@@ -50,6 +50,11 @@ export type Issue = {
   guess: number;
 };
 
+export type RoomMetadata = {
+  exists: boolean;
+  isLocked: boolean;
+};
+
 export type Permissions = {
   room: {
     canLock: boolean;
@@ -157,6 +162,11 @@ export const isRoomStateResponse = isObjectWithKeysMatchingGuard<{
   inProgress: isBool,
   issues: isListOf(isIssue),
   possibleGuesses: isListOf(isPossibleGuess),
+});
+
+export const isRoomMetadata = isObjectWithKeysMatchingGuard<RoomMetadata>({
+  exists: isBool,
+  isLocked: isBool,
 });
 
 export const isConnectionStatus = isObjectWithKeysMatchingGuard<ConnectionState>({
