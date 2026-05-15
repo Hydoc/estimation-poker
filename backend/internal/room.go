@@ -99,6 +99,7 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *s
 
 func (room *Room) Join(client *Client) {
 	room.join <- client
+	client.send <- newPermissions(client.Name, room.NameOfCreator, room.Key)
 	room.broadcast <- newJoin()
 }
 

@@ -24,10 +24,8 @@ const defaultRoomState = RoomStateBuilder.init()
     { name: "test dev", role: Role.Developer, isDone: false },
   ])
   .withPermissions({
-    room: {
-      canLock: true,
-      key: "abc",
-    },
+    canLockRoom: true,
+    key: "abc",
   });
 
 const ResizeObserverMock = vi.fn(() => ({
@@ -234,10 +232,8 @@ describe("RoomView", () => {
       estimationStore.roomState = defaultRoomState
         .withRoomIsLocked(true)
         .withPermissions({
-          room: {
-            canLock: true,
-            key: "",
-          },
+          canLockRoom: true,
+          key: "",
         })
         .build();
       Object.defineProperty(global.navigator, "clipboard", {
@@ -332,8 +328,6 @@ describe("RoomView", () => {
         Role.Developer,
         "room-id",
       );
-      // @ts-ignore
-      expect(estimationStore.fetchPermissions).toHaveBeenCalledOnce();
     });
 
     it("should not join when user is not connected, room is locked and password does not match", async () => {
@@ -381,8 +375,6 @@ describe("RoomView", () => {
       expect(estimationStore.fetchRoomState).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.joinRoom).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.fetchPermissions).not.toHaveBeenCalled();
     });
 
     it("should not join when user is not connected, password matches but round already started", async () => {
@@ -428,8 +420,6 @@ describe("RoomView", () => {
       expect(estimationStore.fetchRoomState).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.joinRoom).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.fetchPermissions).not.toHaveBeenCalled();
     });
 
     it("should not join when user is not connected, password matches but user already exists in the room", async () => {
@@ -475,8 +465,6 @@ describe("RoomView", () => {
       expect(estimationStore.fetchRoomState).not.toHaveBeenCalled();
       // @ts-ignore
       expect(estimationStore.joinRoom).not.toHaveBeenCalled();
-      // @ts-ignore
-      expect(estimationStore.fetchPermissions).not.toHaveBeenCalled();
     });
   });
 

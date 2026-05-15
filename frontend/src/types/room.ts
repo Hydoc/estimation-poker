@@ -9,6 +9,7 @@ import {
   isObjectWithKeysMatchingGuard,
   isOneOf,
   isOneStringOf,
+  isString,
 } from "@kaumlaut/pure/error-aware-guard";
 import type { FetchState } from "@kaumlaut/pure/fetch-state";
 
@@ -56,10 +57,8 @@ export type RoomMetadata = {
 };
 
 export type Permissions = {
-  room: {
-    canLock: boolean;
-    key?: string;
-  };
+  canLockRoom: boolean;
+  key: string;
 };
 
 export enum RoundState {
@@ -116,7 +115,8 @@ export type ReceivableWebsocketMessage = {
     | "room-locked"
     | "developer-skipped"
     | "room-opened"
-    | "issues";
+    | "issues"
+    | "permissions";
   data?: any;
 };
 
@@ -192,16 +192,7 @@ export const isUsernameAlreadyTakenConnectionStatus =
     reason: isExactString("username already taken"),
   });
 
-export const isPermissions = isObjectWithKeysMatchingGuard({
-  permissions: isObjectWithKeysMatchingGuard({
-    room: isOneOf(
-      isObjectWithKeysMatchingGuard({
-        canLock: isBool,
-      }),
-      isObjectWithKeysMatchingGuard({
-        canLock: isBool,
-        key: isNonEmptyString,
-      }),
-    ),
-  }),
+export const isPermissions = isObjectWithKeysMatchingGuard<Permissions>({
+  canLockRoom: isBool,
+  key: isString,
 });

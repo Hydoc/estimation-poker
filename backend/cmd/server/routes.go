@@ -17,7 +17,6 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/room/:id/developer", app.withRequiredQueryParam("name", app.handleWs))
 	router.HandlerFunc(http.MethodGet, "/v1/room/:id/users", app.handleFetchUsers)
 	router.HandlerFunc(http.MethodGet, "/v1/room/:id/state", app.handleFetchRoomState)
-	router.HandlerFunc(http.MethodGet, "/v1/room/:id/permissions", app.withRequiredQueryParam("name", app.handleFetchPermissions))
 
 	router.HandlerFunc(http.MethodGet, "/v1/health", app.healthcheckHandler)
 

@@ -3,6 +3,8 @@ package internal
 import (
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Hydoc/estimation-poker/backend/internal/assert"
 )
 
@@ -72,6 +74,23 @@ func TestMessage(t *testing.T) {
 			msg:          newYouGuessed(2),
 			expectedType: youGuessed,
 			expectedData: 2,
+		},
+		{
+			name:         "newPermissions",
+			msg:          newPermissions("Test", "Abc", uuid.New()),
+			expectedType: permissions,
+			expectedData: Permissions{
+				CanLockRoom: false,
+			},
+		},
+		{
+			name:         "newPermissions when client and room creator have same name",
+			msg:          newPermissions("Test", "Test", uuid.MustParse("67ddc335-0aa0-41f9-8289-2649da77aee7")),
+			expectedType: permissions,
+			expectedData: Permissions{
+				CanLockRoom: true,
+				Key:         uuid.MustParse("67ddc335-0aa0-41f9-8289-2649da77aee7").String(),
+			},
 		},
 	}
 

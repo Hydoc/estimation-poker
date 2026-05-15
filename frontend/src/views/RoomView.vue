@@ -63,13 +63,13 @@ function lockRoom() {
   showSetRoomPasswordDialog.value = false;
   sendMessage("lock-room", {
     password: roomPassword.value,
-    key: permissions.value.room.key || "",
+    key: permissions.value.key || "",
   });
 }
 
 function openRoom() {
   sendMessage("open-room", {
-    key: permissions.value.room.key || "",
+    key: permissions.value.key || "",
   });
 }
 
@@ -128,12 +128,12 @@ async function tryJoin() {
   }
 
   await estimationStore.joinRoom(name.value, role.value, actualRoomId);
-  await Promise.all([estimationStore.fetchRoomState(), estimationStore.fetchPermissions()]);
+  await estimationStore.fetchRoomState();
 }
 
 onMounted(async () => {
   if (isConnected.value) {
-    await Promise.all([estimationStore.fetchRoomState(), estimationStore.fetchPermissions()]);
+    await estimationStore.fetchRoomState();
     return;
   }
 
@@ -216,7 +216,7 @@ onMounted(async () => {
           <v-icon>mdi-text-box-outline</v-icon>
         </v-btn>
         <v-btn
-          v-if="permissions.room.canLock && estimationStore.roomState.roomIsLocked"
+          v-if="permissions.canLockRoom && estimationStore.roomState.roomIsLocked"
           @click="copyPassword"
         >
           <v-tooltip
@@ -229,7 +229,7 @@ onMounted(async () => {
         </v-btn>
 
         <v-btn
-          v-if="permissions.room.canLock && estimationStore.roomState.roomIsLocked"
+          v-if="permissions.canLockRoom && estimationStore.roomState.roomIsLocked"
           @click="openRoom"
         >
           <v-tooltip
@@ -242,7 +242,7 @@ onMounted(async () => {
         </v-btn>
 
         <v-btn
-          v-if="permissions.room.canLock && !estimationStore.roomState.roomIsLocked"
+          v-if="permissions.canLockRoom && !estimationStore.roomState.roomIsLocked"
           @click="showSetRoomPasswordDialog = true"
         >
           <v-tooltip

@@ -13,7 +13,6 @@ import (
 
 	"github.com/Hydoc/go-message"
 	"github.com/coder/websocket"
-	"github.com/google/uuid"
 
 	"github.com/Hydoc/estimation-poker/backend/internal"
 	"github.com/Hydoc/estimation-poker/backend/internal/assert"
@@ -434,77 +433,5 @@ func TestApplication_ListenForRoomDestroy(t *testing.T) {
 	defer app.mu.Unlock()
 	if _, ok := app.rooms[roomToDestroy]; ok {
 		t.Error("expected app to not have room")
-	}
-}
-
-func TestApplication_handleFetchPermissions(t *testing.T) {
-	id := uuid.New()
-	tests := []struct {
-		name     string
-		wantCode int
-		wantBody map[string]map[string]map[string]any
-		request  string
-	}{
-		{
-			name:     "not found when room not found",
-			wantCode: http.StatusBadRequest,
-			wantBody: nil,
-			request:  "/v1/room/1244132/permissions?name=test",
-		},
-		{
-			name:     "correct permissions when user is creator of room",
-			wantCode: http.StatusOK,
-			wantBody: map[string]map[string]map[string]any{
-				"permissions": {
-					"room": {
-						"canLock": true,
-						"key":     id.String(),
-					},
-				},
-			},
-			request: fmt.Sprintf("/v1/room/%s/permissions?name=bla", id.String()),
-		},
-		{
-			name:     "correct permissions when user is not creator of room",
-			wantCode: http.StatusOK,
-			wantBody: map[string]map[string]map[string]any{
-				"permissions": {
-					"room": {
-						"canLock": false,
-					},
-				},
-			},
-			request: fmt.Sprintf("/v1/room/%s/permissions?name=any-other", id.String()),
-		},
-	}
-
-	app := &application{
-		rooms: map[internal.RoomId]*internal.Room{
-			internal.RoomId(id.String()): {
-				Id:            internal.RoomId(id.String()),
-				NameOfCreator: "bla",
-				Key:           id,
-			},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, test.request, nil)
-
-			router.ServeHTTP(recorder, request)
-
-			var got map[string]map[string]map[string]any
-			json.Unmarshal(recorder.Body.Bytes(), &got)
-
-			gotCode := recorder.Code
-
-			assert.Equal(t, gotCode, test.wantCode)
-
-			if test.wantBody != nil {
-				assert.DeepEqual(t, got, test.wantBody)
-			}
-		})
 	}
 }

@@ -4,7 +4,6 @@ import {
   type ConnectionState,
   type DeveloperDone,
   isConnectionState,
-  isIssues,
   isPermissions,
   isRoomMetadata,
   isRoomStateResponse,
@@ -32,7 +31,6 @@ export type UseRoom = {
   roomMetadata(roomId: string): Promise<RoomMetadata>;
   connectionState(roomId: string, username: string, password: string): Promise<ConnectionState>;
   fetchRoomState(): Promise<void>;
-  fetchPermissions(): void;
 };
 
 export function useRoom(): UseRoom {
@@ -53,9 +51,8 @@ export function useRoom(): UseRoom {
   const issues = ref<Issue[]>([]);
   const possibleGuesses = ref<PossibleGuess[]>([]);
   const permissions = ref<Permissions>({
-    room: {
-      canLock: false,
-    },
+    canLockRoom: false,
+    key: "",
   });
 
   const roomState = computed(
@@ -150,6 +147,14 @@ export function useRoom(): UseRoom {
       case "issues":
         await fetchRoomState();
         break;
+      case "permissions":
+        const result = isPermissions(decoded.data);
+        if (!result.success) {
+          console.error(result.errors);
+          throw new Error("permissions is invalid");
+        }
+
+        permissions.value = result.value;
     }
   }
 
@@ -175,9 +180,8 @@ export function useRoom(): UseRoom {
     role.value = nothing();
     issues.value = [];
     permissions.value = {
-      room: {
-        canLock: false,
-      },
+      canLockRoom: false,
+      key: "",
     };
     resetRound();
   }
@@ -244,32 +248,6 @@ export function useRoom(): UseRoom {
     possibleGuesses.value = result.value.possibleGuesses;
   }
 
-  async function fetchPermissions() {
-    if (!isJust(roomId.value) || !isJust(name.value)) {
-      throw new Error("Could not fetch permissions");
-    }
-
-    const response = await fetch(
-      `/v1/room/${roomId.value.value}/permissions?name=${name.value.value}`,
-    );
-    if (!response.ok) {
-      permissions.value = {
-        room: {
-          canLock: false,
-        },
-      };
-      return;
-    }
-
-    const result = isPermissions(await response.json());
-    if (!result.success) {
-      console.error(result.errors);
-      throw new Error("permissions is not valid");
-    }
-
-    permissions.value = result.value.permissions;
-  }
-
   return {
     roomState,
     roomNotifications,
@@ -279,6 +257,5 @@ export function useRoom(): UseRoom {
     roomMetadata,
     connectionState,
     fetchRoomState,
-    fetchPermissions,
   };
 }

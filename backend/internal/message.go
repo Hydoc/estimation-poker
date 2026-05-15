@@ -1,6 +1,9 @@
 package internal
 
-import "github.com/Hydoc/go-message"
+import (
+	"github.com/Hydoc/go-message"
+	"github.com/google/uuid"
+)
 
 const (
 	join             = "join"
@@ -21,6 +24,7 @@ const (
 	youGuessed       = "you-guessed"
 	addIssue         = "add-issue"
 	issues           = "issues"
+	permissions      = "permissions"
 )
 
 type Message struct {
@@ -64,6 +68,25 @@ type GuessPayload struct {
 
 type RevealPayload struct {
 	client *Client
+}
+
+func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *Message {
+	if clientName == roomCreatorName {
+		return &Message{
+			Type: permissions,
+			Data: Permissions{
+				CanLockRoom: true,
+				Key:         key.String(),
+			},
+		}
+	}
+
+	return &Message{
+		Type: permissions,
+		Data: Permissions{
+			CanLockRoom: false,
+		},
+	}
 }
 
 func newJoin() *Message {

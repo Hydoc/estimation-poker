@@ -15,48 +15,6 @@ import (
 	"github.com/Hydoc/estimation-poker/backend/internal"
 )
 
-func (app *application) handleFetchPermissions(writer http.ResponseWriter, request *http.Request) {
-	app.mu.Lock()
-	defer app.mu.Unlock()
-
-	roomId, err := app.readIdParam(request)
-	if err != nil {
-		app.badRequestResponse(writer, request, err)
-		return
-	}
-
-	username := request.URL.Query().Get("name")
-
-	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
-	if !ok {
-		app.notFoundResponse(writer, request)
-		return
-	}
-
-	if actualRoom.NameOfCreator == username {
-		app.writeJSON(writer, http.StatusOK, map[string]map[string]map[string]any{
-			"permissions": {
-				"room": {
-					"canLock": true,
-					"key":     actualRoom.Key.String(),
-				},
-			},
-		}, nil)
-		return
-	}
-
-	err = app.writeJSON(writer, http.StatusOK, map[string]map[string]map[string]any{
-		"permissions": {
-			"room": {
-				"canLock": false,
-			},
-		},
-	}, nil)
-	if err != nil {
-		app.serverErrorResponse(writer, request, err)
-	}
-}
-
 func (app *application) createNewRoom(writer http.ResponseWriter, request *http.Request) {
 	app.mu.Lock()
 	defer app.mu.Unlock()
@@ -258,10 +216,10 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 		clientRole = internal.ProductOwner
 	}
 	client := internal.NewClient(name, clientRole, clientRoom, connection, app.bus, app.logger)
-	clientRoom.Join(client)
 
 	go client.WebsocketReader()
 	go client.WebsocketWriter()
+	clientRoom.Join(client)
 }
 
 func (app *application) listenForRoomDestroy(ctx context.Context) {

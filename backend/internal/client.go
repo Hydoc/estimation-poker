@@ -20,6 +20,11 @@ const (
 
 type UserDTO map[string]any
 
+type Permissions struct {
+	CanLockRoom bool   `json:"canLockRoom"`
+	Key         string `json:"key"`
+}
+
 type Client struct {
 	connection *websocket.Conn
 	logger     *slog.Logger

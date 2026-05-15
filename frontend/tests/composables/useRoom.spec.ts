@@ -52,7 +52,10 @@ describe("useRoom", () => {
         developerDone: [],
         issues: [],
         isConnected: false,
-        permissions: { room: { canLock: false } },
+        permissions: {
+          canLockRoom: false,
+          key: "",
+        },
         possibleGuesses: [],
       });
     });

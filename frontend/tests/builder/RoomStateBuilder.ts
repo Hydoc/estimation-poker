@@ -103,10 +103,8 @@ export class RoomStateBuilder {
       guess: nothing(),
       roundState: RoundState.Waiting,
       permissions: {
-        room: {
-          canLock: false,
-          key: undefined,
-        },
+        canLockRoom: false,
+        key: "",
       },
     });
   }
