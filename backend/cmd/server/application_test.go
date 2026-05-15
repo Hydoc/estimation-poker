@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Hydoc/go-message"
 	"github.com/coder/websocket"
@@ -94,6 +95,13 @@ func TestApplication_createNewRoom(t *testing.T) {
 				},
 			},
 			expectedStatusCode: http.StatusCreated,
+		},
+		{
+			name: "not create for invalid data",
+			body: map[string]any{
+				"creator": 2,
+			},
+			expectedStatusCode: 400,
 		},
 	}
 
@@ -356,18 +364,31 @@ func TestApplication_handleWs(t *testing.T) {
 func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	tests := []struct {
 		name  string
-		rooms map[internal.RoomId]*internal.Room
+		rooms func() map[internal.RoomId]*internal.Room
 		want  map[string][]map[string]any
 	}{
 		{
 			name: "with multiple active rooms",
-			rooms: map[internal.RoomId]*internal.Room{
-				internal.RoomId("50e15380-1475-4ec6-abb0-f1e22929a8e5"): {
-					Id: "50e15380-1475-4ec6-abb0-f1e22929a8e5",
-				},
-				internal.RoomId("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
-					Id: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-				},
+			rooms: func() map[internal.RoomId]*internal.Room {
+				firstDate, err := time.Parse("2006-01-02", "2026-01-01")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				secondDate, err := time.Parse("2006-01-02", "2026-02-01")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return map[internal.RoomId]*internal.Room{
+					"9c874aaa-c628-4688-a72d-0b1afc708a7d": {
+						Id:      "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+						Created: secondDate,
+					},
+					"50e15380-1475-4ec6-abb0-f1e22929a8e5": {
+						Id:      "50e15380-1475-4ec6-abb0-f1e22929a8e5",
+						Created: firstDate,
+					},
+				}
 			},
 			want: map[string][]map[string]any{
 				"rooms": {
@@ -383,8 +404,32 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 			},
 		},
 		{
-			name:  "no rooms",
-			rooms: make(map[internal.RoomId]*internal.Room),
+			name: "multiple rooms but one is locked",
+			rooms: func() map[internal.RoomId]*internal.Room {
+				return map[internal.RoomId]*internal.Room{
+					"9c874aaa-c628-4688-a72d-0b1afc708a7d": {
+						Id:             "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+						HashedPassword: []byte("does not matter"),
+					},
+					"50e15380-1475-4ec6-abb0-f1e22929a8e5": {
+						Id: "50e15380-1475-4ec6-abb0-f1e22929a8e5",
+					},
+				}
+			},
+			want: map[string][]map[string]any{
+				"rooms": {
+					{
+						"id":          "50e15380-1475-4ec6-abb0-f1e22929a8e5",
+						"playerCount": float64(0),
+					},
+				},
+			},
+		},
+		{
+			name: "no rooms",
+			rooms: func() map[internal.RoomId]*internal.Room {
+				return make(map[internal.RoomId]*internal.Room)
+			},
 			want: map[string][]map[string]any{
 				"rooms": {},
 			},
@@ -395,7 +440,7 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			app := &application{
 				guessConfig: &internal.GuessConfig{},
-				rooms:       test.rooms,
+				rooms:       test.rooms(),
 				destroyRoom: nil,
 			}
 			router := app.routes()
