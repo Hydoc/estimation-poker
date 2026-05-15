@@ -22,6 +22,7 @@ tasks:
     dir: 'backend'
     desc: Run code quality tools
     cmds:
+      - go fmt ./...
       - go mod tidy -diff
       - go mod verify
       - go vet ./...
