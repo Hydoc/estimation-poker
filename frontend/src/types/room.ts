@@ -169,7 +169,7 @@ export const isRoomMetadata = isObjectWithKeysMatchingGuard<RoomMetadata>({
   isLocked: isBool,
 });
 
-export const isConnectionStatus = isObjectWithKeysMatchingGuard<ConnectionState>({
+export const isConnectionState = isObjectWithKeysMatchingGuard<ConnectionState>({
   canConnect: isBool,
   reason: isOneStringOf(["round already started", "username already taken", "wrong password", ""]),
 });

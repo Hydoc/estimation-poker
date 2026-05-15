@@ -3,7 +3,7 @@ import { isJust, just, type Maybe, nothing } from "@kaumlaut/pure/maybe";
 import {
   type ConnectionState,
   type DeveloperDone,
-  isConnectionStatus,
+  isConnectionState,
   isIssues,
   isPermissions,
   isRoomMetadata,
@@ -148,9 +148,7 @@ export function useRoom(): UseRoom {
         await fetchUsersInRoom();
         break;
       case "issues":
-        if (isJust(role.value) && role.value.value === Role.ProductOwner) {
-          await fetchIssues();
-        }
+        await fetchRoomState();
         break;
     }
   }
@@ -212,13 +210,13 @@ export function useRoom(): UseRoom {
     });
 
     if (!response.ok) {
-      throw new Error("Could not fetch connection status");
+      throw new Error("Could not fetch connection state");
     }
 
-    const result = isConnectionStatus(await response.json());
+    const result = isConnectionState(await response.json());
     if (!result.success) {
       console.error(result.errors);
-      throw new Error("Connection status is invalid");
+      throw new Error("Connection state is invalid");
     }
 
     return result.value;
@@ -244,26 +242,6 @@ export function useRoom(): UseRoom {
     roomIsLocked.value = result.value.isLocked;
     roundInProgress.value = result.value.inProgress;
     possibleGuesses.value = result.value.possibleGuesses;
-  }
-
-  async function fetchIssues() {
-    if (!isJust(roomId.value)) {
-      throw new Error("Could not fetch issues");
-    }
-    const response = await fetch(`/v1/room/${roomId.value.value}/issues`);
-    if (!response.ok) {
-      issues.value = [];
-      return;
-    }
-
-    const result = isIssues(await response.json());
-
-    if (!result.success) {
-      console.error(result.errors);
-      throw new Error("issues response is not valid");
-    }
-
-    issues.value = result.value;
   }
 
   async function fetchPermissions() {
