@@ -6,7 +6,7 @@ on:
       - "main"
   push:
     paths:
-      - "frontend"
+      - "frontend/**"
       - ".github/workflows/node.js.yml"
     branches:
       - "main"

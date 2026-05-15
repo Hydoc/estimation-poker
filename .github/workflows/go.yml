@@ -6,7 +6,7 @@ on:
       - "main"
   push:
     paths:
-      - "backend"
+      - "backend/**"
       - ".github/workflows/go.yml"
     branches:
       - "main"
