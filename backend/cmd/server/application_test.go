@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +18,52 @@ import (
 	"github.com/Hydoc/estimation-poker/backend/internal"
 	"github.com/Hydoc/estimation-poker/backend/internal/assert"
 )
+
+func TestApplication_createNewRoom(t *testing.T) {
+	tests := []struct {
+		name               string
+		body               map[string]any
+		expectedStatusCode int
+	}{
+		{
+			name: "create new room",
+			body: map[string]any{
+				"creator": "Tester",
+				"guesses": map[int]string{
+					1: "up to 4 hours",
+					2: "up to 1 day",
+				},
+			},
+			expectedStatusCode: http.StatusCreated,
+		},
+		{
+			name: "not create for invalid data",
+			body: map[string]any{
+				"creator": 2,
+			},
+			expectedStatusCode: 400,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApplication(t, make(map[uuid.UUID]*internal.Room))
+
+			ts := newTestServer(t, app.routes())
+			defer ts.Close()
+
+			response := ts.postJSON(t, "/v1/room", tt.body)
+			gotContentType := response.headers.Get("Content-Type")
+
+			assert.Equal(t, response.status, tt.expectedStatusCode)
+			assert.Equal(t, gotContentType, "application/json")
+		})
+	}
+}
+
+func TestApplication_handleFetchRoomMetadata(t *testing.T) {}
+
+func TestApplication_handleFetchConnectionState(t *testing.T) {}
 
 func TestApplication_handleFetchRoomState(t *testing.T) {
 	tests := []struct {
@@ -56,78 +101,114 @@ func TestApplication_handleFetchRoomState(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		app := &application{
-			rooms: test.rooms,
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApplication(t, tt.rooms)
+			ts := newTestServer(t, app.routes())
+			defer ts.Close()
 
-		t.Run(test.name, func(t *testing.T) {
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/room/%s/state", test.room), nil)
-
-			router.ServeHTTP(recorder, request)
+			response := ts.get(t, fmt.Sprintf("/v1/room/%s/state", tt.room))
 
 			var got internal.State
-			json.Unmarshal(recorder.Body.Bytes(), &got)
+			json.Unmarshal(response.body, &got)
 
-			gotContentType := recorder.Header().Get("Content-Type")
+			gotContentType := response.headers.Get("Content-Type")
 
-			assert.Equal(t, recorder.Code, test.expectedStatus)
+			assert.Equal(t, response.status, tt.expectedStatus)
 			assert.Equal(t, gotContentType, "application/json")
-			assert.DeepEqual(t, got, test.expectation)
+			assert.DeepEqual(t, got, tt.expectation)
 		})
 	}
 }
 
-func TestApplication_createNewRoom(t *testing.T) {
+func TestApplication_handleFetchActiveRooms(t *testing.T) {
 	tests := []struct {
-		name               string
-		body               map[string]any
-		expectedStatusCode int
+		name  string
+		rooms func() map[uuid.UUID]*internal.Room
+		want  map[string][]map[string]any
 	}{
 		{
-			name: "create new room",
-			body: map[string]any{
-				"creator": "Tester",
-				"guesses": map[int]string{
-					1: "up to 4 hours",
-					2: "up to 1 day",
+			name: "with multiple active rooms",
+			rooms: func() map[uuid.UUID]*internal.Room {
+				firstDate, err := time.Parse("2006-01-02", "2026-01-01")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				secondDate, err := time.Parse("2006-01-02", "2026-02-01")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return map[uuid.UUID]*internal.Room{
+					uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+						Id:      uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"),
+						Created: secondDate,
+					},
+					uuid.MustParse("50e15380-1475-4ec6-abb0-f1e22929a8e5"): {
+						Id:      uuid.MustParse("50e15380-1475-4ec6-abb0-f1e22929a8e5"),
+						Created: firstDate,
+					},
+				}
+			},
+			want: map[string][]map[string]any{
+				"rooms": {
+					{
+						"id":          "50e15380-1475-4ec6-abb0-f1e22929a8e5",
+						"playerCount": float64(0),
+					},
+					{
+						"id":          "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+						"playerCount": float64(0),
+					},
 				},
 			},
-			expectedStatusCode: http.StatusCreated,
 		},
 		{
-			name: "not create for invalid data",
-			body: map[string]any{
-				"creator": 2,
+			name: "multiple rooms but one is locked",
+			rooms: func() map[uuid.UUID]*internal.Room {
+				return map[uuid.UUID]*internal.Room{
+					uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+						Id:             uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"),
+						HashedPassword: []byte("does not matter"),
+					},
+					uuid.MustParse("50e15380-1475-4ec6-abb0-f1e22929a8e5"): {
+						Id: uuid.MustParse("50e15380-1475-4ec6-abb0-f1e22929a8e5"),
+					},
+				}
 			},
-			expectedStatusCode: 400,
+			want: map[string][]map[string]any{
+				"rooms": {
+					{
+						"id":          "50e15380-1475-4ec6-abb0-f1e22929a8e5",
+						"playerCount": float64(0),
+					},
+				},
+			},
+		},
+		{
+			name: "no rooms",
+			rooms: func() map[uuid.UUID]*internal.Room {
+				return make(map[uuid.UUID]*internal.Room)
+			},
+			want: map[string][]map[string]any{
+				"rooms": {},
+			},
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			app := &application{
-				rooms: make(map[uuid.UUID]*internal.Room),
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApplication(t, tt.rooms())
 
-			body, err := json.Marshal(test.body)
+			ts := newTestServer(t, app.routes())
+			defer ts.Close()
 
-			if err != nil {
-				t.Fatal(err)
-			}
+			response := ts.get(t, "/v1/rooms")
 
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodPost, "/v1/room", bytes.NewReader(body))
+			var got map[string][]map[string]any
+			json.Unmarshal(response.body, &got)
 
-			router.ServeHTTP(recorder, request)
-
-			gotContentType := recorder.Header().Get("Content-Type")
-
-			assert.Equal(t, recorder.Code, test.expectedStatusCode)
-			assert.Equal(t, gotContentType, "application/json")
+			assert.DeepEqual(t, got, tt.want)
 		})
 	}
 }
@@ -233,26 +314,21 @@ func TestApplication_handleFetchUsers(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			app := &application{
-				guessConfig: &internal.GuessConfig{},
-				rooms:       test.rooms,
-				destroyRoom: nil,
-			}
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/room/%s/users", test.roomId), nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApplication(t, tt.rooms)
+			ts := newTestServer(t, app.routes())
+			defer ts.Close()
 
-			router.ServeHTTP(recorder, request)
+			response := ts.get(t, fmt.Sprintf("/v1/room/%s/users", tt.roomId))
 
 			var got []map[string]any
-			json.Unmarshal(recorder.Body.Bytes(), &got)
+			json.Unmarshal(response.body, &got)
 
-			gotContentType := recorder.Header().Get("Content-Type")
+			gotContentType := response.headers.Get("Content-Type")
 
 			assert.Equal(t, gotContentType, "application/json")
-			assert.DeepEqual(t, got, test.expectation)
+			assert.DeepEqual(t, got, tt.expectation)
 		})
 	}
 }
@@ -337,17 +413,12 @@ func TestApplication_handleWs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &application{
-				guessConfig: &internal.GuessConfig{},
-				rooms:       tt.rooms,
-				destroyRoom: make(chan uuid.UUID),
-			}
-			router := app.routes()
+			app := newTestApplication(t, tt.rooms)
 
-			server := httptest.NewServer(router)
-			defer server.Close()
+			ts := newTestServer(t, app.routes())
+			defer ts.Close()
 
-			url := "ws" + strings.TrimPrefix(server.URL, "http") + tt.url
+			url := "ws" + strings.TrimPrefix(ts.URL, "http") + tt.url
 			_, response, _ := websocket.Dial(context.Background(), url, nil)
 
 			assert.Equal(t, response.StatusCode, tt.expectedStatus)
@@ -358,102 +429,6 @@ func TestApplication_handleWs(t *testing.T) {
 				assert.DeepEqual(t, got, tt.expectedError)
 				return
 			}
-		})
-	}
-}
-
-func TestApplication_handleFetchActiveRooms(t *testing.T) {
-	tests := []struct {
-		name  string
-		rooms func() map[uuid.UUID]*internal.Room
-		want  map[string][]map[string]any
-	}{
-		{
-			name: "with multiple active rooms",
-			rooms: func() map[uuid.UUID]*internal.Room {
-				firstDate, err := time.Parse("2006-01-02", "2026-01-01")
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				secondDate, err := time.Parse("2006-01-02", "2026-02-01")
-				if err != nil {
-					t.Fatal(err)
-				}
-				return map[uuid.UUID]*internal.Room{
-					uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
-						Id:      uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"),
-						Created: secondDate,
-					},
-					uuid.MustParse("50e15380-1475-4ec6-abb0-f1e22929a8e5"): {
-						Id:      uuid.MustParse("50e15380-1475-4ec6-abb0-f1e22929a8e5"),
-						Created: firstDate,
-					},
-				}
-			},
-			want: map[string][]map[string]any{
-				"rooms": {
-					{
-						"id":          "50e15380-1475-4ec6-abb0-f1e22929a8e5",
-						"playerCount": float64(0),
-					},
-					{
-						"id":          "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-						"playerCount": float64(0),
-					},
-				},
-			},
-		},
-		{
-			name: "multiple rooms but one is locked",
-			rooms: func() map[uuid.UUID]*internal.Room {
-				return map[uuid.UUID]*internal.Room{
-					uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
-						Id:             uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"),
-						HashedPassword: []byte("does not matter"),
-					},
-					uuid.MustParse("50e15380-1475-4ec6-abb0-f1e22929a8e5"): {
-						Id: uuid.MustParse("50e15380-1475-4ec6-abb0-f1e22929a8e5"),
-					},
-				}
-			},
-			want: map[string][]map[string]any{
-				"rooms": {
-					{
-						"id":          "50e15380-1475-4ec6-abb0-f1e22929a8e5",
-						"playerCount": float64(0),
-					},
-				},
-			},
-		},
-		{
-			name: "no rooms",
-			rooms: func() map[uuid.UUID]*internal.Room {
-				return make(map[uuid.UUID]*internal.Room)
-			},
-			want: map[string][]map[string]any{
-				"rooms": {},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			app := &application{
-				guessConfig: &internal.GuessConfig{},
-				rooms:       test.rooms(),
-				destroyRoom: nil,
-			}
-			router := app.routes()
-			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, "/v1/rooms", nil)
-
-			router.ServeHTTP(recorder, request)
-
-			var got map[string][]map[string]any
-			json.Unmarshal(recorder.Body.Bytes(), &got)
-
-			assert.DeepEqual(t, got, test.want)
 		})
 	}
 }
