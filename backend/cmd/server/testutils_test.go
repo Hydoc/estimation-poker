@@ -18,6 +18,9 @@ func newTestApplication(t *testing.T, rooms map[uuid.UUID]*internal.Room) *appli
 	return &application{
 		logger: slog.New(slog.DiscardHandler),
 		rooms:  rooms,
+		config: config{
+			env: "dev",
+		},
 	}
 }
 
