@@ -17,8 +17,6 @@ var (
 	ErrWrongPassword = errors.New("wrong password")
 )
 
-type RoomId string
-
 type Issue struct {
 	Title string
 	Guess int
@@ -28,13 +26,13 @@ type Room struct {
 	clientMu sync.Mutex
 	logger   *slog.Logger
 
-	Id             RoomId
+	Id             uuid.UUID
 	InProgress     bool
 	leave          chan *Client
 	join           chan *Client
 	Clients        map[*Client]bool
 	broadcast      chan *Message
-	destroy        chan<- RoomId
+	destroy        chan<- uuid.UUID
 	NameOfCreator  string
 	key            uuid.UUID
 	HashedPassword []byte
@@ -56,7 +54,7 @@ type State struct {
 }
 
 type Overview struct {
-	Id          RoomId    `json:"id"`
+	Id          uuid.UUID `json:"id"`
 	PlayerCount int       `json:"playerCount"`
 	Created     time.Time `json:"-"`
 }
@@ -78,9 +76,9 @@ func (room *Room) AsOverview() Overview {
 	}
 }
 
-func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *slog.Logger, guessConfig *GuessConfig) *Room {
+func NewRoom(id uuid.UUID, destroy chan<- uuid.UUID, nameOfCreator string, logger *slog.Logger, guessConfig *GuessConfig) *Room {
 	return &Room{
-		Id:             name,
+		Id:             id,
 		logger:         logger,
 		InProgress:     false,
 		leave:          make(chan *Client),

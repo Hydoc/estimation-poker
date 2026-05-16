@@ -14,8 +14,8 @@ import (
 )
 
 func TestNewRoom(t *testing.T) {
-	expectedRoomId := RoomId("Test")
-	room := NewRoom(expectedRoomId, make(chan<- RoomId), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), new(GuessConfig))
+	expectedRoomId := uuid.New()
+	room := NewRoom(expectedRoomId, make(chan<- uuid.UUID), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), new(GuessConfig))
 	assert.Equal(t, room.Id, expectedRoomId)
 	assert.False(t, room.InProgress)
 }
@@ -188,7 +188,7 @@ func TestRoom_everyDevGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_RegisteringAClient(t *testing.T) {
-	room := NewRoom("Test", make(chan<- RoomId), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), new(GuessConfig))
+	room := NewRoom(uuid.New(), make(chan<- uuid.UUID), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), new(GuessConfig))
 	client := &Client{}
 	go room.Run()
 
@@ -202,8 +202,8 @@ func TestRoom_Run_RegisteringAClient(t *testing.T) {
 }
 
 func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
-	destroyChannel := make(chan RoomId)
-	roomId := RoomId("Test")
+	destroyChannel := make(chan uuid.UUID)
+	roomId := uuid.New()
 	client := &Client{}
 	room := &Room{
 		Id:         roomId,
@@ -237,7 +237,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 		send: clientSendChannel,
 	}
 	room := &Room{
-		Id:         "Test",
+		Id:         uuid.New(),
 		InProgress: false,
 		leave:      nil,
 		join:       nil,
@@ -269,7 +269,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 		guess: 1,
 	}
 	room := &Room{
-		Id:         "Test",
+		Id:         uuid.New(),
 		InProgress: false,
 		leave:      nil,
 		join:       nil,
@@ -290,7 +290,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 	var logBuffer bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&logBuffer, nil))
-	room := NewRoom("Test", make(chan<- RoomId), "Tester", logger, new(GuessConfig))
+	room := NewRoom(uuid.New(), make(chan<- uuid.UUID), "Tester", logger, new(GuessConfig))
 	go room.Run()
 
 	clientSendChannel := make(chan *Message)
@@ -327,7 +327,7 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 		guess: 2,
 	}
 	room := &Room{
-		Id:         "Test",
+		Id:         uuid.New(),
 		InProgress: true,
 		leave:      nil,
 		join:       nil,
@@ -364,7 +364,7 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 		guess: 2,
 	}
 	room := &Room{
-		Id:         "Test",
+		Id:         uuid.New(),
 		InProgress: true,
 		leave:      nil,
 		join:       nil,
@@ -390,7 +390,7 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 func TestRoom_lock(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
-		Id:             "Test",
+		Id:             uuid.New(),
 		InProgress:     true,
 		leave:          nil,
 		join:           nil,
@@ -412,7 +412,7 @@ func TestRoom_lock(t *testing.T) {
 func TestRoom_lock_WhenLockingFails(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
-		Id:             "Test",
+		Id:             uuid.New(),
 		InProgress:     true,
 		leave:          nil,
 		join:           nil,
@@ -432,7 +432,7 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 	id := uuid.New()
 	room := &Room{
-		Id:            "Test",
+		Id:            uuid.New(),
 		InProgress:    false,
 		NameOfCreator: "some user",
 		key:           id,
@@ -444,7 +444,7 @@ func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 
 func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
 	room := &Room{
-		Id:            "Test",
+		Id:            uuid.New(),
 		InProgress:    false,
 		NameOfCreator: "some user",
 		key:           uuid.New(),
@@ -461,7 +461,7 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 
 	key := uuid.New()
 	room := &Room{
-		Id:             "Test",
+		Id:             uuid.New(),
 		InProgress:     true,
 		leave:          nil,
 		join:           nil,

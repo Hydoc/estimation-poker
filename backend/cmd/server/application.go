@@ -31,7 +31,7 @@ func (app *application) createNewRoom(writer http.ResponseWriter, request *http.
 	}
 
 	roomId := uuid.New()
-	room := internal.NewRoom(internal.RoomId(roomId.String()), app.destroyRoom, input.Creator, app.logger, app.guessConfig)
+	room := internal.NewRoom(roomId, app.destroyRoom, input.Creator, app.logger, app.guessConfig)
 	app.rooms[room.Id] = room
 	go room.Run()
 
@@ -51,7 +51,7 @@ func (app *application) handleFetchRoomMetadata(writer http.ResponseWriter, requ
 	app.mu.Lock()
 	defer app.mu.Unlock()
 
-	room, ok := app.rooms[internal.RoomId(roomId.String())]
+	room, ok := app.rooms[roomId]
 
 	if !ok {
 		err = app.writeJSON(writer, http.StatusOK, envelope{"exists": false, "isLocked": false}, nil)
@@ -92,7 +92,7 @@ func (app *application) handleConnectionState(writer http.ResponseWriter, reques
 		return
 	}
 
-	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
+	actualRoom, ok := app.rooms[roomId]
 	if !ok {
 		app.notFoundResponse(writer, request)
 		return
@@ -114,7 +114,7 @@ func (app *application) handleFetchRoomState(writer http.ResponseWriter, request
 		return
 	}
 
-	actualRoom, ok := app.rooms[internal.RoomId(roomId.String())]
+	actualRoom, ok := app.rooms[roomId]
 	if !ok {
 		app.notFoundResponse(writer, request)
 		return
@@ -153,7 +153,7 @@ func (app *application) handleFetchUsers(writer http.ResponseWriter, request *ht
 	app.mu.Lock()
 	defer app.mu.Unlock()
 
-	room, ok := app.rooms[internal.RoomId(roomId.String())]
+	room, ok := app.rooms[roomId]
 	if !ok {
 		err = app.writeJSON(writer, http.StatusOK, []map[string]any{}, nil)
 		if err != nil {
@@ -199,7 +199,7 @@ func (app *application) handleWs(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	clientRoom, ok := app.rooms[internal.RoomId(roomId.String())]
+	clientRoom, ok := app.rooms[roomId]
 	if !ok {
 		app.notFoundResponse(writer, request)
 		return

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Hydoc/go-message"
+	"github.com/google/uuid"
 
 	"github.com/Hydoc/estimation-poker/backend/internal"
 )
@@ -33,8 +34,8 @@ type application struct {
 	bus         message.Bus
 	logger      *slog.Logger
 	guessConfig *internal.GuessConfig
-	rooms       map[internal.RoomId]*internal.Room
-	destroyRoom chan internal.RoomId
+	rooms       map[uuid.UUID]*internal.Room
+	destroyRoom chan uuid.UUID
 }
 
 func main() {
@@ -70,8 +71,8 @@ func main() {
 		logger:      logger,
 		config:      cfg,
 		guessConfig: guessConfig,
-		rooms:       make(map[internal.RoomId]*internal.Room),
-		destroyRoom: make(chan internal.RoomId),
+		rooms:       make(map[uuid.UUID]*internal.Room),
+		destroyRoom: make(chan uuid.UUID),
 		bus:         internal.CreateBus(),
 	}
 
