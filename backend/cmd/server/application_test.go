@@ -61,7 +61,59 @@ func TestApplication_createNewRoom(t *testing.T) {
 	}
 }
 
-func TestApplication_handleFetchRoomMetadata(t *testing.T) {}
+func TestApplication_handleFetchRoomMetadata(t *testing.T) {
+	tests := []struct {
+		name       string
+		roomId     string
+		rooms      map[uuid.UUID]*internal.Room
+		wantStatus int
+		wantBody   envelope
+	}{
+		{
+			name:   "room exists and is not locked",
+			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			rooms: map[uuid.UUID]*internal.Room{
+				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+					InProgress:     true,
+					HashedPassword: make([]byte, 0),
+					Issues:         make([]internal.Issue, 0),
+					GuessConfig:    &internal.GuessConfig{},
+				},
+			},
+			wantStatus: http.StatusOK,
+			wantBody:   envelope{"exists": true, "isLocked": false},
+		},
+		{
+			name:       "does not exist",
+			roomId:     "bd284176-7a5d-4443-b0e0-5058c3e07853",
+			rooms:      make(map[uuid.UUID]*internal.Room),
+			wantStatus: http.StatusOK,
+			wantBody:   envelope{"exists": false, "isLocked": false},
+		},
+		{
+			name:       "room id is invalid",
+			roomId:     "invalid-uuid",
+			rooms:      make(map[uuid.UUID]*internal.Room),
+			wantStatus: http.StatusBadRequest,
+			wantBody:   envelope{"error": "invalid id parameter"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApplication(t, tt.rooms)
+			ts := newTestServer(t, app.routes())
+			defer ts.Close()
+
+			response := ts.get(t, fmt.Sprintf("/v1/room/%s/metadata", tt.roomId))
+
+			var got envelope
+			json.Unmarshal(response.body, &got)
+
+			assert.DeepEqual(t, got, tt.wantBody)
+		})
+	}
+}
 
 func TestApplication_handleFetchConnectionState(t *testing.T) {}
 
