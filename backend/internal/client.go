@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/Hydoc/go-message"
@@ -138,7 +139,6 @@ func (client *Client) WebsocketReader() {
 				client.logger.Error("error reading incoming client Message:", "error", err)
 				return
 			}
-
 		}
 
 		cmd, err := fabricate(incMessage, client)
@@ -146,7 +146,11 @@ func (client *Client) WebsocketReader() {
 			client.logger.Error(err.Error())
 			continue
 		}
-		client.bus.Dispatch(cmd)
+
+		err = client.bus.Dispatch(cmd)
+		if err != nil {
+			client.logger.Error(err.Error())
+		}
 	}
 }
 
@@ -247,7 +251,7 @@ func (client *Client) WebsocketWriter() {
 		case <-ticker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), PingInterval)
 			err := client.connection.Ping(ctx)
-			if err != nil {
+			if err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
 				cancel()
 				client.logger.Error("error pinging client:", "error", err)
 				return
