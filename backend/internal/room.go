@@ -162,6 +162,8 @@ func (room *Room) verify(password string) bool {
 }
 
 func (room *Room) everyDevIsDone() bool {
+	room.clientMu.Lock()
+	defer room.clientMu.Unlock()
 	for client := range room.Clients {
 		if client.Role == Developer && (client.guess == 0 && !client.doSkip) {
 			return false
@@ -172,16 +174,20 @@ func (room *Room) everyDevIsDone() bool {
 
 func (room *Room) newRound() {
 	room.InProgress = false
+	room.clientMu.Lock()
 	for client := range room.Clients {
 		client.newRound()
 		client.send <- newNewRound()
 	}
+	room.clientMu.Unlock()
 }
 
 func (room *Room) broadcastToClients(msg *WebsocketMessage) {
+	room.clientMu.Lock()
 	for client := range room.Clients {
 		client.send <- msg
 	}
+	room.clientMu.Unlock()
 }
 
 func (room *Room) IsLocked() bool {
