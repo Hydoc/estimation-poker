@@ -240,7 +240,7 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 		leave:          make(chan *Client),
 		Clients:        make(map[*Client]bool),
 		NameOfCreator:  nameOfCreator,
-		Key:            id,
+		key:            id,
 		HashedPassword: hashedPassword,
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))
@@ -289,7 +289,7 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 		leave:          make(chan *Client),
 		Clients:        make(map[*Client]bool),
 		NameOfCreator:  "Test",
-		Key:            id,
+		key:            id,
 		HashedPassword: hashedPassword,
 	}
 	server := httptest.NewServer(http.HandlerFunc(echo))

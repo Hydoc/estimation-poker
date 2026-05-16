@@ -398,7 +398,7 @@ func TestRoom_lock(t *testing.T) {
 		broadcast:      make(chan *Message),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
-		Key:            key,
+		key:            key,
 		HashedPassword: make([]byte, 0),
 	}
 
@@ -420,7 +420,7 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 		broadcast:      make(chan *Message),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
-		Key:            key,
+		key:            key,
 		HashedPassword: make([]byte, 0),
 	}
 
@@ -435,7 +435,7 @@ func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 		Id:            "Test",
 		InProgress:    false,
 		NameOfCreator: "some user",
-		Key:           id,
+		key:           id,
 	}
 	got := room.open("invalid user", id.String())
 
@@ -447,7 +447,7 @@ func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
 		Id:            "Test",
 		InProgress:    false,
 		NameOfCreator: "some user",
-		Key:           uuid.New(),
+		key:           uuid.New(),
 	}
 
 	got := room.open("some user", "incorrect Key")
@@ -469,7 +469,7 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 		broadcast:      make(chan *Message),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
-		Key:            key,
+		key:            key,
 		HashedPassword: make([]byte, 0),
 		logger:         logger,
 	}

@@ -36,7 +36,7 @@ type Room struct {
 	broadcast      chan *Message
 	destroy        chan<- RoomId
 	NameOfCreator  string
-	Key            uuid.UUID
+	key            uuid.UUID
 	HashedPassword []byte
 	Created        time.Time
 	Issues         []Issue
@@ -89,7 +89,7 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *s
 		broadcast:      make(chan *Message),
 		destroy:        destroy,
 		NameOfCreator:  nameOfCreator,
-		Key:            uuid.New(),
+		key:            uuid.New(),
 		HashedPassword: make([]byte, 0),
 		Created:        time.Now(),
 		Issues:         make([]Issue, 0),
@@ -99,7 +99,7 @@ func NewRoom(name RoomId, destroy chan<- RoomId, nameOfCreator string, logger *s
 
 func (room *Room) Join(client *Client) {
 	room.join <- client
-	client.send <- newPermissions(client.Name, room.NameOfCreator, room.Key)
+	client.send <- newPermissions(client.Name, room.NameOfCreator, room.key)
 	room.broadcast <- newJoin()
 }
 
@@ -109,7 +109,7 @@ func (room *Room) lock(username, password, key string) bool {
 		room.logger.Error("failed to hash password")
 		return false
 	}
-	if username == room.NameOfCreator && key == room.Key.String() {
+	if username == room.NameOfCreator && key == room.key.String() {
 		room.HashedPassword = hashed
 		return true
 	}
@@ -118,7 +118,7 @@ func (room *Room) lock(username, password, key string) bool {
 }
 
 func (room *Room) open(username, key string) bool {
-	if username == room.NameOfCreator && key == room.Key.String() {
+	if username == room.NameOfCreator && key == room.key.String() {
 		room.HashedPassword = make([]byte, 0)
 		return true
 	}
