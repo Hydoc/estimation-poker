@@ -11,7 +11,7 @@ import (
 func TestMessage(t *testing.T) {
 	tests := []struct {
 		name         string
-		msg          *Message
+		msg          *WebsocketMessage
 		expectedType string
 		expectedData any
 	}{

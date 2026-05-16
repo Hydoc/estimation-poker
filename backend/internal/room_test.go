@@ -232,7 +232,7 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastEstimate(t *testing.T) {
-	clientSendChannel := make(chan *Message)
+	clientSendChannel := make(chan *WebsocketMessage)
 	client := &Client{
 		send: clientSendChannel,
 	}
@@ -244,12 +244,12 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 		Clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: make(chan *Message),
+		broadcast: make(chan *WebsocketMessage),
 		destroy:   nil,
 	}
 	go room.Run()
 
-	msg := &Message{
+	msg := &WebsocketMessage{
 		Type: estimate,
 		Data: nil,
 	}
@@ -262,7 +262,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) {
-	clientSendChannel := make(chan *Message)
+	clientSendChannel := make(chan *WebsocketMessage)
 	client := &Client{
 		send:  clientSendChannel,
 		Role:  Developer,
@@ -276,7 +276,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 		Clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: make(chan *Message),
+		broadcast: make(chan *WebsocketMessage),
 		destroy:   nil,
 	}
 	go room.Run()
@@ -293,7 +293,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 	room := NewRoom(uuid.New(), make(chan<- uuid.UUID), "Tester", logger, new(GuessConfig))
 	go room.Run()
 
-	clientSendChannel := make(chan *Message)
+	clientSendChannel := make(chan *WebsocketMessage)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -316,7 +316,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastNewRound(t *testing.T) {
-	clientSendChannel := make(chan *Message)
+	clientSendChannel := make(chan *WebsocketMessage)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -335,7 +335,7 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 			client:           true,
 			developerToReset: true,
 		},
-		broadcast: make(chan *Message),
+		broadcast: make(chan *WebsocketMessage),
 		destroy:   nil,
 	}
 	go room.Run()
@@ -352,8 +352,8 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
-	clientSendChannel := make(chan *Message)
-	broadcastChannel := make(chan *Message)
+	clientSendChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *WebsocketMessage)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -395,7 +395,7 @@ func TestRoom_lock(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),
-		broadcast:      make(chan *Message),
+		broadcast:      make(chan *WebsocketMessage),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		key:            key,
@@ -417,7 +417,7 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),
-		broadcast:      make(chan *Message),
+		broadcast:      make(chan *WebsocketMessage),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		key:            key,
@@ -466,7 +466,7 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),
-		broadcast:      make(chan *Message),
+		broadcast:      make(chan *WebsocketMessage),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		key:            key,

@@ -2,8 +2,6 @@ package internal
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -34,7 +32,7 @@ type Client struct {
 	Role       string
 	guess      int
 	doSkip     bool
-	send       chan *Message
+	send       chan *WebsocketMessage
 	bus        message.Bus
 }
 
@@ -44,7 +42,7 @@ func NewClient(name, role string, room *Room, connection *websocket.Conn, bus me
 		Name:       name,
 		connection: connection,
 		Role:       role,
-		send:       make(chan *Message),
+		send:       make(chan *WebsocketMessage),
 		bus:        bus,
 		logger:     logger,
 	}
@@ -128,7 +126,7 @@ func (client *Client) WebsocketReader() {
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {
-		var incMessage *Message
+		var incMessage *WebsocketMessage
 		err := wsjson.Read(context.Background(), client.connection, &incMessage)
 
 		if err != nil {
@@ -151,84 +149,6 @@ func (client *Client) WebsocketReader() {
 		if err != nil {
 			client.logger.Error(err.Error())
 		}
-	}
-}
-
-func fabricate(incomingMessage *Message, client *Client) (message.Message, error) {
-	switch incomingMessage.Type {
-	case skipRound:
-		return message.New(
-			skipRound,
-			SkipRoundPayload{
-				client: client,
-			},
-		), nil
-	case estimate:
-		ticket, ok := incomingMessage.Data.(string)
-		if !ok {
-			return message.Message{}, errors.New("ticket is invalid")
-		}
-
-		return message.New(
-			estimate,
-			EstimatePayload{
-				client: client,
-				ticket: ticket,
-			},
-		), nil
-	case guess:
-		actualGuess, ok := incomingMessage.Data.(float64)
-		if !ok {
-			return message.Message{}, errors.New("guess is invalid")
-		}
-
-		return message.New(guess, GuessPayload{
-			client: client,
-			guess:  int(actualGuess),
-		}), nil
-	case newRound:
-		return message.New(newRound, NewRoundPayload{client: client}), nil
-	case reveal:
-		return message.New(reveal, RevealPayload{client: client}), nil
-	case lockRoom:
-		pw, pwOk := incomingMessage.Data.(map[string]any)["password"]
-		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
-
-		if !keyOk {
-			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a key", client.Name, client.room.Id)
-		}
-		if !pwOk {
-			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a password", client.Name, client.room.Id)
-		}
-
-		return message.New(lockRoom, LockRoomPayload{
-			client:   client,
-			key:      key.(string),
-			password: pw.(string),
-		}), nil
-	case openRoom:
-		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
-
-		if !keyOk {
-			return message.Message{}, fmt.Errorf("client: %s tried to open room %s without a key", client.Name, client.room.Id)
-		}
-
-		return message.New(openRoom, OpenRoomPayload{
-			client: client,
-			key:    key.(string),
-		}), nil
-	case addIssue:
-		actualIssue, ok := incomingMessage.Data.(string)
-		if !ok {
-			return message.Message{}, errors.New("issue is invalid")
-		}
-
-		return message.New(addIssue, AddIssuePayload{
-			client: client,
-			issue:  actualIssue,
-		}), nil
-	default:
-		return message.Message{}, errors.New("message not found")
 	}
 }
 

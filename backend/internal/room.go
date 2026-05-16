@@ -31,7 +31,7 @@ type Room struct {
 	leave          chan *Client
 	join           chan *Client
 	Clients        map[*Client]bool
-	broadcast      chan *Message
+	broadcast      chan *WebsocketMessage
 	destroy        chan<- uuid.UUID
 	NameOfCreator  string
 	key            uuid.UUID
@@ -84,7 +84,7 @@ func NewRoom(id uuid.UUID, destroy chan<- uuid.UUID, nameOfCreator string, logge
 		leave:          make(chan *Client),
 		join:           make(chan *Client),
 		Clients:        make(map[*Client]bool),
-		broadcast:      make(chan *Message),
+		broadcast:      make(chan *WebsocketMessage),
 		destroy:        destroy,
 		NameOfCreator:  nameOfCreator,
 		key:            uuid.New(),
@@ -178,7 +178,7 @@ func (room *Room) newRound() {
 	}
 }
 
-func (room *Room) broadcastToClients(msg *Message) {
+func (room *Room) broadcastToClients(msg *WebsocketMessage) {
 	for client := range room.Clients {
 		client.send <- msg
 	}

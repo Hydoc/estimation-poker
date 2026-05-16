@@ -1,6 +1,9 @@
 package internal
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/Hydoc/go-message"
 	"github.com/google/uuid"
 )
@@ -27,7 +30,7 @@ const (
 	permissions      = "permissions"
 )
 
-type Message struct {
+type WebsocketMessage struct {
 	Type string `json:"type"`
 	Data any    `json:"data"`
 }
@@ -70,9 +73,9 @@ type RevealPayload struct {
 	client *Client
 }
 
-func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *Message {
+func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *WebsocketMessage {
 	if clientName == roomCreatorName {
-		return &Message{
+		return &WebsocketMessage{
 			Type: permissions,
 			Data: Permissions{
 				CanLockRoom: true,
@@ -81,7 +84,7 @@ func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *Message 
 		}
 	}
 
-	return &Message{
+	return &WebsocketMessage{
 		Type: permissions,
 		Data: Permissions{
 			CanLockRoom: false,
@@ -89,57 +92,57 @@ func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *Message 
 	}
 }
 
-func newJoin() *Message {
-	return &Message{
+func newJoin() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: join,
 	}
 }
 
-func newEstimate(ticket string) *Message {
-	return &Message{
+func newEstimate(ticket string) *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: estimate,
 		Data: ticket,
 	}
 }
 
-func newLeave(name string) *Message {
-	return &Message{
+func newLeave(name string) *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: leave,
 		Data: name,
 	}
 }
 
-func newRoomLocked() *Message {
-	return &Message{
+func newRoomLocked() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: roomLocked,
 	}
 }
 
-func newRoomOpened() *Message {
-	return &Message{
+func newRoomOpened() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: roomOpened,
 	}
 }
 
-func newIssues() *Message {
-	return &Message{
+func newIssues() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: issues,
 	}
 }
 
-func newDeveloperGuessed() *Message {
-	return &Message{
+func newDeveloperGuessed() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: developerGuessed,
 	}
 }
 
-func newEveryoneIsDone() *Message {
-	return &Message{
+func newEveryoneIsDone() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: everyoneDone,
 	}
 }
 
-func newReveal(clients map[*Client]bool) *Message {
+func newReveal(clients map[*Client]bool) *WebsocketMessage {
 	out := []map[string]any{}
 	for client := range clients {
 		if client.Role == Developer {
@@ -147,32 +150,32 @@ func newReveal(clients map[*Client]bool) *Message {
 		}
 	}
 
-	return &Message{
+	return &WebsocketMessage{
 		Type: reveal,
 		Data: out,
 	}
 }
 
-func newNewRound() *Message {
-	return &Message{
+func newNewRound() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: newRound,
 	}
 }
 
-func newDeveloperSkipped() *Message {
-	return &Message{
+func newDeveloperSkipped() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: developerSkipped,
 	}
 }
 
-func newYouSkipped() *Message {
-	return &Message{
+func newYouSkipped() *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: youSkipped,
 	}
 }
 
-func newYouGuessed(guess int) *Message {
-	return &Message{
+func newYouGuessed(guess int) *WebsocketMessage {
+	return &WebsocketMessage{
 		Type: youGuessed,
 		Data: guess,
 	}
@@ -189,4 +192,82 @@ func CreateBus() message.Bus {
 	bus.Register(openRoom, handleOpenRoom)
 	bus.Register(addIssue, handleAddIssue)
 	return bus
+}
+
+func fabricate(incomingMessage *WebsocketMessage, client *Client) (message.Message, error) {
+	switch incomingMessage.Type {
+	case skipRound:
+		return message.New(
+			skipRound,
+			SkipRoundPayload{
+				client: client,
+			},
+		), nil
+	case estimate:
+		ticket, ok := incomingMessage.Data.(string)
+		if !ok {
+			return message.Message{}, errors.New("ticket is invalid")
+		}
+
+		return message.New(
+			estimate,
+			EstimatePayload{
+				client: client,
+				ticket: ticket,
+			},
+		), nil
+	case guess:
+		actualGuess, ok := incomingMessage.Data.(float64)
+		if !ok {
+			return message.Message{}, errors.New("guess is invalid")
+		}
+
+		return message.New(guess, GuessPayload{
+			client: client,
+			guess:  int(actualGuess),
+		}), nil
+	case newRound:
+		return message.New(newRound, NewRoundPayload{client: client}), nil
+	case reveal:
+		return message.New(reveal, RevealPayload{client: client}), nil
+	case lockRoom:
+		pw, pwOk := incomingMessage.Data.(map[string]any)["password"]
+		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
+
+		if !keyOk {
+			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a key", client.Name, client.room.Id)
+		}
+		if !pwOk {
+			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a password", client.Name, client.room.Id)
+		}
+
+		return message.New(lockRoom, LockRoomPayload{
+			client:   client,
+			key:      key.(string),
+			password: pw.(string),
+		}), nil
+	case openRoom:
+		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
+
+		if !keyOk {
+			return message.Message{}, fmt.Errorf("client: %s tried to open room %s without a key", client.Name, client.room.Id)
+		}
+
+		return message.New(openRoom, OpenRoomPayload{
+			client: client,
+			key:    key.(string),
+		}), nil
+	case addIssue:
+		actualIssue, ok := incomingMessage.Data.(string)
+		if !ok {
+			return message.Message{}, errors.New("issue is invalid")
+		}
+
+		return message.New(addIssue, AddIssuePayload{
+			client: client,
+			issue:  actualIssue,
+		}), nil
+	default:
+		return message.Message{}, errors.New("message not found")
+	}
 }
