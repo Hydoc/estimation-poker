@@ -4,14 +4,24 @@ import {
   type ConnectionState,
   type DeveloperDone,
   isConnectionState,
-  isPermissions,
+  isEstimateWebsocketMessage,
+  isEveryoneDoneWebsocketMessage,
+  isIssuesWebsocketMessage,
+  isLeaveWebsocketMessage,
+  isNewRoundWebsocketMessage,
+  isPermissionsWebsocketMessage,
+  isReceivableWebsocketMessage,
+  isRevealWebsocketMessage,
+  isRoomLockedWebsocketMessage,
   isRoomMetadata,
+  isRoomOpenedWebsocketMessage,
   isRoomStateResponse,
   type Issue,
-  isUserOverview,
+  isUsersWebsocketMessage,
+  isYouGuessedWebsocketMessage,
+  isYouSkippedWebsocketMessage,
   type Permissions,
   type PossibleGuess,
-  type ReceivableWebsocketMessage,
   Role,
   type RoomMetadata,
   type RoomState,
@@ -20,7 +30,6 @@ import {
   type UserOverview,
 } from "@/types/room.ts";
 import { useWebsocket } from "@/composables/useWebsocket.ts";
-import { attemptErrorAware, fail, type FetchState, none } from "@kaumlaut/pure/fetch-state";
 
 export type UseRoom = {
   roomState: ComputedRef<RoomState>;
@@ -42,7 +51,7 @@ export function useRoom(): UseRoom {
   const issueToGuess = ref<Maybe<string>>(nothing());
   const doSkip = ref<boolean>(false);
   const roundState = ref<RoundState>(RoundState.Waiting);
-  const users = ref<FetchState<UserOverview>>(none());
+  const users = ref<Maybe<UserOverview>>(nothing());
   const roomNotifications = ref<string[]>([]);
   const showAllGuesses = ref<boolean>(false);
   const roomIsLocked = ref<boolean>(false);
@@ -103,73 +112,76 @@ export function useRoom(): UseRoom {
   }
 
   async function onWebsocketMessage(message: MessageEvent): Promise<void> {
-    const decoded = JSON.parse(message.data) as ReceivableWebsocketMessage;
-    switch (decoded.type) {
-      case "leave":
-        await fetchUsersInRoom();
-        roomNotifications.value.push(`${decoded.data} has left the room…`);
-        break;
-      case "join":
-      case "developer-skipped":
-      case "developer-guessed":
-        await fetchUsersInRoom();
-        break;
-      case "estimate":
-        roundState.value = RoundState.InProgress;
-        issueToGuess.value = just(decoded.data);
-        break;
-      case "you-guessed":
-        guess.value = just(decoded.data);
-        doSkip.value = false;
-        break;
-      case "you-skipped":
-        guess.value = nothing();
-        doSkip.value = true;
-        break;
-      case "everyone-done":
-        await fetchUsersInRoom();
-        roundState.value = RoundState.End;
-        break;
-      case "reveal":
-        developerDone.value = decoded.data;
-        showAllGuesses.value = true;
-        break;
-      case "room-locked":
-        roomIsLocked.value = true;
-        break;
-      case "room-opened":
-        roomIsLocked.value = false;
-        break;
-      case "new-round":
-        resetRound();
-        await fetchUsersInRoom();
-        break;
-      case "issues":
-        await fetchRoomState();
-        break;
-      case "permissions":
-        const result = isPermissions(decoded.data);
-        if (!result.success) {
-          console.error(result.errors);
-          throw new Error("permissions is invalid");
-        }
-
-        permissions.value = result.value;
+    const result = isReceivableWebsocketMessage(JSON.parse(message.data));
+    if (!result.success) {
+      throw new Error(`message is invalid`);
     }
-  }
 
-  async function fetchUsersInRoom() {
-    if (!isJust(roomId.value)) {
-      users.value = none();
-      return;
-    }
-    const response = await fetch(`/v1/room/${roomId.value.value}/users`);
-    if (!response.ok) {
-      users.value = fail("error trying to fetch users");
+    if (isLeaveWebsocketMessage(result.value).success) {
+      roomNotifications.value.push(`${result.value.data} has left the room…`);
       return;
     }
 
-    users.value = attemptErrorAware(isUserOverview)(await response.json());
+    if (isUsersWebsocketMessage(result.value).success) {
+      users.value = just(result.value.data);
+      return;
+    }
+
+    if (isEstimateWebsocketMessage(result.value).success) {
+      roundState.value = RoundState.InProgress;
+      issueToGuess.value = just(result.value.data);
+      return;
+    }
+
+    if (isYouGuessedWebsocketMessage(result.value).success) {
+      guess.value = just(result.value.data);
+      doSkip.value = false;
+      return;
+    }
+
+    if (isYouSkippedWebsocketMessage(result.value).success) {
+      guess.value = nothing();
+      doSkip.value = true;
+      return;
+    }
+
+    if (isEveryoneDoneWebsocketMessage(result.value).success) {
+      roundState.value = RoundState.End;
+      return;
+    }
+
+    if (isRevealWebsocketMessage(result.value).success) {
+      developerDone.value = result.value.data;
+      showAllGuesses.value = true;
+      return;
+    }
+
+    if (isRoomLockedWebsocketMessage(result.value).success) {
+      roomIsLocked.value = true;
+      return;
+    }
+
+    if (isRoomOpenedWebsocketMessage(result.value).success) {
+      roomIsLocked.value = false;
+      return;
+    }
+
+    if (isNewRoundWebsocketMessage(result.value).success) {
+      resetRound();
+      return;
+    }
+
+    if (isIssuesWebsocketMessage(result.value).success) {
+      await fetchRoomState();
+      return;
+    }
+
+    if (isPermissionsWebsocketMessage(result.value).success) {
+      permissions.value = result.value.data;
+      return;
+    }
+
+    throw new Error(`websocket message ${result.value.type} is not registered.`);
   }
 
   function leaveRoom() {

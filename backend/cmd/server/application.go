@@ -143,45 +143,6 @@ func (app *application) handleFetchActiveRooms(writer http.ResponseWriter, reque
 	}
 }
 
-func (app *application) handleFetchUsers(writer http.ResponseWriter, request *http.Request) {
-	roomId, err := app.readIdParam(request)
-	if err != nil {
-		app.badRequestResponse(writer, request, err)
-		return
-	}
-
-	app.mu.Lock()
-	defer app.mu.Unlock()
-
-	room, ok := app.rooms[roomId]
-	if !ok {
-		err = app.writeJSON(writer, http.StatusOK, []map[string]any{}, nil)
-		if err != nil {
-			app.serverErrorResponse(writer, request, err)
-		}
-		return
-	}
-
-	var clients []*internal.Client
-	for client := range room.Clients {
-		clients = append(clients, client)
-	}
-
-	sort.Slice(clients, func(i, j int) bool {
-		return clients[i].Name < clients[j].Name
-	})
-
-	var out []map[string]any
-	for _, client := range clients {
-		out = append(out, client.ToJson())
-	}
-
-	err = app.writeJSON(writer, http.StatusOK, out, nil)
-	if err != nil {
-		app.serverErrorResponse(writer, request, err)
-	}
-}
-
 func (app *application) handleWs(writer http.ResponseWriter, request *http.Request) {
 	app.mu.Lock()
 	defer app.mu.Unlock()

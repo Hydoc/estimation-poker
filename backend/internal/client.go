@@ -2,8 +2,10 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Hydoc/go-message"
@@ -25,6 +27,8 @@ type Permissions struct {
 }
 
 type Client struct {
+	mu sync.Mutex
+
 	connection *websocket.Conn
 	logger     *slog.Logger
 	room       *Room
@@ -34,6 +38,29 @@ type Client struct {
 	doSkip     bool
 	send       chan *WebsocketMessage
 	bus        message.Bus
+}
+
+func (client *Client) MarshalJSON() ([]byte, error) {
+	if client.Role == ProductOwner {
+		out := struct {
+			Name string `json:"name"`
+			Role string `json:"role"`
+		}{
+			Name: client.Name,
+			Role: client.Role,
+		}
+		return json.Marshal(out)
+	}
+	out := struct {
+		Name   string `json:"name"`
+		Role   string `json:"role"`
+		IsDone bool   `json:"isDone"`
+	}{
+		Name:   client.Name,
+		Role:   client.Role,
+		IsDone: client.guess > 0 || client.doSkip,
+	}
+	return json.Marshal(out)
 }
 
 func NewClient(name, role string, room *Room, connection *websocket.Conn, bus message.Bus, logger *slog.Logger) *Client {
@@ -53,7 +80,8 @@ func handleGuess(msg message.Message) (*message.Message, error) {
 	if ok && payload.client.Role == Developer {
 		payload.client.guess = payload.guess
 		payload.client.doSkip = false
-		payload.client.room.broadcast <- newDeveloperGuessed()
+		payload.client.room.broadcast <- newDeveloperAction()
+		payload.client.room.broadcast <- newUsers(payload.client.room.Clients)
 		payload.client.send <- newYouGuessed(payload.guess)
 	}
 	return nil, nil
@@ -64,7 +92,8 @@ func handleSkipRound(msg message.Message) (*message.Message, error) {
 	if ok && payload.client.Role == Developer {
 		payload.client.doSkip = true
 		payload.client.guess = 0
-		payload.client.room.broadcast <- newDeveloperSkipped()
+		payload.client.room.broadcast <- newDeveloperAction()
+		payload.client.room.broadcast <- newUsers(payload.client.room.Clients)
 		payload.client.send <- newYouSkipped()
 	}
 	return nil, nil
@@ -123,6 +152,7 @@ func (client *Client) WebsocketReader() {
 	defer func() {
 		client.room.leave <- client
 		client.room.broadcast <- newLeave(client.Name)
+		client.room.broadcast <- newUsers(client.room.Clients)
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {
@@ -158,6 +188,7 @@ func (client *Client) WebsocketWriter() {
 	defer func() {
 		client.room.leave <- client
 		client.room.broadcast <- newLeave(client.Name)
+		client.room.broadcast <- newUsers(client.room.Clients)
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {
@@ -182,8 +213,10 @@ func (client *Client) WebsocketWriter() {
 }
 
 func (client *Client) newRound() {
+	client.mu.Lock()
 	client.guess = 0
 	client.doSkip = false
+	client.mu.Unlock()
 }
 
 func (client *Client) asReveal() map[string]any {
@@ -192,19 +225,5 @@ func (client *Client) asReveal() map[string]any {
 		"role":   client.Role,
 		"guess":  client.guess,
 		"doSkip": client.doSkip,
-	}
-}
-
-func (client *Client) ToJson() UserDTO {
-	if client.Role == Developer {
-		return map[string]any{
-			"name":   client.Name,
-			"role":   client.Role,
-			"isDone": client.guess > 0 || client.doSkip,
-		}
-	}
-	return map[string]any{
-		"name": client.Name,
-		"role": client.Role,
 	}
 }

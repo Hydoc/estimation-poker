@@ -3,31 +3,31 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/Hydoc/go-message"
 	"github.com/google/uuid"
 )
 
 const (
-	join             = "join"
-	leave            = "leave"
-	guess            = "guess"
-	newRound         = "new-round"
-	estimate         = "estimate"
-	lockRoom         = "lock-room"
-	openRoom         = "open-room"
-	skipRound        = "skip"
-	reveal           = "reveal"
-	roomLocked       = "room-locked"
-	roomOpened       = "room-opened"
-	developerGuessed = "developer-guessed"
-	everyoneDone     = "everyone-done"
-	developerSkipped = "developer-skipped"
-	youSkipped       = "you-skipped"
-	youGuessed       = "you-guessed"
-	addIssue         = "add-issue"
-	issues           = "issues"
-	permissions      = "permissions"
+	leave           = "leave"
+	guess           = "guess"
+	newRound        = "new-round"
+	estimate        = "estimate"
+	lockRoom        = "lock-room"
+	openRoom        = "open-room"
+	skipRound       = "skip"
+	reveal          = "reveal"
+	roomLocked      = "room-locked"
+	roomOpened      = "room-opened"
+	developerAction = "developer-action"
+	everyoneDone    = "everyone-done"
+	youSkipped      = "you-skipped"
+	youGuessed      = "you-guessed"
+	addIssue        = "add-issue"
+	issues          = "issues"
+	permissions     = "permissions"
+	users           = "users"
 )
 
 type WebsocketMessage struct {
@@ -92,9 +92,26 @@ func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *Websocke
 	}
 }
 
-func newJoin() *WebsocketMessage {
+func newDeveloperAction() *WebsocketMessage {
 	return &WebsocketMessage{
-		Type: join,
+		Type: developerAction,
+	}
+}
+
+func newUsers(clients map[*Client]bool) *WebsocketMessage {
+	var out []*Client
+
+	for c := range clients {
+		out = append(out, c)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Name < out[j].Name
+	})
+
+	return &WebsocketMessage{
+		Type: users,
+		Data: out,
 	}
 }
 
@@ -130,12 +147,6 @@ func newIssues() *WebsocketMessage {
 	}
 }
 
-func newDeveloperGuessed() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: developerGuessed,
-	}
-}
-
 func newEveryoneIsDone() *WebsocketMessage {
 	return &WebsocketMessage{
 		Type: everyoneDone,
@@ -159,12 +170,6 @@ func newReveal(clients map[*Client]bool) *WebsocketMessage {
 func newNewRound() *WebsocketMessage {
 	return &WebsocketMessage{
 		Type: newRound,
-	}
-}
-
-func newDeveloperSkipped() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: developerSkipped,
 	}
 }
 

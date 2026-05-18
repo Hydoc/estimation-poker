@@ -280,7 +280,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 		destroy:   nil,
 	}
 	go room.Run()
-	room.broadcast <- newDeveloperGuessed()
+	room.broadcast <- newDeveloperAction()
 
 	gotClientMsg := <-clientSendChannel
 
@@ -304,14 +304,14 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 		guess: 0,
 		send:  clientSendChannel,
 	}
-	msg := newDeveloperGuessed()
+	msg := newDeveloperAction()
 	room.broadcast <- msg
 
 	select {
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timeout")
 	case gotClientMsg := <-clientSendChannel:
-		assert.DeepEqual(t, gotClientMsg, msg)
+		assert.DeepEqual(t, gotClientMsg, newUsers(room.Clients))
 	}
 }
 

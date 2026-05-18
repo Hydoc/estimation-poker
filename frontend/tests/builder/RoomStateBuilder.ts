@@ -1,7 +1,6 @@
 import { Role, RoomState, RoundState, UserOverview } from "../../src/types/room";
 import { just, nothing } from "@kaumlaut/pure/maybe";
 import { Permissions } from "../../src/types/room";
-import { succeed } from "@kaumlaut/pure/fetch-state";
 
 export class RoomStateBuilder {
   private constructor(private roomState: RoomState) {}
@@ -44,7 +43,7 @@ export class RoomStateBuilder {
   withUsers(users: UserOverview): RoomStateBuilder {
     return new RoomStateBuilder({
       ...this.roomState,
-      users: succeed(users),
+      users: just(users),
     });
   }
 
@@ -84,7 +83,7 @@ export class RoomStateBuilder {
       name: "Tester",
       isConnected: true,
       roomIsLocked: false,
-      users: succeed([
+      users: just([
         { name: "Test", isDone: false, role: Role.Developer },
         { name: "Product Owner Test", role: Role.ProductOwner },
       ]),

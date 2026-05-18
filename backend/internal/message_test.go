@@ -16,12 +16,6 @@ func TestMessage(t *testing.T) {
 		expectedData any
 	}{
 		{
-			name:         "NewJoin",
-			msg:          newJoin(),
-			expectedType: join,
-			expectedData: nil,
-		},
-		{
 			name:         "newLeave",
 			msg:          newLeave("Test"),
 			expectedType: leave,
@@ -37,12 +31,6 @@ func TestMessage(t *testing.T) {
 			name:         "newRoomOpened",
 			msg:          newRoomOpened(),
 			expectedType: roomOpened,
-			expectedData: nil,
-		},
-		{
-			name:         "newDeveloperGuessed",
-			msg:          newDeveloperGuessed(),
-			expectedType: developerGuessed,
 			expectedData: nil,
 		},
 		{

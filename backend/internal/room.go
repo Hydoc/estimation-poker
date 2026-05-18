@@ -98,7 +98,7 @@ func NewRoom(id uuid.UUID, destroy chan<- uuid.UUID, nameOfCreator string, logge
 func (room *Room) Join(client *Client) {
 	room.join <- client
 	client.send <- newPermissions(client.Name, room.NameOfCreator, room.key)
-	room.broadcast <- newJoin()
+	room.broadcast <- newUsers(room.Clients)
 }
 
 func (room *Room) lock(username, password, key string) bool {
@@ -178,6 +178,7 @@ func (room *Room) newRound() {
 	for client := range room.Clients {
 		client.newRound()
 		client.send <- newNewRound()
+		client.send <- newUsers(room.Clients)
 	}
 	room.clientMu.Unlock()
 }
@@ -213,12 +214,12 @@ func (room *Room) Run() {
 			case estimate:
 				room.InProgress = true
 				room.broadcastToClients(msg)
-			case developerGuessed, skipRound, developerSkipped:
+			case developerAction:
 				if room.everyDevIsDone() {
 					room.broadcastToClients(newEveryoneIsDone())
 					continue
 				}
-				room.broadcastToClients(msg)
+				room.broadcastToClients(newUsers(room.Clients))
 			case newRound:
 				room.newRound()
 			case leave:
@@ -227,7 +228,7 @@ func (room *Room) Run() {
 					continue
 				}
 				room.broadcastToClients(msg)
-			case join, reveal, roomLocked, roomOpened:
+			case reveal, roomLocked, roomOpened, users:
 				room.broadcastToClients(msg)
 			default:
 				room.logger.Error(fmt.Sprintf("unexpected Message %#v", msg))

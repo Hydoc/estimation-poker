@@ -1,10 +1,13 @@
 import type { Maybe } from "@kaumlaut/pure/maybe";
 import {
+  isAlways,
   isBool,
   isExactString,
   isFalse,
   isListOf,
   isNonEmptyString,
+  isNull,
+  isNullOr,
   isNumber,
   isObjectWithKeysMatchingGuard,
   isOneOf,
@@ -75,7 +78,7 @@ export type RoomState = Readonly<{
   doSkip: boolean;
   issueToGuess: Maybe<string>;
   roundState: RoundState;
-  users: FetchState<UserOverview>;
+  users: Maybe<UserOverview>;
   showAllGuesses: boolean;
   roomIsLocked: boolean;
   roundInProgress: boolean;
@@ -103,7 +106,6 @@ export type SendableWebsocketMessage = {
 
 export type ReceivableWebsocketMessage = {
   type:
-    | "join"
     | "leave"
     | "estimate"
     | "reveal"
@@ -116,7 +118,8 @@ export type ReceivableWebsocketMessage = {
     | "developer-skipped"
     | "room-opened"
     | "issues"
-    | "permissions";
+    | "permissions"
+    | "users";
   data?: any;
 };
 
@@ -136,9 +139,136 @@ const isDeveloper = isObjectWithKeysMatchingGuard<Developer>({
   role: isExactString(Role.Developer),
 });
 
+const isDeveloperDone = isObjectWithKeysMatchingGuard<DeveloperDone>({
+  doSkip: isBool,
+  guess: isNumber,
+  name: isString,
+  role: isExactString(Role.Developer),
+});
+
 export const isUserOverview = isListOf<ProductOwner | Developer>(
   isOneOf(isDeveloper, isProductOwner),
 );
+
+export const isReceivableWebsocketMessage =
+  isObjectWithKeysMatchingGuard<ReceivableWebsocketMessage>({
+    type: isOneStringOf([
+      "leave",
+      "estimate",
+      "reveal",
+      "developer-guessed",
+      "everyone-done",
+      "you-guessed",
+      "you-skipped",
+      "new-round",
+      "room-locked",
+      "developer-skipped",
+      "room-opened",
+      "issues",
+      "permissions",
+      "users",
+    ]),
+    data: isAlways,
+  });
+
+export const isLeaveWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "leave";
+  data: string;
+}>({
+  type: isExactString("leave"),
+  data: isString,
+});
+
+export const isUsersWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "users";
+  data: (ProductOwner | Developer)[];
+}>({
+  type: isExactString("users"),
+  data: isListOf(isOneOf(isDeveloper, isProductOwner)),
+});
+
+export const isEstimateWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "estimate";
+  data: string;
+}>({
+  type: isExactString("estimate"),
+  data: isString,
+});
+
+export const isYouGuessedWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "you-guessed";
+  data: number;
+}>({
+  type: isExactString("you-guessed"),
+  data: isNumber,
+});
+
+export const isYouSkippedWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "you-skipped";
+  data: null;
+}>({
+  type: isExactString("you-skipped"),
+  data: isNull,
+});
+
+export const isEveryoneDoneWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "everyone-done";
+  data: null;
+}>({
+  type: isExactString("everyone-done"),
+  data: isNull,
+});
+
+export const isRevealWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "reveal";
+  data: DeveloperDone[];
+}>({
+  type: isExactString("reveal"),
+  data: isListOf(isDeveloperDone),
+});
+
+export const isRoomLockedWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "room-locked";
+  data: null;
+}>({
+  type: isExactString("room-locked"),
+  data: isNull,
+});
+
+export const isRoomOpenedWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "room-opened";
+  data: null;
+}>({
+  type: isExactString("room-opened"),
+  data: isNull,
+});
+
+export const isNewRoundWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "new-round";
+  data: null;
+}>({
+  type: isExactString("new-round"),
+  data: isNull,
+});
+
+export const isIssuesWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "issues";
+  data: null;
+}>({
+  type: isExactString("issues"),
+  data: isNull,
+});
+
+export const isPermissionsWebsocketMessage = isObjectWithKeysMatchingGuard<{
+  type: "permissions";
+  data: Permissions;
+}>({
+  type: isExactString("permissions"),
+  data: isObjectWithKeysMatchingGuard<Permissions>({
+    key: isString,
+    canLockRoom: isBool,
+  }),
+});
 
 const isPossibleGuess = isObjectWithKeysMatchingGuard<PossibleGuess>({
   description: isNonEmptyString,
@@ -191,8 +321,3 @@ export const isUsernameAlreadyTakenConnectionStatus =
     canConnect: isFalse,
     reason: isExactString("username already taken"),
   });
-
-export const isPermissions = isObjectWithKeysMatchingGuard<Permissions>({
-  canLockRoom: isBool,
-  key: isString,
-});

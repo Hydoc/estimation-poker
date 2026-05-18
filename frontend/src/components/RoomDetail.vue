@@ -51,9 +51,9 @@ watch(
     <v-col cols="12">
       <v-row>
         <table-overview
-          v-if="isSuccess(props.roomState.users)"
+          v-if="isJust(props.roomState.users)"
           :show-all-guesses="props.roomState.showAllGuesses"
-          :users-in-room="props.roomState.users.data"
+          :users-in-room="props.roomState.users.value"
           :round-state="props.roomState.roundState"
           :user-role="props.roomState.role"
           :developer-done="props.roomState.developerDone"

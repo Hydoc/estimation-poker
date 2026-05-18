@@ -1,17 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/Hydoc/go-message"
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 
@@ -425,126 +422,6 @@ func TestApplication_handleFetchActiveRooms(t *testing.T) {
 			json.Unmarshal(response.body, &got)
 
 			assert.DeepEqual(t, got, tt.want)
-		})
-	}
-}
-
-func TestApplication_handleFetchUsers(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil))
-	room := internal.NewRoom(uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"), make(chan<- uuid.UUID), "", logger, new(internal.GuessConfig))
-	bus := message.NewBus()
-	dev := internal.NewClient("B", internal.Developer, room, nil, bus, logger)
-	otherDev := internal.NewClient("Another", internal.Developer, room, nil, bus, logger)
-	devWithEqualLetter := internal.NewClient("Also a dev", internal.Developer, room, nil, bus, logger)
-	productOwner := internal.NewClient("Another one", internal.ProductOwner, room, nil, bus, logger)
-	otherProductOwner := internal.NewClient("Also a po", internal.ProductOwner, room, nil, bus, logger)
-
-	tests := []struct {
-		name        string
-		roomId      string
-		rooms       map[uuid.UUID]*internal.Room
-		expectation []map[string]any
-	}{
-		{
-			name:   "some users in the same room",
-			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-			rooms: map[uuid.UUID]*internal.Room{
-				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
-					Id:         uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"),
-					InProgress: false,
-					Clients: map[*internal.Client]bool{
-						dev:                true,
-						otherDev:           true,
-						devWithEqualLetter: true,
-						productOwner:       true,
-						otherProductOwner:  true,
-					},
-				},
-			},
-			expectation: []map[string]any{
-				{
-					"name":   "Also a dev",
-					"isDone": false,
-					"role":   internal.Developer,
-				},
-				{
-					"name": "Also a po",
-					"role": internal.ProductOwner,
-				},
-				{
-					"name":   "Another",
-					"isDone": false,
-					"role":   internal.Developer,
-				},
-				{
-					"name": "Another one",
-					"role": internal.ProductOwner,
-				},
-				{
-					"name":   "B",
-					"isDone": false,
-					"role":   internal.Developer,
-				},
-			},
-		},
-		{
-			name:        "no clients",
-			roomId:      "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-			rooms:       make(map[uuid.UUID]*internal.Room),
-			expectation: []map[string]any{},
-		},
-		{
-			name:   "one dev client",
-			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-			rooms: map[uuid.UUID]*internal.Room{
-				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
-					Clients: map[*internal.Client]bool{
-						dev: true,
-					},
-				},
-			},
-			expectation: []map[string]any{
-				{
-					"name":   "B",
-					"isDone": false,
-					"role":   internal.Developer,
-				},
-			},
-		},
-		{
-			name: "one po client",
-			rooms: map[uuid.UUID]*internal.Room{
-				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
-					Clients: map[*internal.Client]bool{
-						productOwner: true,
-					},
-				},
-			},
-			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
-			expectation: []map[string]any{
-				{
-					"name": "Another one",
-					"role": internal.ProductOwner,
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			app := newTestApplication(t, tt.rooms)
-			ts := newTestServer(t, app.routes())
-			defer ts.Close()
-
-			response := ts.get(t, fmt.Sprintf("/v1/room/%s/users", tt.roomId))
-
-			var got []map[string]any
-			json.Unmarshal(response.body, &got)
-
-			gotContentType := response.headers.Get("Content-Type")
-
-			assert.Equal(t, gotContentType, "application/json")
-			assert.DeepEqual(t, got, tt.expectation)
 		})
 	}
 }

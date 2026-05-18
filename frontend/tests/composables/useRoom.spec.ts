@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { useRoom } from "../../src/composables/useRoom";
 import { just, nothing } from "@kaumlaut/pure/maybe";
 import { Role, RoundState } from "../../src/types/room";
-import { none } from "@kaumlaut/pure/fetch-state";
 
 const websocketSendSpy = vi.fn();
 const websocketCloseSpy = vi.fn();
@@ -45,7 +44,7 @@ describe("useRoom", () => {
         doSkip: false,
         issueToGuess: nothing(),
         roundState: RoundState.Waiting,
-        users: none(),
+        users: nothing(),
         showAllGuesses: false,
         roomIsLocked: false,
         roundInProgress: false,
