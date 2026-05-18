@@ -253,6 +253,14 @@ func TestApplication_handleFetchConnectionState(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 			wantState:      internal.ConnectionState{},
 		},
+		{
+			name:           "not found room",
+			roomId:         "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			rooms:          make(map[uuid.UUID]*internal.Room),
+			body:           nil,
+			wantStatusCode: http.StatusNotFound,
+			wantState:      internal.ConnectionState{},
+		},
 	}
 
 	for _, tt := range tests {
