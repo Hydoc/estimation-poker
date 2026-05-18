@@ -115,7 +115,163 @@ func TestApplication_handleFetchRoomMetadata(t *testing.T) {
 	}
 }
 
-func TestApplication_handleFetchConnectionState(t *testing.T) {}
+func TestApplication_handleFetchConnectionState(t *testing.T) {
+	tests := []struct {
+		name           string
+		roomId         string
+		rooms          map[uuid.UUID]*internal.Room
+		body           map[string]any
+		wantStatusCode int
+		wantState      internal.ConnectionState
+	}{
+		{
+			name:   "get connection state for fresh room",
+			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			rooms: map[uuid.UUID]*internal.Room{
+				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+					InProgress:     false,
+					HashedPassword: make([]byte, 0),
+					Clients:        make(map[*internal.Client]bool),
+				},
+			},
+			body: map[string]any{
+				"username": "test",
+				"password": "",
+			},
+			wantStatusCode: http.StatusOK,
+			wantState: internal.ConnectionState{
+				CanConnect: true,
+				Reason:     "",
+			},
+		},
+		{
+
+			name:   "get connection state when password matches",
+			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			rooms: map[uuid.UUID]*internal.Room{
+				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+					InProgress:     false,
+					HashedPassword: []byte("$2a$12$SUOHh5BqzhO5nDMxLhvv6.SZiq/6wM5A8zYg285ZFtkF5meuG17Nm"),
+					Clients:        make(map[*internal.Client]bool),
+				},
+			},
+			body: map[string]any{
+				"username": "test",
+				"password": "Hello",
+			},
+			wantStatusCode: http.StatusOK,
+			wantState: internal.ConnectionState{
+				CanConnect: true,
+				Reason:     "",
+			},
+		},
+		{
+			name:   "room in progress",
+			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			rooms: map[uuid.UUID]*internal.Room{
+				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+					InProgress: true,
+				},
+			},
+			body: map[string]any{
+				"username": "test",
+				"password": "",
+			},
+			wantStatusCode: http.StatusOK,
+			wantState: internal.ConnectionState{
+				CanConnect: false,
+				Reason:     internal.ErrRoundStarted.Error(),
+			},
+		},
+		{
+			name:   "room is locked and not password provided",
+			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			rooms: map[uuid.UUID]*internal.Room{
+				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+					InProgress:     false,
+					HashedPassword: make([]byte, 1),
+				},
+			},
+			body: map[string]any{
+				"username": "test",
+				"password": "",
+			},
+			wantStatusCode: http.StatusOK,
+			wantState: internal.ConnectionState{
+				CanConnect: false,
+				Reason:     internal.ErrWrongPassword.Error(),
+			},
+		},
+		{
+			name:   "room is locked and password does not match",
+			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			rooms: map[uuid.UUID]*internal.Room{
+				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+					InProgress:     false,
+					HashedPassword: []byte("$2a$12$SUOHh5BqzhO5nDMxLhvv6.SZiq/6wM5A8zYg285ZFtkF5meuG17Nm"),
+				},
+			},
+			body: map[string]any{
+				"username": "test",
+				"password": "asd",
+			},
+			wantStatusCode: http.StatusOK,
+			wantState: internal.ConnectionState{
+				CanConnect: false,
+				Reason:     internal.ErrWrongPassword.Error(),
+			},
+		},
+		{
+			name:   "username already taken",
+			roomId: "9c874aaa-c628-4688-a72d-0b1afc708a7d",
+			rooms: map[uuid.UUID]*internal.Room{
+				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
+					InProgress:     false,
+					HashedPassword: make([]byte, 0),
+					Clients: map[*internal.Client]bool{
+						&internal.Client{
+							Name: "test",
+						}: true,
+					},
+				},
+			},
+			body: map[string]any{
+				"username": "test",
+				"password": "asd",
+			},
+			wantStatusCode: http.StatusOK,
+			wantState: internal.ConnectionState{
+				CanConnect: false,
+				Reason:     internal.ErrUsernameTaken.Error(),
+			},
+		},
+		{
+			name:           "invalid room id",
+			roomId:         "invalid",
+			rooms:          make(map[uuid.UUID]*internal.Room),
+			body:           nil,
+			wantStatusCode: http.StatusBadRequest,
+			wantState:      internal.ConnectionState{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApplication(t, tt.rooms)
+			ts := newTestServer(t, app.routes())
+			defer ts.Close()
+
+			response := ts.postJSON(t, fmt.Sprintf("/v1/room/%s/connection-state", tt.roomId), tt.body)
+
+			assert.Equal(t, response.headers.Get("Content-Type"), "application/json")
+			assert.Equal(t, response.status, tt.wantStatusCode)
+
+			var got internal.ConnectionState
+			json.Unmarshal(response.body, &got)
+			assert.DeepEqual(t, got, tt.wantState)
+		})
+	}
+}
 
 func TestApplication_handleFetchRoomState(t *testing.T) {
 	tests := []struct {
