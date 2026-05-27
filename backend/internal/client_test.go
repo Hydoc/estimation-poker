@@ -40,28 +40,31 @@ func TestClient_NewProductOwner(t *testing.T) {
 	assert.DeepEqual(t, got, want)
 }
 
-//func TestClient_NewClient(t *testing.T) {
-//	expectedName := "Test Person"
-//	expectedRole := Developer
-//	expectedGuess := 0
-//	client := NewClient(expectedName, expectedRole, &Room{}, &websocket.Conn{}, message.NewBus(), slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
-//
-//	assert.Equal(t, client.Name, expectedName)
-//	assert.Equal(t, client.Role, expectedRole)
-//	assert.Equal(t, client.guess, expectedGuess)
-//	assert.False(t, client.doSkip)
-//
-//	want, err := json.Marshal(map[string]any{
-//		"name":   expectedName,
-//		"isDone": false,
-//		"role":   expectedRole,
-//	})
-//	assert.NilError(t, err)
-//
-//	got, err := json.Marshal(client)
-//	assert.NilError(t, err)
-//	assert.DeepEqual(t, string(got), string(want))
-//}
+func TestClient_NewClient(t *testing.T) {
+	expectedName := "Test Person"
+	expectedRole := Developer
+	expectedGuess := 0
+	client := NewClient(expectedName, expectedRole, &Room{}, &websocket.Conn{}, message.NewBus(), slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
+
+	assert.Equal(t, client.Name, expectedName)
+	assert.Equal(t, client.Role, expectedRole)
+	assert.Equal(t, client.guess, expectedGuess)
+	assert.False(t, client.doSkip)
+
+	want := map[string]any{
+		"name":   expectedName,
+		"role":   expectedRole,
+		"isDone": false,
+	}
+
+	got, err := json.Marshal(client)
+	assert.NilError(t, err)
+
+	var gotMap map[string]any
+	err = json.Unmarshal(got, &gotMap)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, gotMap, want)
+}
 
 func TestClient_Reset(t *testing.T) {
 	client := NewClient("Any", Developer, &Room{}, &websocket.Conn{}, message.NewBus(), slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
