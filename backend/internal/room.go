@@ -180,8 +180,8 @@ func (room *Room) everyDevIsDone() bool {
 }
 
 func (room *Room) newRound() {
-	room.inProgress = false
 	room.clientMu.Lock()
+	room.inProgress = false
 	for client := range room.Clients {
 		client.newRound()
 		client.send <- newNewRound()
@@ -245,8 +245,10 @@ func (room *Room) Run() {
 }
 
 func (room *Room) addIssue(issue string) {
+	room.mu.Lock()
 	room.Issues = append(room.Issues, Issue{
 		Title: issue,
 		Guess: -1,
 	})
+	room.mu.Unlock()
 }

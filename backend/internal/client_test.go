@@ -158,6 +158,48 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 	assert.DeepEqual(t, got, expectedMessage)
 }
 
+func TestClient_WebsocketReaderAddIssueMessage(t *testing.T) {
+	broadcastChannel := make(chan *WebsocketMessage)
+	room := &Room{
+		broadcast: broadcastChannel,
+		join:      make(chan *Client),
+		leave:     make(chan *Client),
+		Clients:   make(map[*Client]bool),
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(echo))
+	defer server.Close()
+
+	url := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	connection, _, err := websocket.Dial(context.Background(), url, nil)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	bus := message.NewBus()
+	bus.Register(addIssue, handleAddIssue)
+	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
+	go client.WebsocketReader()
+	go client.WebsocketWriter()
+	expectedMessage := &WebsocketMessage{
+		Type: issues,
+	}
+	client.send <- &WebsocketMessage{
+		Type: addIssue,
+		Data: "Issue to add",
+	}
+	got := <-broadcastChannel
+
+	assert.DeepEqual(t, got, expectedMessage)
+	assert.DeepEqual(t, room.Issues, []Issue{
+		{
+			Title: "Issue to add",
+			Guess: -1,
+		},
+	})
+}
+
 func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner(t *testing.T) {
 	broadcastChannel := make(chan *WebsocketMessage)
 	room := &Room{
