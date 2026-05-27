@@ -58,9 +58,15 @@ func (client *Client) MarshalJSON() ([]byte, error) {
 	}{
 		Name:   client.Name,
 		Role:   client.Role,
-		IsDone: client.guess > 0 || client.doSkip,
+		IsDone: client.Guess() > 0 || client.doSkip,
 	}
 	return json.Marshal(out)
+}
+
+func (client *Client) Guess() int {
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	return client.guess
 }
 
 func NewClient(name, role string, room *Room, connection *websocket.Conn, bus message.Bus, logger *slog.Logger) *Client {

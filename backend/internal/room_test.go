@@ -17,7 +17,7 @@ func TestNewRoom(t *testing.T) {
 	expectedRoomId := uuid.New()
 	room := NewRoom(expectedRoomId, make(chan<- uuid.UUID), "", slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), new(GuessConfig))
 	assert.Equal(t, room.Id, expectedRoomId)
-	assert.False(t, room.InProgress)
+	assert.False(t, room.inProgress)
 }
 
 func TestRoom_ConnectionStatus(t *testing.T) {
@@ -34,7 +34,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 			password: "",
 			room: func() *Room {
 				return &Room{
-					InProgress: true,
+					inProgress: true,
 				}
 			},
 			want: ConnectionState{
@@ -52,7 +52,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 					t.Fatal(err)
 				}
 				return &Room{
-					InProgress:     false,
+					inProgress:     false,
 					HashedPassword: hashed,
 				}
 			},
@@ -67,7 +67,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 			password: "",
 			room: func() *Room {
 				return &Room{
-					InProgress:     false,
+					inProgress:     false,
 					HashedPassword: make([]byte, 0),
 					Clients: map[*Client]bool{
 						&Client{
@@ -87,7 +87,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 			password: "",
 			room: func() *Room {
 				return &Room{
-					InProgress:     false,
+					inProgress:     false,
 					HashedPassword: make([]byte, 0),
 					Clients:        make(map[*Client]bool),
 				}
@@ -107,7 +107,7 @@ func TestRoom_ConnectionStatus(t *testing.T) {
 					t.Fatal(err)
 				}
 				return &Room{
-					InProgress:     false,
+					inProgress:     false,
 					HashedPassword: hashed,
 				}
 			},
@@ -207,7 +207,7 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 	client := &Client{}
 	room := &Room{
 		Id:         roomId,
-		InProgress: false,
+		inProgress: false,
 		leave:      make(chan *Client),
 		join:       nil,
 		Clients: map[*Client]bool{
@@ -238,7 +238,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 	}
 	room := &Room{
 		Id:         uuid.New(),
-		InProgress: false,
+		inProgress: false,
 		leave:      nil,
 		join:       nil,
 		Clients: map[*Client]bool{
@@ -258,7 +258,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 	gotClientMsg := <-clientSendChannel
 
 	assert.DeepEqual(t, gotClientMsg, msg)
-	assert.True(t, room.InProgress)
+	assert.True(t, room.inProgress)
 }
 
 func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) {
@@ -270,7 +270,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 	}
 	room := &Room{
 		Id:         uuid.New(),
-		InProgress: false,
+		inProgress: false,
 		leave:      nil,
 		join:       nil,
 		Clients: map[*Client]bool{
@@ -295,11 +295,13 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 
 	clientSendChannel := make(chan *WebsocketMessage)
 	client := &Client{
+		Name: "A",
 		send: clientSendChannel,
 		Role: ProductOwner,
 	}
 	room.join <- client
 	room.join <- &Client{
+		Name:  "B",
 		Role:  Developer,
 		guess: 0,
 		send:  clientSendChannel,
@@ -307,12 +309,9 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 	msg := newDeveloperAction()
 	room.broadcast <- msg
 
-	select {
-	case <-time.After(5 * time.Second):
-		t.Fatalf("timeout")
-	case gotClientMsg := <-clientSendChannel:
-		assert.DeepEqual(t, gotClientMsg, newUsers(room.Clients))
-	}
+	gotClientMsg := <-clientSendChannel
+
+	assert.DeepEqual(t, gotClientMsg, newUsers(room.Clients))
 }
 
 func TestRoom_Run_BroadcastNewRound(t *testing.T) {
@@ -328,7 +327,7 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 	}
 	room := &Room{
 		Id:         uuid.New(),
-		InProgress: true,
+		inProgress: true,
 		leave:      nil,
 		join:       nil,
 		Clients: map[*Client]bool{
@@ -346,9 +345,11 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
+	time.Sleep(20 * time.Millisecond)
+
 	assert.DeepEqual(t, gotClientMsg, msg)
-	assert.False(t, room.InProgress)
-	assert.Equal(t, developerToReset.guess, 0)
+	assert.False(t, room.IsInProgress())
+	assert.Equal(t, developerToReset.Guess(), 0)
 }
 
 func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
@@ -365,7 +366,7 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 	}
 	room := &Room{
 		Id:         uuid.New(),
-		InProgress: true,
+		inProgress: true,
 		leave:      nil,
 		join:       nil,
 		Clients: map[*Client]bool{
@@ -382,8 +383,10 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
+	time.Sleep(10 * time.Millisecond)
+
 	assert.DeepEqual(t, gotClientMsg, newNewRound())
-	assert.False(t, room.InProgress)
+	assert.False(t, room.inProgress)
 	assert.Equal(t, developerToReset.guess, 0)
 }
 
@@ -391,7 +394,7 @@ func TestRoom_lock(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
 		Id:             uuid.New(),
-		InProgress:     true,
+		inProgress:     true,
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),
@@ -413,7 +416,7 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
 		Id:             uuid.New(),
-		InProgress:     true,
+		inProgress:     true,
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),
@@ -433,7 +436,7 @@ func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 	id := uuid.New()
 	room := &Room{
 		Id:            uuid.New(),
-		InProgress:    false,
+		inProgress:    false,
 		NameOfCreator: "some user",
 		key:           id,
 	}
@@ -445,7 +448,7 @@ func TestRoom_open_WhenUserNotCreator(t *testing.T) {
 func TestRoom_open_WhenKeyIsWrong(t *testing.T) {
 	room := &Room{
 		Id:            uuid.New(),
-		InProgress:    false,
+		inProgress:    false,
 		NameOfCreator: "some user",
 		key:           uuid.New(),
 	}
@@ -462,7 +465,7 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 	key := uuid.New()
 	room := &Room{
 		Id:             uuid.New(),
-		InProgress:     true,
+		inProgress:     true,
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),

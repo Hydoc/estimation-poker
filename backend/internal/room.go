@@ -23,11 +23,12 @@ type Issue struct {
 }
 
 type Room struct {
+	mu       sync.Mutex
 	clientMu sync.Mutex
 	logger   *slog.Logger
 
 	Id             uuid.UUID
-	InProgress     bool
+	inProgress     bool
 	leave          chan *Client
 	join           chan *Client
 	Clients        map[*Client]bool
@@ -61,7 +62,7 @@ type Overview struct {
 
 func (room *Room) State() State {
 	return State{
-		InProgress:      room.InProgress,
+		InProgress:      room.inProgress,
 		IsLocked:        room.IsLocked(),
 		Issues:          room.Issues,
 		PossibleGuesses: room.GuessConfig.Guesses,
@@ -80,7 +81,7 @@ func NewRoom(id uuid.UUID, destroy chan<- uuid.UUID, nameOfCreator string, logge
 	return &Room{
 		Id:             id,
 		logger:         logger,
-		InProgress:     false,
+		inProgress:     false,
 		leave:          make(chan *Client),
 		join:           make(chan *Client),
 		Clients:        make(map[*Client]bool),
@@ -93,6 +94,12 @@ func NewRoom(id uuid.UUID, destroy chan<- uuid.UUID, nameOfCreator string, logge
 		Issues:         make([]Issue, 0),
 		GuessConfig:    guessConfig,
 	}
+}
+
+func (room *Room) IsInProgress() bool {
+	room.mu.Lock()
+	defer room.mu.Unlock()
+	return room.inProgress
 }
 
 func (room *Room) Join(client *Client) {
@@ -124,7 +131,7 @@ func (room *Room) open(username, key string) bool {
 }
 
 func (room *Room) ConnectionState(username string, password string) ConnectionState {
-	if room.InProgress {
+	if room.IsInProgress() {
 		return ConnectionState{
 			CanConnect: false,
 			Reason:     ErrRoundStarted.Error(),
@@ -173,7 +180,7 @@ func (room *Room) everyDevIsDone() bool {
 }
 
 func (room *Room) newRound() {
-	room.InProgress = false
+	room.inProgress = false
 	room.clientMu.Lock()
 	for client := range room.Clients {
 		client.newRound()
@@ -212,7 +219,7 @@ func (room *Room) Run() {
 		case msg := <-room.broadcast:
 			switch msg.Type {
 			case estimate:
-				room.InProgress = true
+				room.inProgress = true
 				room.broadcastToClients(msg)
 			case developerAction:
 				if room.everyDevIsDone() {
@@ -223,7 +230,7 @@ func (room *Room) Run() {
 			case newRound:
 				room.newRound()
 			case leave:
-				if room.InProgress {
+				if room.inProgress {
 					room.newRound()
 					continue
 				}
