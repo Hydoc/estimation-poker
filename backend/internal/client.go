@@ -19,8 +19,6 @@ const (
 	PingInterval = time.Second * 20
 )
 
-type UserDTO map[string]any
-
 type Permissions struct {
 	CanLockRoom bool   `json:"canLockRoom"`
 	Key         string `json:"key"`
