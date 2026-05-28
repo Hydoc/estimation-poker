@@ -25,7 +25,7 @@ type Permissions struct {
 }
 
 type Client struct {
-	mu sync.Mutex
+	mu sync.RWMutex
 
 	connection *websocket.Conn
 	logger     *slog.Logger
@@ -82,8 +82,10 @@ func NewClient(name, role string, room *Room, connection *websocket.Conn, bus me
 func handleGuess(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(GuessPayload)
 	if ok && payload.client.Role == Developer {
+		payload.client.mu.Lock()
 		payload.client.guess = payload.guess
 		payload.client.doSkip = false
+		payload.client.mu.Unlock()
 		payload.client.room.broadcast <- newDeveloperAction()
 		payload.client.room.broadcast <- newUsers(payload.client.room.Clients)
 		payload.client.send <- newYouGuessed(payload.guess)
@@ -94,8 +96,10 @@ func handleGuess(msg message.Message) (*message.Message, error) {
 func handleSkipRound(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(SkipRoundPayload)
 	if ok && payload.client.Role == Developer {
+		payload.client.mu.Lock()
 		payload.client.doSkip = true
 		payload.client.guess = 0
+		payload.client.mu.Unlock()
 		payload.client.room.broadcast <- newDeveloperAction()
 		payload.client.room.broadcast <- newUsers(payload.client.room.Clients)
 		payload.client.send <- newYouSkipped()

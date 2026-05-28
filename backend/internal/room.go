@@ -23,8 +23,8 @@ type Issue struct {
 }
 
 type Room struct {
-	mu       sync.Mutex
-	clientMu sync.Mutex
+	mu       sync.RWMutex
+	clientMu sync.RWMutex
 	logger   *slog.Logger
 
 	Id             uuid.UUID
@@ -172,7 +172,7 @@ func (room *Room) everyDevIsDone() bool {
 	room.clientMu.Lock()
 	defer room.clientMu.Unlock()
 	for client := range room.Clients {
-		if client.Role == Developer && (client.guess == 0 && !client.doSkip) {
+		if client.Role == Developer && (client.Guess() == 0 && !client.doSkip) {
 			return false
 		}
 	}

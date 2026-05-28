@@ -25,7 +25,7 @@ type config struct {
 }
 
 type application struct {
-	mu sync.Mutex
+	mu sync.RWMutex
 
 	config      config
 	bus         message.Bus
