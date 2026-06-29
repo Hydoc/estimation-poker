@@ -70,7 +70,6 @@ func TestApplication_handleFetchRoomMetadata(t *testing.T) {
 			rooms: map[uuid.UUID]*internal.Room{
 				uuid.MustParse("9c874aaa-c628-4688-a72d-0b1afc708a7d"): {
 					HashedPassword: make([]byte, 0),
-					Issues:         make([]internal.Issue, 0),
 					GuessConfig:    &internal.GuessConfig{},
 				},
 			},

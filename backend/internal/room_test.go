@@ -521,14 +521,14 @@ func TestRoom_State(t *testing.T) {
 		inProgress      bool
 		hashedPassword  []byte
 		possibleGuesses []GuessConfigEntry
-		issues          []Issue
+		issues          []*Issue
 		want            State
 	}{
 		{
 			name:           "correct representation",
 			inProgress:     false,
 			hashedPassword: make([]byte, 0),
-			issues:         make([]Issue, 0),
+			issues:         make([]*Issue, 0),
 			possibleGuesses: []GuessConfigEntry{
 				{
 					Guess:       0,
@@ -542,7 +542,7 @@ func TestRoom_State(t *testing.T) {
 			want: State{
 				InProgress: false,
 				IsLocked:   false,
-				Issues:     make([]Issue, 0),
+				Issues:     make([]*Issue, 0),
 				PossibleGuesses: []GuessConfigEntry{
 					{
 						Guess:       0,
@@ -561,7 +561,7 @@ func TestRoom_State(t *testing.T) {
 			room := &Room{
 				inProgress:     tt.inProgress,
 				HashedPassword: tt.hashedPassword,
-				Issues:         tt.issues,
+				issues:         tt.issues,
 				GuessConfig: &GuessConfig{
 					Guesses: tt.possibleGuesses,
 				},
@@ -575,12 +575,12 @@ func TestRoom_addIssue(t *testing.T) {
 	tests := []struct {
 		name       string
 		issueToAdd string
-		want       []Issue
+		want       []*Issue
 	}{
 		{
 			name:       "default guess for new issue",
 			issueToAdd: "Hello World",
-			want: []Issue{
+			want: []*Issue{
 				{
 					Title: "Hello World",
 					Guess: -1,
@@ -592,12 +592,12 @@ func TestRoom_addIssue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			room := &Room{
-				Issues: make([]Issue, 0),
+				issues: make([]*Issue, 0),
 			}
 
 			room.addIssue(tt.issueToAdd)
 
-			assert.DeepEqual(t, room.Issues, tt.want)
+			assert.DeepEqual(t, room.issues, tt.want)
 		})
 	}
 }

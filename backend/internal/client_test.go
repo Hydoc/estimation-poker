@@ -159,10 +159,14 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 func TestClient_WebsocketReaderAddIssueMessage(t *testing.T) {
 	broadcastChannel := make(chan *WebsocketMessage)
 	room := &Room{
-		broadcast: broadcastChannel,
-		join:      make(chan *Client),
-		leave:     make(chan *Client),
-		Clients:   make(map[*Client]bool),
+		broadcast:      broadcastChannel,
+		HashedPassword: make([]byte, 0),
+		GuessConfig: &GuessConfig{
+			Guesses: make([]GuessConfigEntry, 0),
+		},
+		join:    make(chan *Client),
+		leave:   make(chan *Client),
+		Clients: make(map[*Client]bool),
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(echo))
@@ -190,7 +194,7 @@ func TestClient_WebsocketReaderAddIssueMessage(t *testing.T) {
 	got := <-broadcastChannel
 
 	assert.DeepEqual(t, got, expectedMessage)
-	assert.DeepEqual(t, room.Issues, []Issue{
+	assert.DeepEqual(t, room.State().Issues, []*Issue{
 		{
 			Title: "Issue to add",
 			Guess: -1,

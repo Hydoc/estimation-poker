@@ -38,7 +38,7 @@ type Room struct {
 	key            uuid.UUID
 	HashedPassword []byte
 	Created        time.Time
-	Issues         []Issue
+	issues         []*Issue
 	GuessConfig    *GuessConfig
 }
 
@@ -50,7 +50,7 @@ type ConnectionState struct {
 type State struct {
 	InProgress      bool               `json:"inProgress"`
 	IsLocked        bool               `json:"isLocked"`
-	Issues          []Issue            `json:"issues"`
+	Issues          []*Issue           `json:"issues"`
 	PossibleGuesses []GuessConfigEntry `json:"possibleGuesses"`
 }
 
@@ -64,7 +64,7 @@ func (room *Room) State() State {
 	return State{
 		InProgress:      room.inProgress,
 		IsLocked:        room.IsLocked(),
-		Issues:          room.Issues,
+		Issues:          room.issues,
 		PossibleGuesses: room.GuessConfig.Guesses,
 	}
 }
@@ -91,7 +91,7 @@ func NewRoom(id uuid.UUID, destroy chan<- uuid.UUID, nameOfCreator string, logge
 		key:            uuid.New(),
 		HashedPassword: make([]byte, 0),
 		Created:        time.Now(),
-		Issues:         make([]Issue, 0),
+		issues:         make([]*Issue, 0),
 		GuessConfig:    guessConfig,
 	}
 }
@@ -246,7 +246,7 @@ func (room *Room) Run() {
 
 func (room *Room) addIssue(issue string) {
 	room.mu.Lock()
-	room.Issues = append(room.Issues, Issue{
+	room.issues = append(room.issues, &Issue{
 		Title: issue,
 		Guess: -1,
 	})
