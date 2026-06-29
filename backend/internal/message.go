@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -30,7 +31,12 @@ const (
 	users           = "users"
 )
 
-type WebsocketMessage struct {
+type IncomingWebsocketMessage struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
+}
+
+type OutgoingWebsocketMessage struct {
 	Type string `json:"type"`
 	Data any    `json:"data"`
 }
@@ -73,9 +79,9 @@ type RevealPayload struct {
 	client *Client
 }
 
-func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *WebsocketMessage {
+func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *OutgoingWebsocketMessage {
 	if clientName == roomCreatorName {
-		return &WebsocketMessage{
+		return &OutgoingWebsocketMessage{
 			Type: permissions,
 			Data: Permissions{
 				CanLockRoom: true,
@@ -84,7 +90,7 @@ func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *Websocke
 		}
 	}
 
-	return &WebsocketMessage{
+	return &OutgoingWebsocketMessage{
 		Type: permissions,
 		Data: Permissions{
 			CanLockRoom: false,
@@ -92,13 +98,14 @@ func newPermissions(clientName, roomCreatorName string, key uuid.UUID) *Websocke
 	}
 }
 
-func newDeveloperAction() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: developerAction,
+func newOutgoingWebsocketMessage(msgType string, data any) *OutgoingWebsocketMessage {
+	return &OutgoingWebsocketMessage{
+		Type: msgType,
+		Data: data,
 	}
 }
 
-func newUsers(clients map[*Client]bool) *WebsocketMessage {
+func newUsers(clients map[*Client]bool) *OutgoingWebsocketMessage {
 	var out []*Client
 
 	for c := range clients {
@@ -109,51 +116,13 @@ func newUsers(clients map[*Client]bool) *WebsocketMessage {
 		return out[i].Name < out[j].Name
 	})
 
-	return &WebsocketMessage{
+	return &OutgoingWebsocketMessage{
 		Type: users,
 		Data: out,
 	}
 }
 
-func newEstimate(ticket string) *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: estimate,
-		Data: ticket,
-	}
-}
-
-func newLeave(name string) *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: leave,
-		Data: name,
-	}
-}
-
-func newRoomLocked() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: roomLocked,
-	}
-}
-
-func newRoomOpened() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: roomOpened,
-	}
-}
-
-func newIssues() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: issues,
-	}
-}
-
-func newEveryoneIsDone() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: everyoneDone,
-	}
-}
-
-func newReveal(clients map[*Client]bool) *WebsocketMessage {
+func newReveal(clients map[*Client]bool) *OutgoingWebsocketMessage {
 	out := []map[string]any{}
 	for client := range clients {
 		if client.Role == Developer {
@@ -161,28 +130,9 @@ func newReveal(clients map[*Client]bool) *WebsocketMessage {
 		}
 	}
 
-	return &WebsocketMessage{
+	return &OutgoingWebsocketMessage{
 		Type: reveal,
 		Data: out,
-	}
-}
-
-func newNewRound() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: newRound,
-	}
-}
-
-func newYouSkipped() *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: youSkipped,
-	}
-}
-
-func newYouGuessed(guess int) *WebsocketMessage {
-	return &WebsocketMessage{
-		Type: youGuessed,
-		Data: guess,
 	}
 }
 
@@ -199,7 +149,7 @@ func CreateBus() message.Bus {
 	return bus
 }
 
-func fabricate(incomingMessage *WebsocketMessage, client *Client) (message.Message, error) {
+func fabricate(incomingMessage *IncomingWebsocketMessage, client *Client) (message.Message, error) {
 	switch incomingMessage.Type {
 	case skipRound:
 		return message.New(
@@ -209,8 +159,8 @@ func fabricate(incomingMessage *WebsocketMessage, client *Client) (message.Messa
 			},
 		), nil
 	case estimate:
-		ticket, ok := incomingMessage.Data.(string)
-		if !ok {
+		var ticket string
+		if err := json.Unmarshal(incomingMessage.Data, &ticket); err != nil {
 			return message.Message{}, errors.New("ticket is invalid")
 		}
 
@@ -222,55 +172,54 @@ func fabricate(incomingMessage *WebsocketMessage, client *Client) (message.Messa
 			},
 		), nil
 	case guess:
-		actualGuess, ok := incomingMessage.Data.(float64)
-		if !ok {
+		var actualGuess int
+		if err := json.Unmarshal(incomingMessage.Data, &actualGuess); err != nil {
 			return message.Message{}, errors.New("guess is invalid")
 		}
-
 		return message.New(guess, GuessPayload{
 			client: client,
-			guess:  int(actualGuess),
+			guess:  actualGuess,
 		}), nil
 	case newRound:
 		return message.New(newRound, NewRoundPayload{client: client}), nil
 	case reveal:
 		return message.New(reveal, RevealPayload{client: client}), nil
 	case lockRoom:
-		pw, pwOk := incomingMessage.Data.(map[string]any)["password"]
-		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
-
-		if !keyOk {
-			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a key", client.Name, client.room.Id)
+		var input struct {
+			Password string `json:"password"`
+			Key      string `json:"key"`
 		}
-		if !pwOk {
-			return message.Message{}, fmt.Errorf("client: %s tried to lock room %s without a password", client.Name, client.room.Id)
+
+		if err := json.Unmarshal(incomingMessage.Data, &input); err != nil {
+			return message.Message{}, errors.New("lockRoom payload is invalid")
 		}
 
 		return message.New(lockRoom, LockRoomPayload{
 			client:   client,
-			key:      key.(string),
-			password: pw.(string),
+			key:      input.Key,
+			password: input.Password,
 		}), nil
 	case openRoom:
-		key, keyOk := incomingMessage.Data.(map[string]any)["key"]
-
-		if !keyOk {
+		var input struct {
+			Key string `json:"key"`
+		}
+		if err := json.Unmarshal(incomingMessage.Data, &input); err != nil {
 			return message.Message{}, fmt.Errorf("client: %s tried to open room %s without a key", client.Name, client.room.Id)
 		}
 
 		return message.New(openRoom, OpenRoomPayload{
 			client: client,
-			key:    key.(string),
+			key:    input.Key,
 		}), nil
 	case addIssue:
-		actualIssue, ok := incomingMessage.Data.(string)
-		if !ok {
-			return message.Message{}, errors.New("issue is invalid")
+		var issue string
+		if err := json.Unmarshal(incomingMessage.Data, &issue); err != nil {
+			return message.Message{}, fmt.Errorf("client: %s tried to open room %s without a key", client.Name, client.room.Id)
 		}
 
 		return message.New(addIssue, AddIssuePayload{
 			client: client,
-			issue:  actualIssue,
+			issue:  issue,
 		}), nil
 	default:
 		return message.Message{}, errors.New("message not found")

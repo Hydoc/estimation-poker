@@ -232,7 +232,7 @@ func TestRoom_Run_DeletingAClientAndDestroyingTheRoom(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastEstimate(t *testing.T) {
-	clientSendChannel := make(chan *WebsocketMessage)
+	clientSendChannel := make(chan *OutgoingWebsocketMessage)
 	client := &Client{
 		send: clientSendChannel,
 	}
@@ -244,12 +244,12 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 		Clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: make(chan *WebsocketMessage),
+		broadcast: make(chan *OutgoingWebsocketMessage),
 		destroy:   nil,
 	}
 	go room.Run()
 
-	msg := &WebsocketMessage{
+	msg := &OutgoingWebsocketMessage{
 		Type: estimate,
 		Data: nil,
 	}
@@ -262,7 +262,7 @@ func TestRoom_Run_BroadcastEstimate(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) {
-	clientSendChannel := make(chan *WebsocketMessage)
+	clientSendChannel := make(chan *OutgoingWebsocketMessage)
 	client := &Client{
 		send:  clientSendChannel,
 		Role:  Developer,
@@ -276,15 +276,15 @@ func TestRoom_Run_BroadcastDeveloperGuessed_EveryDeveloperGuessed(t *testing.T) 
 		Clients: map[*Client]bool{
 			client: true,
 		},
-		broadcast: make(chan *WebsocketMessage),
+		broadcast: make(chan *OutgoingWebsocketMessage),
 		destroy:   nil,
 	}
 	go room.Run()
-	room.broadcast <- newDeveloperAction()
+	room.broadcast <- newOutgoingWebsocketMessage(developerAction, nil)
 
 	gotClientMsg := <-clientSendChannel
 
-	assert.DeepEqual(t, gotClientMsg, newEveryoneIsDone())
+	assert.DeepEqual(t, gotClientMsg, newOutgoingWebsocketMessage(everyoneDone, nil))
 }
 
 func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
@@ -293,7 +293,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 	room := NewRoom(uuid.New(), make(chan<- uuid.UUID), "Tester", logger, new(GuessConfig))
 	go room.Run()
 
-	clientSendChannel := make(chan *WebsocketMessage)
+	clientSendChannel := make(chan *OutgoingWebsocketMessage)
 	client := &Client{
 		Name: "A",
 		send: clientSendChannel,
@@ -306,7 +306,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 		guess: 0,
 		send:  clientSendChannel,
 	}
-	msg := newDeveloperAction()
+	msg := newOutgoingWebsocketMessage(developerAction, nil)
 	room.broadcast <- msg
 
 	gotClientMsg := <-clientSendChannel
@@ -315,7 +315,7 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastNewRound(t *testing.T) {
-	clientSendChannel := make(chan *WebsocketMessage)
+	clientSendChannel := make(chan *OutgoingWebsocketMessage)
 	client := &Client{
 		Name: "do nothing",
 		send: clientSendChannel,
@@ -336,12 +336,12 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 			client:           true,
 			developerToReset: true,
 		},
-		broadcast: make(chan *WebsocketMessage),
+		broadcast: make(chan *OutgoingWebsocketMessage),
 		destroy:   nil,
 	}
 	go room.Run()
 
-	msg := newNewRound()
+	msg := newOutgoingWebsocketMessage(newRound, nil)
 	room.broadcast <- msg
 
 	// four messages due to two clients à 2 messages
@@ -360,8 +360,8 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 }
 
 func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
-	clientSendChannel := make(chan *WebsocketMessage)
-	broadcastChannel := make(chan *WebsocketMessage)
+	clientSendChannel := make(chan *OutgoingWebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	client := &Client{
 		send: clientSendChannel,
 		Role: ProductOwner,
@@ -385,12 +385,12 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 	}
 	go room.Run()
 
-	msg := newLeave(client.Name)
+	msg := newOutgoingWebsocketMessage(leave, client.Name)
 	room.broadcast <- msg
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
-	assert.DeepEqual(t, gotClientMsg, newNewRound())
+	assert.DeepEqual(t, gotClientMsg, newOutgoingWebsocketMessage(newRound, nil))
 	assert.False(t, room.inProgress)
 	assert.Equal(t, developerToReset.Guess(), 0)
 }
@@ -403,7 +403,7 @@ func TestRoom_lock(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),
-		broadcast:      make(chan *WebsocketMessage),
+		broadcast:      make(chan *OutgoingWebsocketMessage),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		key:            key,
@@ -425,7 +425,7 @@ func TestRoom_lock_WhenLockingFails(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),
-		broadcast:      make(chan *WebsocketMessage),
+		broadcast:      make(chan *OutgoingWebsocketMessage),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		key:            key,
@@ -474,7 +474,7 @@ func TestRoom_lock_WhenLockingFailsDueToHashingFails(t *testing.T) {
 		leave:          nil,
 		join:           nil,
 		Clients:        make(map[*Client]bool),
-		broadcast:      make(chan *WebsocketMessage),
+		broadcast:      make(chan *OutgoingWebsocketMessage),
 		destroy:        nil,
 		NameOfCreator:  "Bla",
 		key:            key,

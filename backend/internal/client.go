@@ -34,7 +34,7 @@ type Client struct {
 	Role       string
 	guess      int
 	doSkip     bool
-	send       chan *WebsocketMessage
+	send       chan *OutgoingWebsocketMessage
 	bus        message.Bus
 }
 
@@ -73,7 +73,7 @@ func NewClient(name, role string, room *Room, connection *websocket.Conn, bus me
 		Name:       name,
 		connection: connection,
 		Role:       role,
-		send:       make(chan *WebsocketMessage),
+		send:       make(chan *OutgoingWebsocketMessage),
 		bus:        bus,
 		logger:     logger,
 	}
@@ -86,9 +86,9 @@ func handleGuess(msg message.Message) (*message.Message, error) {
 		payload.client.guess = payload.guess
 		payload.client.doSkip = false
 		payload.client.mu.Unlock()
-		payload.client.room.broadcast <- newDeveloperAction()
+		payload.client.room.broadcast <- newOutgoingWebsocketMessage(developerAction, nil)
 		payload.client.room.broadcast <- newUsers(payload.client.room.Clients)
-		payload.client.send <- newYouGuessed(payload.guess)
+		payload.client.send <- newOutgoingWebsocketMessage(youGuessed, payload.guess)
 	}
 	return nil, nil
 }
@@ -100,9 +100,9 @@ func handleSkipRound(msg message.Message) (*message.Message, error) {
 		payload.client.doSkip = true
 		payload.client.guess = 0
 		payload.client.mu.Unlock()
-		payload.client.room.broadcast <- newDeveloperAction()
+		payload.client.room.broadcast <- newOutgoingWebsocketMessage(developerAction, nil)
 		payload.client.room.broadcast <- newUsers(payload.client.room.Clients)
-		payload.client.send <- newYouSkipped()
+		payload.client.send <- newOutgoingWebsocketMessage(youSkipped, nil)
 	}
 	return nil, nil
 }
@@ -110,7 +110,7 @@ func handleSkipRound(msg message.Message) (*message.Message, error) {
 func handleNewRound(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(NewRoundPayload)
 	if ok && payload.client.Role == ProductOwner {
-		payload.client.room.broadcast <- newNewRound()
+		payload.client.room.broadcast <- newOutgoingWebsocketMessage(newRound, nil)
 	}
 	return nil, nil
 }
@@ -118,7 +118,7 @@ func handleNewRound(msg message.Message) (*message.Message, error) {
 func handleLockRoom(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(LockRoomPayload)
 	if ok && payload.client.room.lock(payload.client.Name, payload.password, payload.key) {
-		payload.client.room.broadcast <- newRoomLocked()
+		payload.client.room.broadcast <- newOutgoingWebsocketMessage(roomLocked, nil)
 	}
 	return nil, nil
 }
@@ -126,7 +126,7 @@ func handleLockRoom(msg message.Message) (*message.Message, error) {
 func handleOpenRoom(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(OpenRoomPayload)
 	if ok && payload.client.room.open(payload.client.Name, payload.key) {
-		payload.client.room.broadcast <- newRoomOpened()
+		payload.client.room.broadcast <- newOutgoingWebsocketMessage(roomOpened, nil)
 	}
 	return nil, nil
 }
@@ -134,7 +134,7 @@ func handleOpenRoom(msg message.Message) (*message.Message, error) {
 func handleEstimate(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(EstimatePayload)
 	if ok && payload.client.Role == ProductOwner {
-		payload.client.room.broadcast <- newEstimate(payload.ticket)
+		payload.client.room.broadcast <- newOutgoingWebsocketMessage(estimate, payload.ticket)
 	}
 	return nil, nil
 }
@@ -151,7 +151,7 @@ func handleAddIssue(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(AddIssuePayload)
 	if ok && payload.client.Role == ProductOwner {
 		payload.client.room.addIssue(payload.issue)
-		payload.client.room.broadcast <- newIssues()
+		payload.client.room.broadcast <- newOutgoingWebsocketMessage(issues, nil)
 	}
 	return nil, nil
 }
@@ -159,12 +159,12 @@ func handleAddIssue(msg message.Message) (*message.Message, error) {
 func (client *Client) WebsocketReader() {
 	defer func() {
 		client.room.leave <- client
-		client.room.broadcast <- newLeave(client.Name)
+		client.room.broadcast <- newOutgoingWebsocketMessage(leave, client.Name)
 		client.room.broadcast <- newUsers(client.room.Clients)
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()
 	for {
-		var incMessage *WebsocketMessage
+		var incMessage *IncomingWebsocketMessage
 		err := wsjson.Read(context.Background(), client.connection, &incMessage)
 
 		if err != nil {
@@ -195,7 +195,7 @@ func (client *Client) WebsocketWriter() {
 
 	defer func() {
 		client.room.leave <- client
-		client.room.broadcast <- newLeave(client.Name)
+		client.room.broadcast <- newOutgoingWebsocketMessage(leave, client.Name)
 		client.room.broadcast <- newUsers(client.room.Clients)
 		client.connection.Close(websocket.StatusNormalClosure, "")
 	}()

@@ -11,37 +11,37 @@ import (
 func TestMessage(t *testing.T) {
 	tests := []struct {
 		name         string
-		msg          *WebsocketMessage
+		msg          *OutgoingWebsocketMessage
 		expectedType string
 		expectedData any
 	}{
 		{
-			name:         "newLeave",
-			msg:          newLeave("Test"),
+			name:         "leave",
+			msg:          newOutgoingWebsocketMessage(leave, "Test"),
 			expectedType: leave,
 			expectedData: "Test",
 		},
 		{
 			name:         "newRoomLocked",
-			msg:          newRoomLocked(),
+			msg:          newOutgoingWebsocketMessage(roomLocked, nil),
 			expectedType: roomLocked,
 			expectedData: nil,
 		},
 		{
 			name:         "newRoomOpened",
-			msg:          newRoomOpened(),
+			msg:          newOutgoingWebsocketMessage(roomOpened, nil),
 			expectedType: roomOpened,
 			expectedData: nil,
 		},
 		{
 			name:         "newEveryoneIsDone",
-			msg:          newEveryoneIsDone(),
+			msg:          newOutgoingWebsocketMessage(everyoneDone, nil),
 			expectedType: everyoneDone,
 			expectedData: nil,
 		},
 		{
 			name:         "newNewRound",
-			msg:          newNewRound(),
+			msg:          newOutgoingWebsocketMessage(newRound, nil),
 			expectedType: newRound,
 			expectedData: nil,
 		},
@@ -52,14 +52,14 @@ func TestMessage(t *testing.T) {
 			expectedData: []map[string]any{},
 		},
 		{
-			name:         "newYouSkipped",
-			msg:          newYouSkipped(),
+			name:         "youSkipped",
+			msg:          newOutgoingWebsocketMessage(youSkipped, nil),
 			expectedType: youSkipped,
 			expectedData: nil,
 		},
 		{
-			name:         "newYouGuessed",
-			msg:          newYouGuessed(2),
+			name:         "youGuessed",
+			msg:          newOutgoingWebsocketMessage(youGuessed, 2),
 			expectedType: youGuessed,
 			expectedData: 2,
 		},

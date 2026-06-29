@@ -32,7 +32,7 @@ type Room struct {
 	leave          chan *Client
 	join           chan *Client
 	Clients        map[*Client]bool
-	broadcast      chan *WebsocketMessage
+	broadcast      chan *OutgoingWebsocketMessage
 	destroy        chan<- uuid.UUID
 	NameOfCreator  string
 	key            uuid.UUID
@@ -85,7 +85,7 @@ func NewRoom(id uuid.UUID, destroy chan<- uuid.UUID, nameOfCreator string, logge
 		leave:          make(chan *Client),
 		join:           make(chan *Client),
 		Clients:        make(map[*Client]bool),
-		broadcast:      make(chan *WebsocketMessage),
+		broadcast:      make(chan *OutgoingWebsocketMessage),
 		destroy:        destroy,
 		NameOfCreator:  nameOfCreator,
 		key:            uuid.New(),
@@ -189,12 +189,12 @@ func (room *Room) newRound() {
 	room.inProgress = false
 	for client := range room.Clients {
 		client.newRound()
-		client.send <- newNewRound()
+		client.send <- newOutgoingWebsocketMessage(newRound, nil)
 		client.send <- newUsers(room.Clients)
 	}
 }
 
-func (room *Room) broadcastToClients(msg *WebsocketMessage) {
+func (room *Room) broadcastToClients(msg *OutgoingWebsocketMessage) {
 	room.clientMu.Lock()
 	for client := range room.Clients {
 		client.send <- msg
@@ -229,7 +229,7 @@ func (room *Room) Run() {
 				room.mu.Unlock()
 			case developerAction:
 				if room.everyDevIsDone() {
-					room.broadcastToClients(newEveryoneIsDone())
+					room.broadcastToClients(newOutgoingWebsocketMessage(everyoneDone, nil))
 					continue
 				}
 				room.broadcastToClients(newUsers(room.Clients))

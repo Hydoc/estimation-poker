@@ -75,7 +75,7 @@ func TestClient_Reset(t *testing.T) {
 }
 
 func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *testing.T) {
-	broadcastChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	room := &Room{
 		broadcast: broadcastChannel,
 		join:      make(chan *Client),
@@ -94,7 +94,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 
 	bus := message.NewBus()
 	bus.Register(guess, handleGuess)
-	clientChannel := make(chan *WebsocketMessage)
+	clientChannel := make(chan *OutgoingWebsocketMessage)
 	client := &Client{
 		connection: connection,
 		Role:       Developer,
@@ -105,7 +105,7 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 	}
 	go client.WebsocketReader()
 
-	wsjson.Write(context.Background(), connection, WebsocketMessage{
+	wsjson.Write(context.Background(), connection, OutgoingWebsocketMessage{
 		Type: guess,
 		Data: 2,
 	})
@@ -113,17 +113,17 @@ func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *te
 	firstBroadcastMsg := <-broadcastChannel
 	secondBroadcastMsg := <-broadcastChannel
 
-	expectedClientMsg := newYouGuessed(2)
+	expectedClientMsg := newOutgoingWebsocketMessage(youGuessed, 2)
 	gotClientMsg := <-clientChannel
 
-	assert.DeepEqual(t, firstBroadcastMsg, newDeveloperAction())
+	assert.DeepEqual(t, firstBroadcastMsg, newOutgoingWebsocketMessage(developerAction, nil))
 	assert.DeepEqual(t, secondBroadcastMsg, newUsers(room.Clients))
 	assert.DeepEqual(t, gotClientMsg, expectedClientMsg)
 	assert.Equal(t, client.Guess(), 2)
 }
 
 func TestClient_websocketReaderRevealMessage(t *testing.T) {
-	broadcastChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	room := &Room{
 		broadcast: broadcastChannel,
 		join:      make(chan *Client),
@@ -146,7 +146,7 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	go client.WebsocketReader()
 	go client.WebsocketWriter()
-	expectedMessage := &WebsocketMessage{
+	expectedMessage := &OutgoingWebsocketMessage{
 		Type: reveal,
 		Data: []map[string]any{},
 	}
@@ -157,7 +157,7 @@ func TestClient_websocketReaderRevealMessage(t *testing.T) {
 }
 
 func TestClient_WebsocketReaderAddIssueMessage(t *testing.T) {
-	broadcastChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	room := &Room{
 		broadcast:      broadcastChannel,
 		HashedPassword: make([]byte, 0),
@@ -184,10 +184,10 @@ func TestClient_WebsocketReaderAddIssueMessage(t *testing.T) {
 	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	go client.WebsocketReader()
 	go client.WebsocketWriter()
-	expectedMessage := &WebsocketMessage{
+	expectedMessage := &OutgoingWebsocketMessage{
 		Type: issues,
 	}
-	client.send <- &WebsocketMessage{
+	client.send <- &OutgoingWebsocketMessage{
 		Type: addIssue,
 		Data: "Issue to add",
 	}
@@ -203,7 +203,7 @@ func TestClient_WebsocketReaderAddIssueMessage(t *testing.T) {
 }
 
 func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner(t *testing.T) {
-	broadcastChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	room := &Room{
 		broadcast: broadcastChannel,
 		join:      make(chan *Client),
@@ -225,7 +225,7 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	go client.WebsocketReader()
 
-	expectedMsg := newNewRound()
+	expectedMsg := newOutgoingWebsocketMessage(newRound, nil)
 	wsjson.Write(context.Background(), connection, expectedMsg)
 
 	got := <-broadcastChannel
@@ -234,7 +234,7 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 }
 
 func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(t *testing.T) {
-	broadcastChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	room := &Room{
 		broadcast: broadcastChannel,
 		join:      make(chan *Client),
@@ -253,7 +253,7 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 
 	bus := message.NewBus()
 	bus.Register(skipRound, handleSkipRound)
-	clientChannel := make(chan *WebsocketMessage)
+	clientChannel := make(chan *OutgoingWebsocketMessage)
 	client := &Client{
 		connection: connection,
 		room:       room,
@@ -264,13 +264,13 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 	}
 	go client.WebsocketReader()
 
-	wsjson.Write(context.Background(), connection, WebsocketMessage{
+	wsjson.Write(context.Background(), connection, OutgoingWebsocketMessage{
 		Type: skipRound,
 	})
 
-	expectedMsg := newDeveloperAction()
+	expectedMsg := newOutgoingWebsocketMessage(developerAction, nil)
 	secondExpectedMsg := newUsers(room.Clients)
-	expectedClientMsg := newYouSkipped()
+	expectedClientMsg := newOutgoingWebsocketMessage(youSkipped, nil)
 	firstBroadcast := <-broadcastChannel
 	secondBroadcast := <-broadcastChannel
 	gotClientMessage := <-clientChannel
@@ -281,7 +281,7 @@ func TestClient_WebsocketReader_WhenSkipRoundMessageOccurredWithClientDeveloper(
 }
 
 func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *testing.T) {
-	broadcastChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	id := uuid.New()
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
 	nameOfCreator := "Test"
@@ -316,7 +316,7 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 	}
 	go client.WebsocketReader()
 
-	wsjson.Write(context.Background(), connection, WebsocketMessage{
+	wsjson.Write(context.Background(), connection, OutgoingWebsocketMessage{
 		Type: lockRoom,
 		Data: map[string]any{
 			"password": "my cool pw",
@@ -324,14 +324,14 @@ func TestClient_WebsocketReader_WhenLockRoomMessageOccurredAnyClientCanLock(t *t
 		},
 	})
 
-	expectedMsg := newRoomLocked()
+	expectedMsg := newOutgoingWebsocketMessage(roomLocked, nil)
 	got := <-broadcastChannel
 
 	assert.DeepEqual(t, got, expectedMsg)
 }
 
 func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
-	broadcastChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	id := uuid.New()
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("my cool pw"), bcrypt.DefaultCost)
 	room := &Room{
@@ -365,21 +365,21 @@ func TestClient_WebsocketReader_WhenOpenRoomMessageOccurred(t *testing.T) {
 	}
 	go client.WebsocketReader()
 
-	wsjson.Write(context.Background(), connection, WebsocketMessage{
+	wsjson.Write(context.Background(), connection, OutgoingWebsocketMessage{
 		Type: openRoom,
 		Data: map[string]any{
 			"key": id.String(),
 		},
 	})
 
-	expectedMsg := newRoomOpened()
+	expectedMsg := newOutgoingWebsocketMessage(roomOpened, nil)
 	got := <-broadcastChannel
 
 	assert.DeepEqual(t, got, expectedMsg)
 }
 
 func TestClient_WebsocketWriter(t *testing.T) {
-	broadcastChannel := make(chan *WebsocketMessage)
+	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	room := &Room{
 		broadcast: broadcastChannel,
 		join:      make(chan *Client),
@@ -396,7 +396,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	clientChannel := make(chan *WebsocketMessage)
+	clientChannel := make(chan *OutgoingWebsocketMessage)
 	bus := message.NewBus()
 	bus.Register(estimate, handleEstimate)
 	client := &Client{
@@ -411,7 +411,7 @@ func TestClient_WebsocketWriter(t *testing.T) {
 	go client.WebsocketReader()
 
 	// due to the echo websocket it writes to itself
-	expectedMsg := &WebsocketMessage{
+	expectedMsg := &OutgoingWebsocketMessage{
 		Type: estimate,
 		Data: "a-ticket",
 	}
