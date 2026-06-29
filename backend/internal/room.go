@@ -181,13 +181,17 @@ func (room *Room) everyDevIsDone() bool {
 
 func (room *Room) newRound() {
 	room.clientMu.Lock()
+	room.mu.Lock()
+	defer func() {
+		room.clientMu.Unlock()
+		room.mu.Unlock()
+	}()
 	room.inProgress = false
 	for client := range room.Clients {
 		client.newRound()
 		client.send <- newNewRound()
 		client.send <- newUsers(room.Clients)
 	}
-	room.clientMu.Unlock()
 }
 
 func (room *Room) broadcastToClients(msg *WebsocketMessage) {
@@ -219,8 +223,10 @@ func (room *Room) Run() {
 		case msg := <-room.broadcast:
 			switch msg.Type {
 			case estimate:
+				room.mu.Lock()
 				room.inProgress = true
 				room.broadcastToClients(msg)
+				room.mu.Unlock()
 			case developerAction:
 				if room.everyDevIsDone() {
 					room.broadcastToClients(newEveryoneIsDone())
@@ -230,7 +236,7 @@ func (room *Room) Run() {
 			case newRound:
 				room.newRound()
 			case leave:
-				if room.inProgress {
+				if room.IsInProgress() {
 					room.newRound()
 					continue
 				}

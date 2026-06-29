@@ -317,10 +317,12 @@ func TestRoom_Run_BroadcastDeveloperGuessed_NotEveryoneGuessed(t *testing.T) {
 func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 	clientSendChannel := make(chan *WebsocketMessage)
 	client := &Client{
+		Name: "do nothing",
 		send: clientSendChannel,
 		Role: ProductOwner,
 	}
 	developerToReset := &Client{
+		Name:  "reset me",
 		send:  clientSendChannel,
 		Role:  Developer,
 		guess: 2,
@@ -342,10 +344,17 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 	msg := newNewRound()
 	room.broadcast <- msg
 
-	gotClientMsg := <-clientSendChannel
-	<-clientSendChannel
+	// four messages due to two clients à 2 messages
+	gotFirstClientMessage := <-clientSendChannel
+	gotSecondClientMessage := <-clientSendChannel
+	gotThirdClientMessage := <-clientSendChannel
+	gotFourthClientMessage := <-clientSendChannel
 
-	assert.DeepEqual(t, gotClientMsg, msg)
+	assert.DeepEqual(t, gotFirstClientMessage, msg)
+	assert.DeepEqual(t, gotSecondClientMessage, newUsers(room.Clients))
+	assert.DeepEqual(t, gotThirdClientMessage, msg)
+	assert.DeepEqual(t, gotFourthClientMessage, newUsers(room.Clients))
+
 	assert.False(t, room.IsInProgress())
 	assert.Equal(t, developerToReset.Guess(), 0)
 }
