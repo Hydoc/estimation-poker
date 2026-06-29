@@ -18,8 +18,8 @@ var (
 )
 
 type Issue struct {
-	Title string
-	Guess int
+	Title string `json:"title"`
+	Guess int    `json:"guess"`
 }
 
 type Room struct {
