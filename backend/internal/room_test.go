@@ -345,8 +345,6 @@ func TestRoom_Run_BroadcastNewRound(t *testing.T) {
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
-	time.Sleep(20 * time.Millisecond)
-
 	assert.DeepEqual(t, gotClientMsg, msg)
 	assert.False(t, room.IsInProgress())
 	assert.Equal(t, developerToReset.Guess(), 0)
@@ -383,11 +381,9 @@ func TestRoom_Run_BroadcastLeaveWhenRoomInProgress(t *testing.T) {
 	gotClientMsg := <-clientSendChannel
 	<-clientSendChannel
 
-	time.Sleep(10 * time.Millisecond)
-
 	assert.DeepEqual(t, gotClientMsg, newNewRound())
 	assert.False(t, room.inProgress)
-	assert.Equal(t, developerToReset.guess, 0)
+	assert.Equal(t, developerToReset.Guess(), 0)
 }
 
 func TestRoom_lock(t *testing.T) {
