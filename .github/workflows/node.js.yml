@@ -39,7 +39,7 @@ jobs:
         cd frontend
         pnpm test
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
          name: frontend
          token: ${{ secrets.CODECOV_TOKEN }}
