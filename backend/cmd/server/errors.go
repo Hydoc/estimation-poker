@@ -7,14 +7,11 @@ func (app *application) logError(request *http.Request, err error) {
 		method = request.Method
 		uri    = request.URL.RequestURI()
 	)
-
 	app.logger.Error(err.Error(), "method", method, "uri", uri)
 }
 
 func (app *application) errorResponse(writer http.ResponseWriter, request *http.Request, status int, message any) {
-	env := envelope{"error": message}
-
-	err := app.writeJSON(writer, status, env, nil)
+	err := app.writeJSON(writer, status, envelope{"error": message}, nil)
 	if err != nil {
 		app.logError(request, err)
 		writer.WriteHeader(500)
@@ -23,7 +20,6 @@ func (app *application) errorResponse(writer http.ResponseWriter, request *http.
 
 func (app *application) serverErrorResponse(writer http.ResponseWriter, request *http.Request, err error) {
 	app.logError(request, err)
-
 	message := "the server encountered a problem and could not process your request"
 	app.errorResponse(writer, request, http.StatusInternalServerError, message)
 }
