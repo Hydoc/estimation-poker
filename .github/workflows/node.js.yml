@@ -1,15 +1,10 @@
 name: Frontend CI
 
 on:
-  pull_request:
-    branches:
-      - "main"
   push:
-    paths:
-      - "frontend/**"
-      - ".github/workflows/node.js.yml"
     branches:
-      - "main"
+      - main
+  pull_request:
   workflow_dispatch:
 
 jobs:
