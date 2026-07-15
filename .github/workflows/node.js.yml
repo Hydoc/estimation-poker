@@ -20,12 +20,12 @@ jobs:
         node-version: [24.x]
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: pnpm/action-setup@v2
+    - uses: actions/checkout@v7
+    - uses: pnpm/action-setup@v6
       with:
         version: 8
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v7
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
@@ -39,7 +39,7 @@ jobs:
         cd frontend
         pnpm test
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v7
       with:
          name: frontend
          token: ${{ secrets.CODECOV_TOKEN }}
