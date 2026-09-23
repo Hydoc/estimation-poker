@@ -6,6 +6,7 @@ import RoomForm from "@/components/RoomForm.vue";
 import { isJust } from "@kaumlaut/pure/maybe";
 import { useEstimationStore } from "@/stores/estimation.ts";
 import {
+  isDeveloper,
   isRoundAlreadyStartedConnectionStatus,
   isUsernameAlreadyTakenConnectionStatus,
   isWrongPasswordConnectionStatus,
@@ -13,6 +14,7 @@ import {
   RoundState,
   type SendableWebsocketMessageType,
 } from "@/types/room.ts";
+import {toGuard} from "@kaumlaut/pure/error-aware-guard";
 
 const estimationStore = useEstimationStore();
 const router = useRouter();
@@ -38,6 +40,9 @@ const permissions = computed(() => estimationStore.roomState.permissions);
 const isConnected = computed(() => estimationStore.roomState.isConnected);
 const roundState = computed(() => estimationStore.roomState.roundState);
 const roundIsWaiting = computed(() => estimationStore.roomState.roundState === RoundState.Waiting);
+const hasDeveloperInRoom = computed(() => isJust(estimationStore.roomState.users) && estimationStore.roomState.users.value.filter(toGuard(isDeveloper)).length > 0)
+const hasIssueToGuess = computed(() => isJust(estimationStore.roomState.issueToGuess));
+const issueToGuess = computed(() => estimationStore.roomState.issueToGuess);
 
 const roundStateAsReadableString = computed(() => {
   if (roundState.value === RoundState.Waiting) {
@@ -271,7 +276,7 @@ onMounted(async () => {
       @estimate="sendMessage('estimate', $event)"
       @guess="sendMessage('guess', $event)"
       @reveal="sendMessage('reveal', null)"
-      @new-round="sendMessage('new-round', null)"
+      @new-round="sendMessage('finish', null)"
       @skip="sendMessage('skip', null)"
     />
 
@@ -304,17 +309,21 @@ onMounted(async () => {
           :key="issue"
         >
           <v-card
-            variant="tonal"
+            :variant="isJust(issueToGuess) && issueToGuess.value.id === issue.id ? 'outlined' : 'tonal'"
             class="pa-2"
           >
-            <v-card-title>{{ issue }}</v-card-title>
+            <v-card-title>{{ issue.title }}</v-card-title>
 
             <v-card-actions>
-              <v-btn variant="tonal">
+              <v-btn
+                variant="tonal"
+                :disabled="!hasDeveloperInRoom || hasIssueToGuess"
+                @click="sendMessage('estimate', issue.id)"
+              >
                 Vote this issue
               </v-btn>
               <v-spacer />
-              <span>-</span>
+              <span>{{ issue.guess === -1 ? "-" : issue.guess }}</span>
             </v-card-actions>
           </v-card>
         </v-list-item>

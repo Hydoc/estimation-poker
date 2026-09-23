@@ -14,6 +14,7 @@ const (
 	leave           = "leave"
 	guess           = "guess"
 	newRound        = "new-round"
+	finish          = "finish"
 	estimate        = "estimate"
 	lockRoom        = "lock-room"
 	openRoom        = "open-room"
@@ -141,7 +142,7 @@ func CreateBus() message.Bus {
 	bus.Register(skipRound, handleSkipRound)
 	bus.Register(estimate, handleEstimate)
 	bus.Register(guess, handleGuess)
-	bus.Register(newRound, handleNewRound)
+	bus.Register(finish, handleFinish)
 	bus.Register(reveal, handleReveal)
 	bus.Register(lockRoom, handleLockRoom)
 	bus.Register(openRoom, handleOpenRoom)
@@ -180,8 +181,8 @@ func fabricate(incomingMessage *IncomingWebsocketMessage, client *Client) (messa
 			client: client,
 			guess:  actualGuess,
 		}), nil
-	case newRound:
-		return message.New(newRound, NewRoundPayload{client: client}), nil
+	case finish:
+		return message.New(finish, NewRoundPayload{client: client}), nil
 	case reveal:
 		return message.New(reveal, RevealPayload{client: client}), nil
 	case lockRoom:

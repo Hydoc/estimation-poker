@@ -64,7 +64,6 @@ describe("RoomView", () => {
       const wrapper = createWrapper();
 
       expect(wrapper.findComponent(VToolbar).exists()).to.be.true;
-      expect(wrapper.findComponent(VToolbar).props("rounded")).to.be.true;
 
       expect(wrapper.findComponent(RoomDetail).exists()).to.be.true;
       expect(wrapper.findComponent(RoomDetail).props("roomState")).deep.equal(
@@ -172,9 +171,10 @@ describe("RoomView", () => {
 
     it("should disconnect and push to home when on leave", () => {
       const wrapper = createWrapper();
+      
+      wrapper.findAllComponents(VBtn).forEach(it => console.log(it.html()));
 
       wrapper
-        .findComponent(VToolbar)
         .findAllComponents(VBtn)
         .find((btn) => btn.findComponent(VIcon).find("i").classes().includes("mdi-location-exit"))
         .trigger("click");
@@ -188,7 +188,6 @@ describe("RoomView", () => {
       const wrapper = createWrapper();
 
       await wrapper
-        .findComponent(VToolbar)
         .findAllComponents(VBtn)
         .find((btn) => btn.findComponent(VIcon).find("i").classes().includes("mdi-lock"))
         .trigger("click");
@@ -215,7 +214,6 @@ describe("RoomView", () => {
       const wrapper = createWrapper();
 
       await wrapper
-        .findComponent(VToolbar)
         .findAllComponents(VBtn)
         .find((btn) => btn.findComponent(VIcon).find("i").classes().includes("mdi-key"))
         .trigger("click");
@@ -254,7 +252,6 @@ describe("RoomView", () => {
       // @ts-ignore
       wrapper.vm.roomPassword = "top secret";
       await wrapper
-        .findComponent(VToolbar)
         .findAllComponents(VBtn)
         .find((btn) => btn.findComponent(VIcon).find("i").classes().includes("mdi-content-copy"))
         .trigger("click");
@@ -284,7 +281,6 @@ describe("RoomView", () => {
       // @ts-ignore
       wrapper.vm.roomPassword = "top secret";
       await wrapper
-        .findComponent(VToolbar)
         .findAllComponents(VBtn)
         .find((btn) => btn.findComponent(VIcon).find("i").classes().includes("mdi-content-copy"))
         .trigger("click");
@@ -511,6 +507,9 @@ function createWrapper() {
     global: {
       plugins: [pinia],
       stubs: {
+        VToolbar: {
+          template: "<div></div>",
+        },
         VNavigationDrawer: {
           template: "<div></div>",
         },

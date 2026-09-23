@@ -107,10 +107,10 @@ func handleSkipRound(msg message.Message) (*message.Message, error) {
 	return nil, nil
 }
 
-func handleNewRound(msg message.Message) (*message.Message, error) {
+func handleFinish(msg message.Message) (*message.Message, error) {
 	payload, ok := msg.Payload.(NewRoundPayload)
 	if ok && payload.client.Role == ProductOwner {
-		payload.client.room.broadcast <- newOutgoingWebsocketMessage(newRound, nil)
+		payload.client.room.broadcast <- newOutgoingWebsocketMessage(finish, nil)
 	}
 	return nil, nil
 }
@@ -218,13 +218,6 @@ func (client *Client) WebsocketWriter() {
 			cancel()
 		}
 	}
-}
-
-func (client *Client) newRound() {
-	client.mu.Lock()
-	client.guess = 0
-	client.doSkip = false
-	client.mu.Unlock()
 }
 
 func (client *Client) asReveal() map[string]any {

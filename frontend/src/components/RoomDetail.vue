@@ -5,7 +5,6 @@ import DeveloperRoundView from "@/components/DeveloperRoundView.vue";
 import RoundSummary from "@/components/RoundSummary.vue";
 import { Role, type RoomState } from "@/types/room.ts";
 import { isJust } from "@kaumlaut/pure/maybe";
-import { isSuccess } from "@kaumlaut/pure/fetch-state";
 
 type Props = {
   roomState: RoomState;

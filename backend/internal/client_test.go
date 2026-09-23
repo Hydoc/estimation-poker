@@ -66,14 +66,6 @@ func TestClient_NewClient(t *testing.T) {
 	assert.DeepEqual(t, gotMap, want)
 }
 
-func TestClient_Reset(t *testing.T) {
-	client := NewClient("Any", Developer, &Room{}, &websocket.Conn{}, message.NewBus(), slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
-	client.guess = 2
-	client.newRound()
-
-	assert.Equal(t, client.Guess(), 0)
-}
-
 func TestClient_WebsocketReaderWhenGuessMessageOccurredWithClientDeveloper(t *testing.T) {
 	broadcastChannel := make(chan *OutgoingWebsocketMessage)
 	room := &Room{
@@ -221,7 +213,7 @@ func TestClient_WebsocketReaderWhenNewRoundMessageOccurredWithClientProductOwner
 	}
 
 	bus := message.NewBus()
-	bus.Register(newRound, handleNewRound)
+	bus.Register(newRound, handleFinish)
 	client := NewClient("Test", ProductOwner, room, connection, bus, slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)))
 	go client.WebsocketReader()
 

@@ -12,7 +12,7 @@ import {
   isObjectWithKeysMatchingGuard,
   isOneOf,
   isOneStringOf,
-  isString,
+  isString, isStringWithPattern,
 } from "@kaumlaut/pure/error-aware-guard";
 import type { FetchState } from "@kaumlaut/pure/fetch-state";
 
@@ -50,6 +50,7 @@ export type ConnectionState = {
 };
 
 export type Issue = {
+  id: string;
   title: string;
   guess: number;
 };
@@ -76,7 +77,7 @@ export type RoomState = Readonly<{
   role: Maybe<Role>;
   name: Maybe<string>;
   doSkip: boolean;
-  issueToGuess: Maybe<string>;
+  issueToGuess: Maybe<Issue>;
   roundState: RoundState;
   users: Maybe<UserOverview>;
   showAllGuesses: boolean;
@@ -93,7 +94,7 @@ export type SendableWebsocketMessageType =
   | "estimate"
   | "guess"
   | "reveal"
-  | "new-round"
+  | "finish"
   | "lock-room"
   | "skip"
   | "open-room"
@@ -133,7 +134,7 @@ const isProductOwner = isObjectWithKeysMatchingGuard<ProductOwner>({
   role: isExactString(Role.ProductOwner),
 });
 
-const isDeveloper = isObjectWithKeysMatchingGuard<Developer>({
+export const isDeveloper = isObjectWithKeysMatchingGuard<Developer>({
   name: isNonEmptyString,
   isDone: isBool,
   role: isExactString(Role.Developer),
@@ -187,12 +188,18 @@ export const isUsersWebsocketMessage = isObjectWithKeysMatchingGuard<{
   data: isListOf(isOneOf(isDeveloper, isProductOwner)),
 });
 
+const isIssue = isObjectWithKeysMatchingGuard<Issue>({
+  id: isStringWithPattern(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+  title: isNonEmptyString,
+  guess: isNumber,
+});
+
 export const isEstimateWebsocketMessage = isObjectWithKeysMatchingGuard<{
   type: "estimate";
-  data: string;
+  data: Issue;
 }>({
   type: isExactString("estimate"),
-  data: isString,
+  data: isIssue,
 });
 
 export const isYouGuessedWebsocketMessage = isObjectWithKeysMatchingGuard<{
@@ -272,11 +279,6 @@ export const isPermissionsWebsocketMessage = isObjectWithKeysMatchingGuard<{
 
 const isPossibleGuess = isObjectWithKeysMatchingGuard<PossibleGuess>({
   description: isNonEmptyString,
-  guess: isNumber,
-});
-
-const isIssue = isObjectWithKeysMatchingGuard<Issue>({
-  title: isNonEmptyString,
   guess: isNumber,
 });
 

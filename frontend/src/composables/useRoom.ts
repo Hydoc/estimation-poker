@@ -48,7 +48,7 @@ export function useRoom(): UseRoom {
   const name = ref<Maybe<string>>(nothing());
   const role = ref<Maybe<Role>>(nothing());
   const guess = ref<Maybe<number>>(nothing());
-  const issueToGuess = ref<Maybe<string>>(nothing());
+  const issueToGuess = ref<Maybe<Issue>>(nothing());
   const doSkip = ref<boolean>(false);
   const roundState = ref<RoundState>(RoundState.Waiting);
   const users = ref<Maybe<UserOverview>>(nothing());

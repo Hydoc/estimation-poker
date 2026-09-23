@@ -5,12 +5,12 @@ import ProductOwnerRoundView from "@/components/ProductOwnerRoundView.vue";
 import { isJust, type Maybe } from "@kaumlaut/pure/maybe";
 import {
   type Developer,
-  type DeveloperDone,
-  type ProductOwner,
+  type DeveloperDone, isDeveloper, type Issue,
   Role,
   type RoundState,
   type UserOverview,
 } from "@/types/room.ts";
+import {toGuard} from "@kaumlaut/pure/error-aware-guard";
 
 type Props = {
   usersInRoom: Readonly<UserOverview>;
@@ -18,13 +18,13 @@ type Props = {
   developerDone: DeveloperDone[];
   showAllGuesses: boolean;
   userRole: Maybe<Role>;
-  issueToGuess: Maybe<string>;
+  issueToGuess: Maybe<Issue>;
 };
 const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "reveal"): void;
   (e: "new-round"): void;
-  (e: "estimate", issue: string): void;
+  (e: "estimate", issueId: string): void;
 }>();
 const radius = 250;
 const cy = 300;
@@ -38,10 +38,6 @@ const userIsDeveloper = computed(
   () => isJust(props.userRole) && props.userRole.value === Role.Developer,
 );
 const hasIssueToGuess = computed(() => isJust(props.issueToGuess));
-
-function isDeveloper(user: ProductOwner | Developer): user is Developer {
-  return user.role === "developer";
-}
 
 function findDeveloperDone(developer: Developer): DeveloperDone | undefined {
   return props.developerDone.find((it) => it.name === developer.name);
@@ -88,7 +84,7 @@ function leftForElement(index: number, username: string): string {
       :style="`left:${leftForElement(index, user.name)};top:${topForElement(index)}`"
     >
       <developer-card
-        v-if="isDeveloper(user)"
+        v-if="toGuard(isDeveloper)(user)"
         :developer="user"
         :developer-done="findDeveloperDone(user)"
       />

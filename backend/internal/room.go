@@ -18,8 +18,9 @@ var (
 )
 
 type Issue struct {
-	Title string `json:"title"`
-	Guess int    `json:"guess"`
+	Id    uuid.UUID `json:"id"`
+	Title string    `json:"title"`
+	Guess int       `json:"guess"`
 }
 
 type Room struct {
@@ -40,6 +41,7 @@ type Room struct {
 	Created        time.Time
 	issues         []*Issue
 	GuessConfig    *GuessConfig
+	issueToGuess   *Issue
 }
 
 type ConnectionState struct {
@@ -186,12 +188,52 @@ func (room *Room) newRound() {
 		room.clientMu.Unlock()
 		room.mu.Unlock()
 	}()
-	room.inProgress = false
+
+	guesses := make(map[int]int)
+
 	for client := range room.Clients {
-		client.newRound()
+		if client.Role == Developer {
+			guesses[client.guess]++
+			client.guess = 0
+			client.doSkip = false
+		}
 		client.send <- newOutgoingWebsocketMessage(newRound, nil)
 		client.send <- newUsers(room.Clients)
 	}
+
+	var (
+		currentGreatest int
+		averageGuess    int
+	)
+	for number, count := range guesses {
+		if count > currentGreatest {
+			currentGreatest = count
+			averageGuess = number
+		}
+	}
+
+	room.issueToGuess.Guess = averageGuess
+	room.inProgress = false
+	room.issueToGuess = nil
+}
+
+func (room *Room) broadcastToProductOwner(msg *OutgoingWebsocketMessage) {
+	room.clientMu.Lock()
+	for client := range room.Clients {
+		if client.Role == ProductOwner {
+			client.send <- msg
+		}
+	}
+	room.clientMu.Unlock()
+}
+
+func (room *Room) findIssue(id string) *Issue {
+	for _, issue := range room.issues {
+		if issue.Id.String() == id {
+			return issue
+		}
+	}
+	return nil
 }
 
 func (room *Room) broadcastToClients(msg *OutgoingWebsocketMessage) {
@@ -225,7 +267,8 @@ func (room *Room) Run() {
 			case estimate:
 				room.mu.Lock()
 				room.inProgress = true
-				room.broadcastToClients(msg)
+				room.issueToGuess = room.findIssue(msg.Data.(string))
+				room.broadcastToClients(newOutgoingWebsocketMessage(estimate, room.issueToGuess))
 				room.mu.Unlock()
 			case developerAction:
 				if room.everyDevIsDone() {
@@ -233,7 +276,7 @@ func (room *Room) Run() {
 					continue
 				}
 				room.broadcastToClients(newUsers(room.Clients))
-			case newRound:
+			case finish:
 				room.newRound()
 			case leave:
 				if room.IsInProgress() {
@@ -243,6 +286,8 @@ func (room *Room) Run() {
 				room.broadcastToClients(msg)
 			case reveal, roomLocked, roomOpened, users:
 				room.broadcastToClients(msg)
+			case issues:
+				room.broadcastToProductOwner(msg)
 			default:
 				room.logger.Error(fmt.Sprintf("unexpected Message %#v", msg))
 			}
@@ -253,6 +298,7 @@ func (room *Room) Run() {
 func (room *Room) addIssue(issue string) {
 	room.mu.Lock()
 	room.issues = append(room.issues, &Issue{
+		Id:    uuid.New(),
 		Title: issue,
 		Guess: -1,
 	})
