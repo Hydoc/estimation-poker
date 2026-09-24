@@ -54,7 +54,7 @@ func (srv *gameServer) routes() http.Handler {
 func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) {
 	roomId, err := readIdParam(r)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		srv.badRequestResponse(w, r, err)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) 
 func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 	roomId, err := readIdParam(r)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		srv.badRequestResponse(w, r, err)
 		return
 	}
 
@@ -96,7 +96,7 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.UnmarshalRead(r.Body, &input)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		srv.badRequestResponse(w, r, err)
 		return
 	}
 
@@ -105,7 +105,7 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 	srv.roomsMu.RUnlock()
 
 	if !roomExists {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		srv.notFoundResponse(w, r)
 		return
 	}
 
@@ -113,13 +113,13 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 	handler, handlerExists := srv.handlerRegistry.handlers[input.Message.Type]
 	srv.handlerRegistry.handlersMu.RUnlock()
 	if !handlerExists {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		srv.notFoundResponse(w, r)
 		return
 	}
 
 	result, err := handler(foundRoom, input.Message.Data)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		srv.badRequestResponse(w, r, err)
 		return
 	}
 
