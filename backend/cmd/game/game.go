@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json/v2"
 	"errors"
-	"io"
 	"log/slog"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/time/rate"
@@ -87,23 +88,24 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body := http.MaxBytesReader(w, r.Body, 8192)
-	defer body.Close()
-	msg, err := io.ReadAll(body)
+	var input struct {
+		Message message `json:"message"`
+	}
 
+	err = json.UnmarshalRead(r.Body, &input)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	srv.publishRoom(msg, id)
+	srv.publishRoom(input.Message, id)
 }
 
 func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, room uuid.UUID) error {
 	ctx = conn.CloseRead(ctx)
 
 	s := &subscriber{
-		msgs: make(chan []byte),
+		messages: make(chan message),
 		closeSlow: func() {
 			conn.Close(websocket.StatusPolicyViolation, "connection too slow to keep up")
 		},
@@ -114,7 +116,7 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 
 	for {
 		select {
-		case msg := <-s.msgs:
+		case msg := <-s.messages:
 			err := writeTimeout(ctx, time.Second*5, conn, msg)
 			if err != nil {
 				return err
@@ -125,7 +127,7 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 	}
 }
 
-func (srv *gameServer) publishRoom(msg []byte, room uuid.UUID) {
+func (srv *gameServer) publishRoom(msg message, room uuid.UUID) {
 	srv.roomsMu.Lock()
 	defer srv.roomsMu.Unlock()
 
@@ -133,7 +135,7 @@ func (srv *gameServer) publishRoom(msg []byte, room uuid.UUID) {
 
 	for s := range srv.rooms[room] {
 		select {
-		case s.msgs <- msg:
+		case s.messages <- msg:
 		default:
 			go s.closeSlow()
 		}
@@ -157,14 +159,14 @@ func (srv *gameServer) deleteRoomSubscriber(s *subscriber, room uuid.UUID) {
 	srv.roomsMu.Unlock()
 }
 
-func writeTimeout(ctx context.Context, timeout time.Duration, conn *websocket.Conn, msg []byte) error {
+func writeTimeout(ctx context.Context, timeout time.Duration, conn *websocket.Conn, msg message) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	return conn.Write(ctx, websocket.MessageText, msg)
+	return wsjson.Write(ctx, conn, msg)
 }
 
 type subscriber struct {
-	msgs      chan []byte
+	messages  chan message
 	closeSlow func()
 }
