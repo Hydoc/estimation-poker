@@ -51,7 +51,7 @@ const roundStateAsReadableString = computed(() => {
     roundState.value === RoundState.InProgress &&
     isJust(estimationStore.roomState.issueToGuess)
   ) {
-    return `Currently guessing ${estimationStore.roomState.issueToGuess.value}`;
+    return `Currently guessing ${estimationStore.roomState.issueToGuess.value.title}`;
   } else {
     return "Everyone guessed!";
   }

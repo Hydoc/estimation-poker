@@ -197,8 +197,6 @@ func (room *Room) newRound() {
 			client.guess = 0
 			client.doSkip = false
 		}
-		client.send <- newOutgoingWebsocketMessage(newRound, nil)
-		client.send <- newUsers(room.Clients)
 	}
 
 	var (
@@ -213,6 +211,8 @@ func (room *Room) newRound() {
 	}
 
 	room.issueToGuess.Guess = averageGuess
+	room.broadcastToClients(newOutgoingWebsocketMessage(newRound, nil))
+	room.broadcastToClients(newUsers(room.Clients))
 	room.inProgress = false
 	room.issueToGuess = nil
 }

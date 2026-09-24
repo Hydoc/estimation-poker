@@ -74,7 +74,7 @@ function leftForElement(index: number, username: string): string {
         v-if="isJust(props.issueToGuess) && userIsDeveloper"
         class="text-h5"
       >{{
-        props.issueToGuess.value
+        props.issueToGuess.value.title
       }}</span>
     </div>
     <div
