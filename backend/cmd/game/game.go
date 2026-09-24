@@ -49,7 +49,7 @@ func (srv *gameServer) routes() http.Handler {
 }
 
 func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := readIdParam(r)
+	roomId, err := readIdParam(r)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -63,7 +63,7 @@ func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) 
 
 	defer conn.Close(websocket.StatusInternalError, "")
 
-	err = srv.subscribeRoom(r.Context(), conn, id)
+	err = srv.subscribeRoom(r.Context(), conn, roomId)
 
 	if errors.Is(err, context.Canceled) {
 		return
@@ -81,7 +81,7 @@ func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := readIdParam(r)
+	roomId, err := readIdParam(r)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -97,10 +97,10 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	srv.publishRoom(input.Message, id)
+	srv.publishRoom(input.Message, roomId)
 }
 
-func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, room uuid.UUID) error {
+func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, roomId uuid.UUID) error {
 	ctx = conn.CloseRead(ctx)
 
 	s := &subscriber{
@@ -110,8 +110,8 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 		},
 	}
 
-	srv.addRoomSubscriber(s, room)
-	defer srv.deleteRoomSubscriber(s, room)
+	srv.addRoomSubscriber(s, roomId)
+	defer srv.deleteRoomSubscriber(s, roomId)
 
 	for {
 		select {
@@ -126,15 +126,13 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 	}
 }
 
-func (srv *gameServer) publishRoom(msg message, room uuid.UUID) {
+func (srv *gameServer) publishRoom(msg message, roomId uuid.UUID) {
 	srv.roomsMu.Lock()
 	defer srv.roomsMu.Unlock()
 
 	srv.publishLimiter.Wait(context.Background())
 
-	srv.logger.Info("room", "room", room)
-
-	for s := range srv.rooms[room] {
+	for s := range srv.rooms[roomId] {
 		select {
 		case s.messages <- msg:
 		default:
@@ -143,19 +141,19 @@ func (srv *gameServer) publishRoom(msg message, room uuid.UUID) {
 	}
 }
 
-func (srv *gameServer) addRoomSubscriber(s *subscriber, room uuid.UUID) {
+func (srv *gameServer) addRoomSubscriber(s *subscriber, roomId uuid.UUID) {
 	srv.roomsMu.Lock()
-	if len(srv.rooms[room]) == 0 {
-		srv.rooms[room] = make(map[*subscriber]struct{})
+	if len(srv.rooms[roomId]) == 0 {
+		srv.rooms[roomId] = make(map[*subscriber]struct{})
 	}
-	srv.rooms[room][s] = struct{}{}
+	srv.rooms[roomId][s] = struct{}{}
 	srv.roomsMu.Unlock()
 }
 
-func (srv *gameServer) deleteRoomSubscriber(s *subscriber, room uuid.UUID) {
+func (srv *gameServer) deleteRoomSubscriber(s *subscriber, roomId uuid.UUID) {
 	srv.roomsMu.Lock()
-	if len(srv.rooms[room]) != 0 {
-		delete(srv.rooms[room], s)
+	if len(srv.rooms[roomId]) != 0 {
+		delete(srv.rooms[roomId], s)
 	}
 	srv.roomsMu.Unlock()
 }
