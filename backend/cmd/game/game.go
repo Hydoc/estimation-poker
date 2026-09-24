@@ -100,25 +100,24 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	srv.roomsMu.Lock()
-	srv.handlerRegistry.handlersMu.Lock()
-	defer func() {
-		srv.roomsMu.Unlock()
-		srv.handlerRegistry.handlersMu.Unlock()
-	}()
+	srv.roomsMu.RLock()
+	foundRoom, roomExists := srv.rooms[roomId]
+	srv.roomsMu.RUnlock()
 
-	if _, ok := srv.rooms[roomId]; !ok {
-		srv.logger.Info("does not exist", "room", roomId)
+	if !roomExists {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	handler, ok := srv.handlerRegistry.handlers[input.Message.Type]
-	if !ok {
+	srv.handlerRegistry.handlersMu.RLock()
+	handler, handlerExists := srv.handlerRegistry.handlers[input.Message.Type]
+	srv.handlerRegistry.handlersMu.RUnlock()
+	if !handlerExists {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	result, err := handler(srv.rooms[roomId], input.Message.Data)
+	result, err := handler(foundRoom, input.Message.Data)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -175,7 +174,13 @@ func (srv *gameServer) addRoomSubscriber(s *subscriber, roomId uuid.UUID) {
 	srv.roomsMu.RUnlock()
 
 	if !exists {
-		return
+		srv.roomsMu.Lock()
+		r, exists = srv.rooms[roomId]
+		if !exists {
+			r = newRoom()
+			srv.rooms[roomId] = r
+		}
+		srv.roomsMu.Unlock()
 	}
 
 	r.addSubscriber(s)

@@ -20,7 +20,7 @@ var (
 type HandlerFunc func(room *room, rawPayload json.RawMessage) (message outgoingMessage, err error)
 
 type messageHandlerRegistry struct {
-	handlersMu sync.Mutex
+	handlersMu sync.RWMutex
 	handlers   map[string]HandlerFunc
 }
 
