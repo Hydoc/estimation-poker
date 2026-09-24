@@ -1,4 +1,4 @@
-package internal
+package main
 
 import (
 	"context"
@@ -6,11 +6,12 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
 	"golang.org/x/time/rate"
 )
 
@@ -22,41 +23,47 @@ type gameServer struct {
 	publishLimiter *rate.Limiter
 
 	roomsMu sync.Mutex
-	rooms   map[string]map[*subscriber]struct{}
+	rooms   map[uuid.UUID]map[*subscriber]struct{}
 }
 
-func newGameServer() *gameServer {
-	srv := &gameServer{
-		rooms: make(map[string]map[*subscriber]struct{}),
+func readIdParam(r *http.Request) (uuid.UUID, error) {
+	id, err := uuid.Parse(httprouter.ParamsFromContext(r.Context()).ByName("roomId"))
+	if err != nil {
+		return uuid.Nil, errors.New("invalid roomId param")
 	}
-
-	srv.serveMux.HandleFunc("GET /subscribe", srv.subscribeHandler)
-	srv.serveMux.HandleFunc("POST /publish", srv.publishHandler)
-
-	return srv
+	return id, nil
 }
 
-func (srv *gameServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	srv.serveMux.ServeHTTP(w, r)
+func newGameServer(logger *slog.Logger) *gameServer {
+	return &gameServer{
+		logger: logger,
+		rooms:  make(map[uuid.UUID]map[*subscriber]struct{}),
+	}
+}
+
+func (srv *gameServer) routes() http.Handler {
+	router := httprouter.New()
+	router.HandlerFunc(http.MethodGet, "/subscribe/:roomId", srv.subscribeHandler)
+	router.HandlerFunc(http.MethodPost, "/publish/:roomId", srv.publishHandler)
+	return router
 }
 
 func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocket.Accept(w, r, nil)
+	id, err := readIdParam(r)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: []string{"*"}})
 	if err != nil {
 		srv.logger.Error(err.Error())
 		return
 	}
 
 	defer conn.Close(websocket.StatusInternalError, "")
-	room := strings.Split(r.URL.Path, "/")
 
-	if len(room) != 3 {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	srv.logger.Info("room", "room", room[2])
-	err = srv.subscribeRoom(r.Context(), conn, room[2])
+	err = srv.subscribeRoom(r.Context(), conn, id)
 
 	if errors.Is(err, context.Canceled) {
 		return
@@ -74,6 +81,12 @@ func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := readIdParam(r)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
 	body := http.MaxBytesReader(w, r.Body, 8192)
 	defer body.Close()
 	msg, err := io.ReadAll(body)
@@ -83,15 +96,10 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room := strings.Split(r.URL.Path, "/")
-	if len(room) != 3 {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-	srv.publishRoom(msg, room[2])
+	srv.publishRoom(msg, id)
 }
 
-func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, room string) error {
+func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, room uuid.UUID) error {
 	ctx = conn.CloseRead(ctx)
 
 	s := &subscriber{
@@ -117,7 +125,7 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 	}
 }
 
-func (srv *gameServer) publishRoom(msg []byte, room string) {
+func (srv *gameServer) publishRoom(msg []byte, room uuid.UUID) {
 	srv.roomsMu.Lock()
 	defer srv.roomsMu.Unlock()
 
@@ -132,7 +140,7 @@ func (srv *gameServer) publishRoom(msg []byte, room string) {
 	}
 }
 
-func (srv *gameServer) addRoomSubscriber(s *subscriber, room string) {
+func (srv *gameServer) addRoomSubscriber(s *subscriber, room uuid.UUID) {
 	srv.roomsMu.Lock()
 	if len(srv.rooms[room]) == 0 {
 		srv.rooms[room] = make(map[*subscriber]struct{})
@@ -141,7 +149,7 @@ func (srv *gameServer) addRoomSubscriber(s *subscriber, room string) {
 	srv.roomsMu.Unlock()
 }
 
-func (srv *gameServer) deleteRoomSubscriber(s *subscriber, room string) {
+func (srv *gameServer) deleteRoomSubscriber(s *subscriber, room uuid.UUID) {
 	srv.roomsMu.Lock()
 	if len(srv.rooms[room]) != 0 {
 		delete(srv.rooms[room], s)
