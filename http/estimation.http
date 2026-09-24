@@ -8,7 +8,9 @@ Content-Type: application/json
 
 {
   "message": {
-    "type": "round:leave",
-    "data": null
+    "type": "issue:add",
+    "data": {
+      "title": "Hello World"
+    }
   }
 }

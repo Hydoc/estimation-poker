@@ -3,50 +3,77 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 )
 
 var (
 	roundJoin  = "round:join"
 	roundLeave = "round:leave"
+
+	issueAdd = "issue:add"
+
+	issuesAll = "issues:all"
 )
+
+type HandlerFunc func(room *room, rawPayload json.RawMessage) (message outgoingMessage, err error)
+
+type messageHandlerRegistry struct {
+	handlersMu sync.Mutex
+	handlers   map[string]HandlerFunc
+}
+
+func newMessageHandlerRegistry() *messageHandlerRegistry {
+	return &messageHandlerRegistry{
+		handlers: make(map[string]HandlerFunc),
+	}
+}
+
+func (r *messageHandlerRegistry) register[T message](messageType string, handler func(room *room, msg T) (message outgoingMessage, e error)) {
+	r.handlers[messageType] = func(room *room, rawPayload json.RawMessage) (message outgoingMessage, e error) {
+		var msg T
+		if err := json.Unmarshal(rawPayload, &msg); err != nil {
+			return outgoingMessage{}, fmt.Errorf("invalid payload: %w", err)
+		}
+
+		if err := msg.Validate(); err != nil {
+			return outgoingMessage{}, fmt.Errorf("validation failed: %w", err)
+		}
+
+		return handler(room, msg)
+	}
+}
 
 type message interface {
 	Validate() error
-
-	ToBroadcastPayload() any
 }
 
-type roundJoinMessage struct {
+type issueAddMessage struct {
+	Title string `json:"title"`
 }
 
-func (j *roundJoinMessage) Validate() error {
+func (i issueAddMessage) Validate() error {
+	i.Title = strings.TrimSpace(i.Title)
+
+	if i.Title == "" {
+		return errors.New("missing title")
+	}
+
+	if len(i.Title) > 15 {
+		return errors.New("title too long")
+	}
+
 	return nil
 }
 
-func (j *roundJoinMessage) ToBroadcastPayload() any {
-	return map[string]any{
-		"message": roundJoin,
-	}
-}
+func handleIssueAddMessage(room *room, msg issueAddMessage) (outgoingMessage, error) {
+	room.addIssue(newIssue(msg.Title))
 
-type roundLeaveMessage struct{}
-
-func (r *roundLeaveMessage) Validate() error {
-	return nil
-}
-
-func (r *roundLeaveMessage) ToBroadcastPayload() any {
-	return map[string]any{
-		"message": roundLeave,
-	}
-}
-
-type factory func() message
-
-var factories = map[string]factory{
-	roundJoin:  func() message { return &roundJoinMessage{} },
-	roundLeave: func() message { return &roundLeaveMessage{} },
+	return outgoingMessage{
+		Type: issuesAll,
+		Data: room.Issues(),
+	}, nil
 }
 
 type incomingMessage struct {
@@ -54,25 +81,7 @@ type incomingMessage struct {
 	Data json.RawMessage `json:"data"`
 }
 
-func fabricateMessage(msg incomingMessage) (message, error) {
-	var mu sync.Mutex
-	mu.Lock()
-	defer mu.Unlock()
-
-	foundFactory, exists := factories[msg.Type]
-	if !exists {
-		return nil, errors.New("unknown message")
-	}
-
-	cmd := foundFactory()
-
-	if err := json.Unmarshal(msg.Data, cmd); err != nil {
-		return nil, err
-	}
-
-	if err := cmd.Validate(); err != nil {
-		return nil, err
-	}
-
-	return cmd, nil
+type outgoingMessage struct {
+	Type string `json:"type"`
+	Data any    `json:"data"`
 }

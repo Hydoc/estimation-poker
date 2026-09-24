@@ -30,8 +30,7 @@ func main() {
 }
 
 func serve(logger *slog.Logger, config *config) error {
-
-	server := newGameServer(logger)
+	server := newGameServer(logger, initMessageHandlerRegistry())
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", config.port),
@@ -53,4 +52,10 @@ func serve(logger *slog.Logger, config *config) error {
 	logger.Info("starting server", "addr", srv.Addr)
 
 	return srv.ListenAndServe()
+}
+
+func initMessageHandlerRegistry() *messageHandlerRegistry {
+	handlerRegistry := newMessageHandlerRegistry()
+	handlerRegistry.register(issueAdd, handleIssueAddMessage)
+	return handlerRegistry
 }

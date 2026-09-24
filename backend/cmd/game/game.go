@@ -21,8 +21,10 @@ type gameServer struct {
 
 	publishLimiter *rate.Limiter
 
-	roomsMu sync.Mutex
-	rooms   map[uuid.UUID]map[*subscriber]struct{}
+	roomsMu sync.RWMutex
+	rooms   map[uuid.UUID]*room
+
+	handlerRegistry *messageHandlerRegistry
 }
 
 func readIdParam(r *http.Request) (uuid.UUID, error) {
@@ -33,11 +35,12 @@ func readIdParam(r *http.Request) (uuid.UUID, error) {
 	return id, nil
 }
 
-func newGameServer(logger *slog.Logger) *gameServer {
+func newGameServer(logger *slog.Logger, handlerRegistry *messageHandlerRegistry) *gameServer {
 	return &gameServer{
-		logger:         logger,
-		publishLimiter: rate.NewLimiter(rate.Every(time.Millisecond*100), 8),
-		rooms:          make(map[uuid.UUID]map[*subscriber]struct{}),
+		logger:          logger,
+		publishLimiter:  rate.NewLimiter(rate.Every(time.Millisecond*100), 8),
+		rooms:           make(map[uuid.UUID]*room),
+		handlerRegistry: handlerRegistry,
 	}
 }
 
@@ -97,13 +100,31 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd, err := fabricateMessage(input.Message)
+	srv.roomsMu.Lock()
+	srv.handlerRegistry.handlersMu.Lock()
+	defer func() {
+		srv.roomsMu.Unlock()
+		srv.handlerRegistry.handlersMu.Unlock()
+	}()
+
+	if _, ok := srv.rooms[roomId]; !ok {
+		srv.logger.Info("does not exist", "room", roomId)
+		return
+	}
+
+	handler, ok := srv.handlerRegistry.handlers[input.Message.Type]
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	result, err := handler(srv.rooms[roomId], input.Message.Data)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	srv.publishRoom(cmd, roomId)
+	srv.publishRoom(result, roomId)
 }
 
 func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, roomId uuid.UUID) error {
@@ -132,36 +153,44 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 	}
 }
 
-func (srv *gameServer) publishRoom(msg message, roomId uuid.UUID) {
-	srv.roomsMu.Lock()
-	defer srv.roomsMu.Unlock()
+func (srv *gameServer) publishRoom(msg outgoingMessage, roomId uuid.UUID) {
+	srv.roomsMu.RLock()
+	r, exists := srv.rooms[roomId]
+	srv.roomsMu.RUnlock()
 
-	srv.publishLimiter.Wait(context.Background())
-
-	for s := range srv.rooms[roomId] {
-		select {
-		case s.messages <- msg.ToBroadcastPayload():
-		default:
-			go s.closeSlow()
-		}
+	if !exists {
+		return
 	}
+
+	if err := srv.publishLimiter.Wait(context.Background()); err != nil {
+		return
+	}
+
+	r.publish(msg)
 }
 
 func (srv *gameServer) addRoomSubscriber(s *subscriber, roomId uuid.UUID) {
-	srv.roomsMu.Lock()
-	if len(srv.rooms[roomId]) == 0 {
-		srv.rooms[roomId] = make(map[*subscriber]struct{})
+	srv.roomsMu.RLock()
+	r, exists := srv.rooms[roomId]
+	srv.roomsMu.RUnlock()
+
+	if !exists {
+		return
 	}
-	srv.rooms[roomId][s] = struct{}{}
-	srv.roomsMu.Unlock()
+
+	r.addSubscriber(s)
 }
 
 func (srv *gameServer) deleteRoomSubscriber(s *subscriber, roomId uuid.UUID) {
-	srv.roomsMu.Lock()
-	if len(srv.rooms[roomId]) != 0 {
-		delete(srv.rooms[roomId], s)
+	srv.roomsMu.RLock()
+	r, exists := srv.rooms[roomId]
+	srv.roomsMu.RUnlock()
+
+	if !exists {
+		return
 	}
-	srv.roomsMu.Unlock()
+
+	r.deleteSubscriber(s)
 }
 
 func writeTimeout(ctx context.Context, timeout time.Duration, conn *websocket.Conn, msg any) error {
