@@ -2,6 +2,7 @@ package main
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/google/uuid"
 )
@@ -22,7 +23,7 @@ type room struct {
 	issuesMu sync.Mutex
 	issues   []*issue
 
-	inProgress bool
+	inProgress atomic.Bool
 
 	subscribersMu sync.RWMutex
 	subscribers   map[*subscriber]struct{}
@@ -71,10 +72,17 @@ func (r *room) Issues() []*issue {
 	return cp
 }
 
+func (r *room) SetInProgress(value bool) {
+	r.inProgress.Store(value)
+}
+
+func (r *room) InProgress() bool {
+	return r.inProgress.Load()
+}
+
 func newRoom() *room {
 	return &room{
 		issues:      make([]*issue, 0),
-		inProgress:  false,
 		subscribers: make(map[*subscriber]struct{}),
 	}
 }
