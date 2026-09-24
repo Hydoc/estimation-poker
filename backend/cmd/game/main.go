@@ -57,5 +57,7 @@ func serve(logger *slog.Logger, config *config) error {
 func initMessageHandlerRegistry() *messageHandlerRegistry {
 	handlerRegistry := newMessageHandlerRegistry()
 	handlerRegistry.register(issueAdd, handleIssueAddMessage)
+	handlerRegistry.register(roundJoin, handleRoundJoinMessage)
+	handlerRegistry.register(roundLeave, handleRoundLeaveMessage)
 	return handlerRegistry
 }

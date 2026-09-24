@@ -80,6 +80,17 @@ func (r *room) InProgress() bool {
 	return r.inProgress.Load()
 }
 
+func (r *room) SubscribersSlice() []*subscriber {
+	r.subscribersMu.Lock()
+	defer r.subscribersMu.Unlock()
+
+	subscribers := make([]*subscriber, 0, len(r.subscribers))
+	for s := range r.subscribers {
+		subscribers = append(subscribers, s)
+	}
+	return subscribers
+}
+
 func newRoom() *room {
 	return &room{
 		issues:      make([]*issue, 0),

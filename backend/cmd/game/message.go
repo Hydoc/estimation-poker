@@ -15,6 +15,7 @@ var (
 	issueAdd = "issue:add"
 
 	issuesAll = "issues:all"
+	usersAll  = "users:all"
 )
 
 type HandlerFunc func(room *room, rawPayload json.RawMessage) (message outgoingMessage, err error)
@@ -49,6 +50,18 @@ type message interface {
 	Validate() error
 }
 
+type roundJoinMessage struct{}
+
+func (r roundJoinMessage) Validate() error {
+	return nil
+}
+
+type roundLeaveMessage struct{}
+
+func (r roundLeaveMessage) Validate() error {
+	return nil
+}
+
 type issueAddMessage struct {
 	Title string `json:"title"`
 }
@@ -73,6 +86,20 @@ func handleIssueAddMessage(room *room, msg issueAddMessage) (outgoingMessage, er
 	return outgoingMessage{
 		Type: issuesAll,
 		Data: room.Issues(),
+	}, nil
+}
+
+func handleRoundJoinMessage(room *room, _ roundJoinMessage) (outgoingMessage, error) {
+	return outgoingMessage{
+		Type: usersAll,
+		Data: room.SubscribersSlice(),
+	}, nil
+}
+
+func handleRoundLeaveMessage(room *room, _ roundLeaveMessage) (outgoingMessage, error) {
+	return outgoingMessage{
+		Type: usersAll,
+		Data: room.SubscribersSlice(),
 	}, nil
 }
 

@@ -1,5 +1,5 @@
 ### Connect
-WEBSOCKET ws://localhost:8080/subscribe/1a82c734-5144-4cc7-a424-1f409b14ecdb
+WEBSOCKET ws://localhost:8080/subscribe/1a82c734-5144-4cc7-a424-1f409b14ecdb?name=Felix
 
 
 ### Publish
@@ -8,7 +8,7 @@ Content-Type: application/json
 
 {
   "message": {
-    "type": "issue:add",
+    "type": "round:join",
     "data": {
       "title": "Hello World"
     }
