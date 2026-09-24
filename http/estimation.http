@@ -1,0 +1,14 @@
+### Connect
+WEBSOCKET ws://localhost:8080/subscribe/1a82c734-5144-4cc7-a424-1f409b14ecdb
+
+
+### Publish
+POST http://localhost:8080/publish/1a82c734-5144-4cc7-a424-1f409b14ecdb
+Content-Type: application/json
+
+{
+  "message": {
+    "type": "stuff:estimate",
+    "data": null
+  }
+}

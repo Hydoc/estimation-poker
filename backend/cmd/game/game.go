@@ -19,8 +19,6 @@ import (
 type gameServer struct {
 	logger *slog.Logger
 
-	serveMux http.ServeMux
-
 	publishLimiter *rate.Limiter
 
 	roomsMu sync.Mutex
@@ -37,8 +35,9 @@ func readIdParam(r *http.Request) (uuid.UUID, error) {
 
 func newGameServer(logger *slog.Logger) *gameServer {
 	return &gameServer{
-		logger: logger,
-		rooms:  make(map[uuid.UUID]map[*subscriber]struct{}),
+		logger:         logger,
+		publishLimiter: rate.NewLimiter(rate.Every(time.Millisecond*100), 8),
+		rooms:          make(map[uuid.UUID]map[*subscriber]struct{}),
 	}
 }
 
@@ -132,6 +131,8 @@ func (srv *gameServer) publishRoom(msg message, room uuid.UUID) {
 	defer srv.roomsMu.Unlock()
 
 	srv.publishLimiter.Wait(context.Background())
+
+	srv.logger.Info("room", "room", room)
 
 	for s := range srv.rooms[room] {
 		select {
