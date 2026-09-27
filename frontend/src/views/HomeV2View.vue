@@ -1,75 +1,30 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {useRouter} from "vue-router";
 
-const displayName = ref("");
+const router = useRouter();
 
-const rules = [
-  (value: string) => {
-    if (value) return true
-    return "Is required"
-  },
-]
-
-function connect() {}
-function create() {}
+function startNewGame() {
+  router.push({
+    name: "newGame",
+  });
+}
 </script>
 
 <template>
   <main>
-    <v-card title="To which room would you like to connect?">
-      <v-card-subtitle>If there is already a room you can directly connect through the link.</v-card-subtitle>
-      <v-card-text>
-        <v-form @submit:prevent="connect">
-          <v-text-field
-            placeholder="Room id"
-            :rules="rules"
-            required
-          />
-          <v-text-field
-            v-model.trim="displayName"
-            placeholder="Your display name"
-            :rules="rules"
-            required
-          />
-          
-          <v-card-actions>
-            <v-spacer />
-
-            <v-btn
-              color="primary"
-              prepend-icon="mdi-connection"
-            >
-              Connect
-            </v-btn>
-          </v-card-actions>
-        </v-form>
-        
-        <v-spacer />
-        
-        <div>
-          <p class="text-title-medium">
-            As an alternative you can also create a new one
-          </p>
-          <v-form @submit:prevent="create">
-            <v-text-field
-              v-model.trim="displayName"
-              :rules="rules"
-              placeholder="Your display name"
-            />
-            
-            <v-card-actions>
-              <v-spacer />
-              <v-btn
-                color="primary"
-                prepend-icon="mdi-plus"
-              >
-                Create a new room
-              </v-btn>
-            </v-card-actions>
-          </v-form>
-        </div>
-      </v-card-text>
-    </v-card>
+    <div class="d-flex flex-column align-center ga-5">
+      <h1 class="text-headline-large d-flex flex-column align-center">
+        <span>Estimation Poker</span>
+        <span>Play. Estimate. Deliver.</span>
+      </h1>
+      <v-btn
+        size="x-large"
+        color="primary"
+        @click="startNewGame"
+      >
+        Start a new game!
+      </v-btn>
+    </div>
   </main>
 </template>
 
