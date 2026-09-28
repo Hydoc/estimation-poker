@@ -9,13 +9,19 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Hydoc/estimation-poker/backend/internal/validator"
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 	"golang.org/x/time/rate"
 )
 
+var (
+	errRoomNotExists = errors.New("room does not exist")
+)
+
 type gameServer struct {
 	logger *slog.Logger
+	config *config
 
 	publishLimiter *rate.Limiter
 
@@ -25,9 +31,10 @@ type gameServer struct {
 	handlerRegistry *messageHandlerRegistry
 }
 
-func newGameServer(logger *slog.Logger, handlerRegistry *messageHandlerRegistry) *gameServer {
+func newGameServer(logger *slog.Logger, config *config, handlerRegistry *messageHandlerRegistry) *gameServer {
 	return &gameServer{
 		logger:          logger,
+		config:          config,
 		publishLimiter:  rate.NewLimiter(rate.Every(time.Millisecond*100), 8),
 		rooms:           make(map[uuid.UUID]*room),
 		handlerRegistry: handlerRegistry,
@@ -44,6 +51,13 @@ func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) 
 	name, err := readNameQueryParam(r)
 	if err != nil {
 		srv.badRequestResponse(w, r, err)
+		return
+	}
+
+	_, roomExists := srv.room(roomId)
+
+	if !roomExists {
+		srv.notFoundResponse(w, r)
 		return
 	}
 
@@ -72,6 +86,39 @@ func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func (srv *gameServer) createRoomHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		RoomName string `json:"roomName"`
+		Deck     string `json:"deck"`
+	}
+
+	err := json.UnmarshalRead(r.Body, &input)
+	if err != nil {
+		srv.badRequestResponse(w, r, err)
+		return
+	}
+
+	id := uuid.New()
+	createdRoom := newRoom(input.RoomName, input.Deck)
+
+	v := validator.New()
+
+	if validateRoom(v, createdRoom); !v.Valid() {
+		srv.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	srv.roomsMu.Lock()
+	srv.rooms[id] = createdRoom
+	srv.roomsMu.Unlock()
+
+	err = srv.writeJSON(w, http.StatusOK, envelope{"id": id.String()}, nil)
+	if err != nil {
+		srv.serverErrorResponse(w, r, err)
+		return
+	}
+}
+
 func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 	roomId, err := readIdParam(r)
 	if err != nil {
@@ -89,11 +136,9 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	srv.roomsMu.RLock()
-	foundRoom, roomExists := srv.rooms[roomId]
-	srv.roomsMu.RUnlock()
+	foundRoom, exists := srv.room(roomId)
 
-	if !roomExists {
+	if !exists {
 		srv.notFoundResponse(w, r)
 		return
 	}
@@ -115,12 +160,22 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 	srv.publishRoom(result, roomId)
 }
 
+func (srv *gameServer) room(roomId uuid.UUID) (*room, bool) {
+	srv.roomsMu.RLock()
+	defer srv.roomsMu.RUnlock()
+	r, ok := srv.rooms[roomId]
+	return r, ok
+}
+
 func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, name string, roomId uuid.UUID) error {
 	ctx = conn.CloseRead(ctx)
 
 	s := newSubscriber(name, conn)
 
-	srv.addRoomSubscriber(s, roomId)
+	err := srv.addRoomSubscriber(s, roomId)
+	if err != nil {
+		return err
+	}
 	defer srv.deleteRoomSubscriber(s, roomId)
 
 	for {
@@ -137,9 +192,7 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 }
 
 func (srv *gameServer) publishRoom(msg outgoingMessage, roomId uuid.UUID) {
-	srv.roomsMu.RLock()
-	r, exists := srv.rooms[roomId]
-	srv.roomsMu.RUnlock()
+	r, exists := srv.room(roomId)
 
 	if !exists {
 		return
@@ -152,32 +205,29 @@ func (srv *gameServer) publishRoom(msg outgoingMessage, roomId uuid.UUID) {
 	r.publish(msg)
 }
 
-func (srv *gameServer) addRoomSubscriber(s *subscriber, roomId uuid.UUID) {
+func (srv *gameServer) addRoomSubscriber(s *subscriber, roomId uuid.UUID) error {
 	srv.roomsMu.RLock()
-	r, exists := srv.rooms[roomId]
-	srv.roomsMu.RUnlock()
+	defer srv.roomsMu.RUnlock()
 
+	r, exists := srv.rooms[roomId]
 	if !exists {
-		srv.roomsMu.Lock()
-		r, exists = srv.rooms[roomId]
-		if !exists {
-			r = newRoom()
-			srv.rooms[roomId] = r
-		}
-		srv.roomsMu.Unlock()
+		return errRoomNotExists
 	}
 
 	r.addSubscriber(s)
+	return nil
 }
 
 func (srv *gameServer) deleteRoomSubscriber(s *subscriber, roomId uuid.UUID) {
-	srv.roomsMu.RLock()
-	r, exists := srv.rooms[roomId]
-	srv.roomsMu.RUnlock()
+	srv.roomsMu.Lock()
+	defer srv.roomsMu.Unlock()
 
+	foundRoom, exists := srv.rooms[roomId]
 	if !exists {
 		return
 	}
 
-	r.deleteSubscriber(s)
+	if foundRoom.deleteSubscriber(s) {
+		delete(srv.rooms, roomId)
+	}
 }

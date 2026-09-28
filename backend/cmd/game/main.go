@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const version = "0.0.1"
+
 type config struct {
 	port int
 	env  string
@@ -20,6 +22,7 @@ func main() {
 	var cfg config
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	flag.IntVar(&cfg.port, "port", 8080, "port to listen on")
+	flag.StringVar(&cfg.env, "env", "dev", "environment dev|test|prod")
 	flag.Parse()
 
 	err := serve(logger, &cfg)
@@ -30,7 +33,7 @@ func main() {
 }
 
 func serve(logger *slog.Logger, config *config) error {
-	server := newGameServer(logger, initMessageHandlerRegistry())
+	server := newGameServer(logger, config, initMessageHandlerRegistry())
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", config.port),

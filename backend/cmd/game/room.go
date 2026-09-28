@@ -1,27 +1,35 @@
 package main
 
 import (
+	"regexp"
+	"strings"
 	"sync"
 	"sync/atomic"
 
+	"github.com/Hydoc/estimation-poker/backend/internal/validator"
 	"github.com/google/uuid"
 )
 
 type issue struct {
-	Id    uuid.UUID `json:"id"`
-	Title string    `json:"title"`
+	Id     uuid.UUID `json:"id"`
+	Title  string    `json:"title"`
+	Effort int       `json:"effort"`
 }
 
 func newIssue(title string) *issue {
 	return &issue{
-		Id:    uuid.New(),
-		Title: title,
+		Id:     uuid.New(),
+		Title:  title,
+		Effort: -1,
 	}
 }
 
 type room struct {
-	issuesMu sync.Mutex
-	issues   []*issue
+	mu     sync.RWMutex
+	issues []*issue
+
+	name string
+	deck string
 
 	inProgress atomic.Bool
 
@@ -47,8 +55,8 @@ func (r *room) publish(msg outgoingMessage) {
 }
 
 func (r *room) addIssue(issue *issue) {
-	r.issuesMu.Lock()
-	defer r.issuesMu.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.issues = append(r.issues, issue)
 }
 
@@ -58,15 +66,16 @@ func (r *room) addSubscriber(s *subscriber) {
 	r.subscribers[s] = struct{}{}
 }
 
-func (r *room) deleteSubscriber(s *subscriber) {
+func (r *room) deleteSubscriber(s *subscriber) bool {
 	r.subscribersMu.Lock()
 	defer r.subscribersMu.Unlock()
 	delete(r.subscribers, s)
+	return len(r.subscribers) == 0
 }
 
 func (r *room) Issues() []*issue {
-	r.issuesMu.Lock()
-	defer r.issuesMu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	cp := make([]*issue, len(r.issues))
 	copy(cp, r.issues)
 	return cp
@@ -91,9 +100,19 @@ func (r *room) SubscribersSlice() []*subscriber {
 	return subscribers
 }
 
-func newRoom() *room {
+func validateRoom(v *validator.Validator, r *room) {
+	v.Check(r.name != "", "name", "must be provided")
+	v.Check(len(r.name) <= 20, "name", "must not be more than 20 bytes long")
+
+	v.Check(validator.Matches(r.deck, regexp.MustCompile("^\\d{1,3}(,\\d{1,3})+$")), "deck", "must match ^\\d{1,3}(,\\d{1,3})+$")
+	v.Check(validator.Unique(strings.Split(r.deck, ",")), "deck", "must be unique")
+}
+
+func newRoom(name, deck string) *room {
 	return &room{
+		name:        name,
 		issues:      make([]*issue, 0),
+		deck:        deck,
 		subscribers: make(map[*subscriber]struct{}),
 	}
 }

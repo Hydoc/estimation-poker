@@ -1,16 +1,26 @@
+### Create Room
+POST http://localhost:8080/v1/rooms
+Content-Type: application/json
+
+{
+  "roomName": "Gollum",
+  "deck": "1,2,3,4,5"
+}
+
 ### Connect
-WEBSOCKET ws://localhost:8080/subscribe/1a82c734-5144-4cc7-a424-1f409b14ecdb?name=Felix
+WEBSOCKET ws://localhost:8080/v1/rooms/subscribe/ca4268d4-f26a-42cb-997f-5603e9df56dd?name=Felix
 
 
 ### Publish
-POST http://localhost:8080/publish/1a82c734-5144-4cc7-a424-1f409b14ecdb
+POST http://localhost:8080/v1/rooms/publish/ca4268d4-f26a-42cb-997f-5603e9df56dd
 Content-Type: application/json
 
 {
   "message": {
     "type": "round:join",
-    "data": {
-      "title": "Hello World"
-    }
+    "data": null
   }
 }
+
+### Health
+GET http://localhost:8080/v1/health
