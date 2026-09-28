@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, type Ref, ref } from "vue";
+import { type Ref, ref } from "vue";
 import { defineStore } from "pinia";
 
 export type Deck = {
