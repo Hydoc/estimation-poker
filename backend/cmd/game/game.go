@@ -18,6 +18,8 @@ import (
 
 var (
 	errRoomNotExists = errors.New("room does not exist")
+
+	maxAllowedCharsPerName = 20
 )
 
 type gameServer struct {
@@ -52,6 +54,11 @@ func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) 
 	name, err := readNameQueryParam(r)
 	if err != nil {
 		srv.badRequestResponse(w, r, err)
+		return
+	}
+
+	if len(name) > maxAllowedCharsPerName {
+		srv.badRequestResponse(w, r, errors.New("name too long"))
 		return
 	}
 

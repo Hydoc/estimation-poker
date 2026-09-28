@@ -9,6 +9,10 @@ const showCreateCustomDeckDialog = ref(false);
 const gameName = ref("");
 const displayName = ref("");
 const deck = ref(fibonacciValue);
+const formValid = ref();
+
+const requiredRule = (value: string) => !!value || "Is required";
+const maxCharRule = (value: string) => value.length <= 20 || "Must be 20 chars or lower";
 
 const availableDecks = computed(() => [
   {
@@ -17,7 +21,7 @@ const availableDecks = computed(() => [
     action: () => (deck.value = fibonacciValue),
   },
   {
-    title: "T-Shirts (XS, S, M, L, XL)",
+    title: "T-shirts (XS, S, M, L, XL)",
     value: "XS,S,M,L,XL",
     action: () => (deck.value = "XS,S,M,L,XL"),
   },
@@ -42,7 +46,11 @@ function saveCustomDeck(deckToCreate: Deck) {
   deck.value = deckToCreate.value;
 }
 
-function start() {}
+function start() {
+  console.log(deck.value);
+  console.log(gameName.value);
+  console.log(displayName.value);
+}
 </script>
 
 <template>
@@ -54,15 +62,18 @@ function start() {}
     />
 
     <v-form
+      v-model="formValid"
       class="d-flex flex-column w-50 mx-auto"
       @submit.prevent="start"
     >
       <v-text-field
         v-model="gameName"
+        :rules="[requiredRule, maxCharRule]"
         label="Game name"
       />
       <v-text-field
         v-model="displayName"
+        :rules="[requiredRule, maxCharRule]"
         label="Your display name"
       />
       <v-select
@@ -79,7 +90,11 @@ function start() {}
         </template>
       </v-select>
 
-      <v-btn color="secondary">
+      <v-btn
+        color="primary"
+        :disabled="!formValid"
+        type="submit"
+      >
         Start
       </v-btn>
 

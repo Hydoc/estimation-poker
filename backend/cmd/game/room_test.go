@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -29,7 +30,7 @@ func Test_validateRoom(t *testing.T) {
 				deck: "1",
 			},
 			wantErrors: map[string]string{
-				"deck": "must match ^[^,]{1,3}(,[^,]{1,3})+$",
+				"deck": fmt.Sprintf("must match %s", deckRegex.String()),
 			},
 		},
 		{
@@ -39,7 +40,7 @@ func Test_validateRoom(t *testing.T) {
 				deck: "1,2,",
 			},
 			wantErrors: map[string]string{
-				"deck": "must match ^[^,]{1,3}(,[^,]{1,3})+$",
+				"deck": fmt.Sprintf("must match %s", deckRegex.String()),
 			},
 		},
 		{
@@ -49,7 +50,7 @@ func Test_validateRoom(t *testing.T) {
 				deck: "1,2222",
 			},
 			wantErrors: map[string]string{
-				"deck": "must match ^[^,]{1,3}(,[^,]{1,3})+$",
+				"deck": fmt.Sprintf("must match %s", deckRegex.String()),
 			},
 		},
 		{

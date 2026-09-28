@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -8,6 +9,11 @@ import (
 
 	"github.com/Hydoc/estimation-poker/backend/internal/validator"
 	"github.com/google/uuid"
+)
+
+var (
+	maxAllowedCardsPerDeck = 10
+	deckRegex              = regexp.MustCompile("^[^,]{1,3}(,[^,]{1,3})+$")
 )
 
 type issue struct {
@@ -113,13 +119,13 @@ func (r *room) State() map[string]any {
 
 func validateRoom(v *validator.Validator, r *room) {
 	v.Check(r.name != "", "name", "must be provided")
-	v.Check(len(r.name) <= 20, "name", "must not be more than 20 bytes long")
+	v.Check(len(r.name) <= maxAllowedCharsPerName, "name", "must not be more than 20 bytes long")
 
-	v.Check(validator.Matches(r.deck, regexp.MustCompile("^[^,]{1,3}(,[^,]{1,3})+$")), "deck", "must match ^[^,]{1,3}(,[^,]{1,3})+$")
+	v.Check(validator.Matches(r.deck, deckRegex), "deck", fmt.Sprintf("must match %s", deckRegex.String()))
 
 	splitDeck := strings.Split(r.deck, ",")
 	v.Check(validator.Unique(splitDeck), "deck", "must be unique")
-	v.Check(len(splitDeck) <= 10, "deck", "must be 10 elements maximum")
+	v.Check(len(splitDeck) <= maxAllowedCardsPerDeck, "deck", "must be 10 elements maximum")
 }
 
 func newRoom(name, deck string) *room {
