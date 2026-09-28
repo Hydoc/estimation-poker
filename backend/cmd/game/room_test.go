@@ -18,7 +18,7 @@ func Test_validateRoom(t *testing.T) {
 			name: "valid room",
 			r: &room{
 				name: strings.Repeat("a", 20),
-				deck: "1,22,333,4,5",
+				deck: "1,a2,333,E4,5",
 			},
 			wantErrors: map[string]string{},
 		},
@@ -29,17 +29,17 @@ func Test_validateRoom(t *testing.T) {
 				deck: "1",
 			},
 			wantErrors: map[string]string{
-				"deck": "must match ^\\d{1,3}(,\\d{1,3})+$",
+				"deck": "must match ^[^,]{1,3}(,[^,]{1,3})+$",
 			},
 		},
 		{
 			name: "invalid due to comma after number in deck",
 			r: &room{
 				name: "Hola",
-				deck: "1,",
+				deck: "1,2,",
 			},
 			wantErrors: map[string]string{
-				"deck": "must match ^\\d{1,3}(,\\d{1,3})+$",
+				"deck": "must match ^[^,]{1,3}(,[^,]{1,3})+$",
 			},
 		},
 		{
@@ -49,7 +49,7 @@ func Test_validateRoom(t *testing.T) {
 				deck: "1,2222",
 			},
 			wantErrors: map[string]string{
-				"deck": "must match ^\\d{1,3}(,\\d{1,3})+$",
+				"deck": "must match ^[^,]{1,3}(,[^,]{1,3})+$",
 			},
 		},
 		{
@@ -80,6 +80,16 @@ func Test_validateRoom(t *testing.T) {
 			},
 			wantErrors: map[string]string{
 				"deck": "must be unique",
+			},
+		},
+		{
+			name: "invalid due to invalid amount of elements (> 10)",
+			r: &room{
+				name: "Hello World",
+				deck: "1,2,3,4,5,6,7,8,9,10,11",
+			},
+			wantErrors: map[string]string{
+				"deck": "must be 10 elements maximum",
 			},
 		},
 	}

@@ -17,6 +17,7 @@
     "@kaumlaut/pure": "^2.3.0",
     "@pinia/testing": "^1.0.3",
     "pinia": "^3.0.4",
+    "pinia-plugin-persistedstate": "^4.7.1",
     "vite-plugin-vuetify": "^2.1.3",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1",

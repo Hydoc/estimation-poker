@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import {ref} from "vue";
-import {useCustomDecks} from "@/composables/useCustomDecks.ts";
+import { computed, ref } from "vue";
 import CreateCustomDeckDialog from "@/components/CreateCustomDeckDialog.vue";
+import { type Deck, useCustomDeckStore } from "@/stores/customDeck.ts";
 
-const customDecks = useCustomDecks();
+const customDeckStore = useCustomDeckStore();
 const fibonacciValue = "0,1,2,3,4,5,8,13";
 const showCreateCustomDeckDialog = ref(false);
 const gameName = ref("");
 const displayName = ref("");
 const deck = ref(fibonacciValue);
 
-const availableDecks = [
+const availableDecks = computed(() => [
   {
     title: "Fibonacci (0,1,2,3,4,5,8,13)",
     value: fibonacciValue,
-    action: () => deck.value = fibonacciValue,
+    action: () => (deck.value = fibonacciValue),
   },
   {
     title: "T-Shirts (XS, S, M, L, XL)",
     value: "XS,S,M,L,XL",
-    action: () => deck.value = "XS,S,M,L,XL",
+    action: () => (deck.value = "XS,S,M,L,XL"),
   },
-  ...customDecks.state.value.decks.map((it) => ({
+  ...customDeckStore.customDecks.map((it) => ({
     title: `${it.name} (${it.value.split(",").join(", ")})`,
     value: it.value,
-    action: () => deck.value = it.value,
+    action: () => (deck.value = it.value),
   })),
   {
     title: "Create a custom deck...",
@@ -34,8 +34,13 @@ const availableDecks = [
     },
     customClass: "text-blue",
   },
-];
+]);
 
+function saveCustomDeck(deckToCreate: Deck) {
+  showCreateCustomDeckDialog.value = false;
+  customDeckStore.addCustomDeck(deckToCreate);
+  deck.value = deckToCreate.value;
+}
 
 function start() {}
 </script>
@@ -45,8 +50,9 @@ function start() {}
     <create-custom-deck-dialog
       v-if="showCreateCustomDeckDialog"
       @close="showCreateCustomDeckDialog = false"
+      @save="saveCustomDeck"
     />
-    
+
     <v-form
       class="d-flex flex-column w-50 mx-auto"
       @submit.prevent="start"
@@ -72,11 +78,11 @@ function start() {}
           />
         </template>
       </v-select>
-      
+
       <v-btn color="secondary">
         Start
       </v-btn>
-      
+
       <pre>
         {
           gameName: {{ gameName }},
@@ -88,6 +94,4 @@ function start() {}
   </main>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>
