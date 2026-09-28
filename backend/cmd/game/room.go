@@ -118,9 +118,8 @@ func validateRoom(v *validator.Validator, r *room) {
 	v.Check(validator.Matches(r.deck, regexp.MustCompile("^[^,]{1,3}(,[^,]{1,3})+$")), "deck", "must match ^[^,]{1,3}(,[^,]{1,3})+$")
 
 	splitDeck := strings.Split(r.deck, ",")
-
-	v.Check(len(splitDeck) <= 10, "deck", "must be 10 elements maximum")
 	v.Check(validator.Unique(splitDeck), "deck", "must be unique")
+	v.Check(len(splitDeck) <= 10, "deck", "must be 10 elements maximum")
 }
 
 func newRoom(name, deck string) *room {
