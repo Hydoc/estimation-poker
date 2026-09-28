@@ -9,13 +9,14 @@ import (
 )
 
 var (
-	roundJoin  = "round:join"
-	roundLeave = "round:leave"
+	// declare incoming messages here
+	roomJoin  = "room:join"
+	roomLeave = "room:leave"
+	issueAdd  = "issue:add"
 
-	issueAdd = "issue:add"
-
+	// declare outgoing messages here
 	issuesAll = "issues:all"
-	usersAll  = "users:all"
+	roomState = "room:state"
 )
 
 type HandlerFunc func(room *room, rawPayload json.RawMessage) (message outgoingMessage, err error)
@@ -91,15 +92,15 @@ func handleIssueAddMessage(room *room, msg issueAddMessage) (outgoingMessage, er
 
 func handleRoundJoinMessage(room *room, _ roundJoinMessage) (outgoingMessage, error) {
 	return outgoingMessage{
-		Type: usersAll,
-		Data: room.SubscribersSlice(),
+		Type: roomState,
+		Data: room.State(),
 	}, nil
 }
 
 func handleRoundLeaveMessage(room *room, _ roundLeaveMessage) (outgoingMessage, error) {
 	return outgoingMessage{
-		Type: usersAll,
-		Data: room.SubscribersSlice(),
+		Type: roomState,
+		Data: room.State(),
 	}, nil
 }
 

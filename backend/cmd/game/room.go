@@ -100,6 +100,17 @@ func (r *room) SubscribersSlice() []*subscriber {
 	return subscribers
 }
 
+func (r *room) State() map[string]any {
+	return map[string]any{
+		"players": r.SubscribersSlice(),
+		"room": envelope{
+			"name":   r.name,
+			"deck":   r.deck,
+			"issues": r.Issues(),
+		},
+	}
+}
+
 func validateRoom(v *validator.Validator, r *room) {
 	v.Check(r.name != "", "name", "must be provided")
 	v.Check(len(r.name) <= 20, "name", "must not be more than 20 bytes long")

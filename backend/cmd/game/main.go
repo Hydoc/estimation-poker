@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -43,24 +45,36 @@ func serve(logger *slog.Logger, config *config) error {
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
+	shutdownErr := make(chan error)
+
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
-		logger.Info("caught signal", "signal", s.String())
-
-		os.Exit(0)
+		logger.Info("stopping server", "addr", srv.Addr, "signal", s.String())
+		shutdownErr <- srv.Shutdown(context.Background())
 	}()
 
 	logger.Info("starting server", "addr", srv.Addr)
 
-	return srv.ListenAndServe()
+	err := srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdownErr
+	if err != nil {
+		return err
+	}
+
+	logger.Info("stopped server")
+	return nil
 }
 
 func initMessageHandlerRegistry() *messageHandlerRegistry {
 	handlerRegistry := newMessageHandlerRegistry()
 	handlerRegistry.register(issueAdd, handleIssueAddMessage)
-	handlerRegistry.register(roundJoin, handleRoundJoinMessage)
-	handlerRegistry.register(roundLeave, handleRoundLeaveMessage)
+	handlerRegistry.register(roomJoin, handleRoundJoinMessage)
+	handlerRegistry.register(roomLeave, handleRoundLeaveMessage)
 	return handlerRegistry
 }

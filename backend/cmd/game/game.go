@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json/v2"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -147,7 +148,7 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 	handler, handlerExists := srv.handlerRegistry.handlers[input.Message.Type]
 	srv.handlerRegistry.handlersMu.RUnlock()
 	if !handlerExists {
-		srv.notFoundResponse(w, r)
+		srv.serverErrorResponse(w, r, fmt.Errorf("no handler exists for the given message '%s'", input.Message.Type))
 		return
 	}
 
