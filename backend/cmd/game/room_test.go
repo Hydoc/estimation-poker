@@ -4,10 +4,60 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Hydoc/estimation-poker/backend/internal/assert"
 	"github.com/Hydoc/estimation-poker/backend/internal/validator"
 )
+
+func Test_room_publish(t *testing.T) {
+	t.Run("publish a message correctly", func(t *testing.T) {
+		sub := &subscriber{
+			messages:  make(chan outgoingMessage, 1),
+			closeSlow: func() {},
+		}
+		r := &room{
+			subscribers: map[*subscriber]struct{}{
+				sub: {},
+			},
+		}
+		r.addSubscriber(sub)
+
+		msgToPublish := outgoingMessage{
+			Type: "Test",
+		}
+		r.publish(msgToPublish)
+		got := <-sub.messages
+		assert.DeepEqual(t, got, msgToPublish)
+	})
+
+	t.Run("should call closeSlow for slow subscriber", func(t *testing.T) {
+		closeCalled := make(chan struct{})
+		sub := &subscriber{
+			messages: make(chan outgoingMessage),
+			closeSlow: func() {
+				close(closeCalled)
+			},
+		}
+		r := &room{
+			subscribers: map[*subscriber]struct{}{
+				sub: {},
+			},
+		}
+		r.addSubscriber(sub)
+
+		r.publish(outgoingMessage{
+			Type: "Test",
+		})
+
+		select {
+		case <-closeCalled:
+		// Test is ok
+		case <-time.After(100 * time.Millisecond):
+			t.Fatal("timed out waiting for closeSlow")
+		}
+	})
+}
 
 func Test_validateRoom(t *testing.T) {
 	tests := []struct {
