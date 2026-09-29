@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 	"sync"
+
+	"github.com/Hydoc/estimation-poker/backend/internal/validator"
 )
 
 var (
@@ -39,8 +39,10 @@ func (r *messageHandlerRegistry) register[T message](messageType string, handler
 			return outgoingMessage{}, fmt.Errorf("invalid payload: %w", err)
 		}
 
-		if err := msg.Validate(); err != nil {
-			return outgoingMessage{}, fmt.Errorf("validation failed: %w", err)
+		v := validator.New()
+
+		if msg.Validate(v); !v.Valid() {
+			return outgoingMessage{}, fmt.Errorf("validation failed")
 		}
 
 		return handler(room, msg)
@@ -48,37 +50,24 @@ func (r *messageHandlerRegistry) register[T message](messageType string, handler
 }
 
 type message interface {
-	Validate() error
+	Validate(v *validator.Validator)
 }
 
 type roundJoinMessage struct{}
 
-func (r roundJoinMessage) Validate() error {
-	return nil
-}
+func (r roundJoinMessage) Validate(v *validator.Validator) {}
 
 type roundLeaveMessage struct{}
 
-func (r roundLeaveMessage) Validate() error {
-	return nil
-}
+func (r roundLeaveMessage) Validate(v *validator.Validator) {}
 
 type issueAddMessage struct {
 	Title string `json:"title"`
 }
 
-func (i issueAddMessage) Validate() error {
-	i.Title = strings.TrimSpace(i.Title)
-
-	if i.Title == "" {
-		return errors.New("missing title")
-	}
-
-	if len(i.Title) > 15 {
-		return errors.New("title too long")
-	}
-
-	return nil
+func (i issueAddMessage) Validate(v *validator.Validator) {
+	v.Check(i.Title != "", "title", "must be set")
+	v.Check(len(i.Title) <= 15, "title", "must not be more than 15 bytes long")
 }
 
 func handleIssueAddMessage(room *room, msg issueAddMessage) (outgoingMessage, error) {
