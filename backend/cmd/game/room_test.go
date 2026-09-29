@@ -66,6 +66,70 @@ func Test_room_addIssue(t *testing.T) {
 	assert.DeepEqual(t, r.Issues(), []*issue{i})
 }
 
+func Test_room_deleteSubscriber(t *testing.T) {
+	tests := []struct {
+		name             string
+		setup            func() (*room, *subscriber)
+		wantRoomDeletion bool
+	}{
+		{
+			name: "should delete room when all subscribers are gone",
+			setup: func() (*room, *subscriber) {
+				s := &subscriber{}
+
+				r := &room{
+					subscribers: map[*subscriber]struct{}{
+						s: {},
+					},
+				}
+
+				return r, s
+			},
+			wantRoomDeletion: true,
+		},
+		{
+			name: "should keep room when one subscriber leaves",
+			setup: func() (*room, *subscriber) {
+				firstSubscriber := &subscriber{}
+				secondSubscriber := &subscriber{}
+
+				r := &room{
+					subscribers: map[*subscriber]struct{}{
+						firstSubscriber:  {},
+						secondSubscriber: {},
+					},
+				}
+
+				return r, firstSubscriber
+			},
+			wantRoomDeletion: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, s := tt.setup()
+			got := r.deleteSubscriber(s)
+			assert.Equal(t, got, tt.wantRoomDeletion)
+		})
+	}
+}
+
+func Test_room_State(t *testing.T) {
+	sub := newSubscriber("Tester", nil)
+	r := newRoom("Test", "1,2,3,4,5")
+	r.addSubscriber(sub)
+	want := map[string]any{
+		"players": []*subscriber{sub},
+		"room": envelope{
+			"name":   "Test",
+			"deck":   "1,2,3,4,5",
+			"issues": make([]*issue, 0),
+		},
+	}
+	assert.DeepEqual(t, r.State(), want)
+}
+
 func Test_validateRoom(t *testing.T) {
 	tests := []struct {
 		name       string
