@@ -59,6 +59,13 @@ func Test_room_publish(t *testing.T) {
 	})
 }
 
+func Test_room_addIssue(t *testing.T) {
+	r := newRoom("Test", "1,2,3,4,5")
+	i := newIssue("Test Issue")
+	r.addIssue(i)
+	assert.DeepEqual(t, r.Issues(), []*issue{i})
+}
+
 func Test_validateRoom(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -66,7 +73,7 @@ func Test_validateRoom(t *testing.T) {
 		wantErrors map[string]string
 	}{
 		{
-			name: "valid room",
+			name: "should be a valid room",
 			r: &room{
 				name: strings.Repeat("a", 20),
 				deck: "1,a2,333,E4,5",
@@ -74,7 +81,7 @@ func Test_validateRoom(t *testing.T) {
 			wantErrors: map[string]string{},
 		},
 		{
-			name: "invalid due to single number as deck",
+			name: "should be invalid due to single number as deck",
 			r: &room{
 				name: "Hola",
 				deck: "1",
@@ -84,7 +91,7 @@ func Test_validateRoom(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid due to comma after number in deck",
+			name: "should be invalid due to comma after number in deck",
 			r: &room{
 				name: "Hola",
 				deck: "1,2,",
@@ -94,7 +101,7 @@ func Test_validateRoom(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid due to too long entry in deck",
+			name: "should be invalid due to too long entry in deck",
 			r: &room{
 				name: "Hola",
 				deck: "1,2222",
@@ -104,7 +111,7 @@ func Test_validateRoom(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid due to name too long",
+			name: "should be invalid due to name too long",
 			r: &room{
 				name: strings.Repeat("a", 21),
 				deck: "1,2,3",
@@ -114,7 +121,7 @@ func Test_validateRoom(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid due to empty name",
+			name: "should be invalid due to empty name",
 			r: &room{
 				name: "",
 				deck: "1,2",
@@ -124,7 +131,7 @@ func Test_validateRoom(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid due to not unique deck entries",
+			name: "should be invalid due to not unique deck entries",
 			r: &room{
 				name: "Hello World",
 				deck: "1,2,2",
@@ -134,7 +141,7 @@ func Test_validateRoom(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid due to invalid amount of elements (> 10)",
+			name: "should be invalid due to invalid amount of elements (> 10)",
 			r: &room{
 				name: "Hello World",
 				deck: "1,2,3,4,5,6,7,8,9,10,11",
