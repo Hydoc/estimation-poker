@@ -1,5 +1,5 @@
 ### Create Room
-POST http://localhost:8080/v1/rooms
+POST {{url}}/v1/rooms
 Content-Type: application/json
 
 {
@@ -7,20 +7,29 @@ Content-Type: application/json
   "deck": "1,2,3,4,5"
 }
 
+> {%
+    client.assert(response.status === 200, "Response status is not 200");
+    const roomId = response.body.id;
+    // length of an uuid
+    client.assert(roomId.length === 36);
+    client.global.set("createdRoomId", roomId);
+%}
+
+
 ### Connect
-WEBSOCKET ws://localhost:8080/v1/rooms/subscribe/ca4268d4-f26a-42cb-997f-5603e9df56dd?name=Felix
+WEBSOCKET ws://{{url}}/v1/rooms/subscribe/{{createdRoomId}}?name=Felix
 
 
 ### Publish
-POST http://localhost:8080/v1/rooms/publish/ca4268d4-f26a-42cb-997f-5603e9df56dd
+POST http://{{url}}/v1/rooms/publish/{{createdRoomId}}
 Content-Type: application/json
 
 {
   "message": {
-    "type": "round:join",
+    "type": "room:join",
     "data": null
   }
 }
 
 ### Health
-GET http://localhost:8080/v1/health
+GET http://{{url}}/v1/health
