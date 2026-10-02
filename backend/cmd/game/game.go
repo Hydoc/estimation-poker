@@ -10,10 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Hydoc/estimation-poker/backend/internal/validator"
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 	"golang.org/x/time/rate"
+
+	"github.com/Hydoc/estimation-poker/backend/internal/validator"
 )
 
 var (
@@ -171,8 +172,8 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 func (srv *gameServer) room(roomId uuid.UUID) (*room, bool) {
 	srv.roomsMu.RLock()
 	defer srv.roomsMu.RUnlock()
-	r, ok := srv.rooms[roomId]
-	return r, ok
+	foundRoom, ok := srv.rooms[roomId]
+	return foundRoom, ok
 }
 
 func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, name string, roomId uuid.UUID) error {
@@ -200,7 +201,7 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 }
 
 func (srv *gameServer) publishRoom(msg outgoingMessage, roomId uuid.UUID) {
-	r, exists := srv.room(roomId)
+	foundRoom, exists := srv.room(roomId)
 
 	if !exists {
 		return
@@ -210,19 +211,19 @@ func (srv *gameServer) publishRoom(msg outgoingMessage, roomId uuid.UUID) {
 		return
 	}
 
-	r.publish(msg)
+	foundRoom.publish(msg)
 }
 
 func (srv *gameServer) addRoomSubscriber(s *subscriber, roomId uuid.UUID) error {
 	srv.roomsMu.RLock()
 	defer srv.roomsMu.RUnlock()
 
-	r, exists := srv.rooms[roomId]
+	foundRoom, exists := srv.rooms[roomId]
 	if !exists {
 		return errRoomNotExists
 	}
 
-	r.addSubscriber(s)
+	foundRoom.addSubscriber(s)
 	return nil
 }
 
