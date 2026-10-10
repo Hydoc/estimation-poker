@@ -8,6 +8,7 @@ import (
 
 func (srv *gameServer) routes() http.Handler {
 	router := httprouter.New()
+	router.NotFound = http.HandlerFunc(srv.notFoundResponse)
 	router.HandlerFunc(http.MethodGet, "/v1/health", srv.healthHandler)
 
 	router.HandlerFunc(http.MethodPost, "/v1/rooms", srv.createRoomHandler)
