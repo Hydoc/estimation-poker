@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
 )
 
 func (srv *gameServer) routes() http.Handler {
@@ -13,7 +14,8 @@ func (srv *gameServer) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodPost, "/v1/rooms", srv.createRoomHandler)
 
-	router.HandlerFunc(http.MethodGet, "/v1/rooms/subscribe/:roomId", srv.withRequiredQueryParam("name", srv.subscribeHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/rooms/subscribe/:roomId", alice.New(srv.withRequiredQueryParam("name")).ThenFunc(srv.subscribeHandler).(http.HandlerFunc))
 	router.HandlerFunc(http.MethodPost, "/v1/rooms/publish/:roomId", srv.publishHandler)
-	return srv.recoverPanic(router)
+
+	return alice.New(srv.recoverPanic).Then(router)
 }

@@ -9,13 +9,14 @@ require (
 	github.com/coder/websocket v1.8.15
 	github.com/google/uuid v1.6.0
 	github.com/julienschmidt/httprouter v1.3.0
+	github.com/justinas/alice v1.2.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/time v0.16.0
 )
 
 require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	golang.org/x/exp/typeparams v0.0.0-20260508232706-74f9aab9d74a // indirect
+	golang.org/x/exp/typeparams v0.0.0-20261009195045-ca0d7ba23607 // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
