@@ -7,28 +7,28 @@ import (
 
 func (srv *gameServer) withRequiredQueryParam(param string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			queryParam := request.URL.Query().Get(param)
-			if len(queryParam) == 0 || !request.URL.Query().Has(param) {
-				err := srv.writeJSON(writer, http.StatusBadRequest, envelope{"message": fmt.Sprintf("%s is missing in query", param)}, nil)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			queryParam := r.URL.Query().Get(param)
+			if len(queryParam) == 0 || !r.URL.Query().Has(param) {
+				err := srv.writeJSON(w, http.StatusBadRequest, envelope{"message": fmt.Sprintf("%s is missing in query", param)}, nil)
 				if err != nil {
-					srv.serverErrorResponse(writer, request, err)
+					srv.serverErrorResponse(w, r, err)
 				}
 				return
 			}
-			next.ServeHTTP(writer, request)
+			next.ServeHTTP(w, r)
 		})
 	}
 }
 
 func (srv *gameServer) recoverPanic(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				writer.Header().Set("Connection", "close")
-				srv.serverErrorResponse(writer, request, fmt.Errorf("%s", err))
+				w.Header().Set("Connection", "close")
+				srv.serverErrorResponse(w, r, fmt.Errorf("%s", err))
 			}
 		}()
-		next.ServeHTTP(writer, request)
+		next.ServeHTTP(w, r)
 	})
 }
