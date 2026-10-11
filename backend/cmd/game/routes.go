@@ -14,7 +14,7 @@ func (srv *gameServer) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodPost, "/v1/rooms", srv.createRoomHandler)
 
-	router.HandlerFunc(http.MethodGet, "/v1/rooms/subscribe/:roomId", alice.New(srv.withRequiredQueryParam("name")).ThenFunc(srv.subscribeHandler).(http.HandlerFunc))
+	router.HandlerFunc(http.MethodGet, "/v1/rooms/subscribe/:roomId/:name", srv.subscribeHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/rooms/publish/:roomId", srv.publishHandler)
 
 	return alice.New(srv.recoverPanic).Then(router)

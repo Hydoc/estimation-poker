@@ -17,11 +17,11 @@ Content-Type: application/json
 
 
 ### Connect
-WEBSOCKET ws://{{url}}/v1/rooms/subscribe/{{createdRoomId}}?name=Felix
+WEBSOCKET ws://{{url}}/v1/rooms/subscribe/{{createdRoomId}}/Felix
 
 
 ### Publish
-POST http://{{url}}/v1/rooms/publish/{{createdRoomId}}
+POST {{url}}/v1/rooms/publish/{{createdRoomId}}
 Content-Type: application/json
 
 {

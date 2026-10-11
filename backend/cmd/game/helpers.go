@@ -6,7 +6,6 @@ import (
 	"errors"
 	"maps"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/coder/websocket"
@@ -23,10 +22,10 @@ func readIdParam(r *http.Request) (uuid.UUID, error) {
 	return id, nil
 }
 
-func readNameQueryParam(r *http.Request) (string, error) {
-	name := strings.TrimSpace(r.URL.Query().Get("name"))
+func readNameParam(r *http.Request) (string, error) {
+	name := httprouter.ParamsFromContext(r.Context()).ByName("name")
 	if name == "" {
-		return "", errors.New("invalid name query parameter")
+		return "", errors.New("invalid name param")
 	}
 	return name, nil
 }

@@ -52,7 +52,7 @@ func (srv *gameServer) subscribeHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	name, err := readNameQueryParam(r)
+	name, err := readNameParam(r)
 	if err != nil {
 		srv.badRequestResponse(w, r, err)
 		return
