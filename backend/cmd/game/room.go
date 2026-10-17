@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"uuid"
 
 	"github.com/Hydoc/estimation-poker/backend/internal/validator"
-	"github.com/google/uuid"
 )
 
 var (
@@ -31,8 +31,9 @@ func newIssue(title string) *issue {
 }
 
 type room struct {
-	mu     sync.RWMutex
-	issues []*issue
+	mu          sync.RWMutex
+	issues      []*issue
+	activeIssue *issue
 
 	name string
 	deck string
@@ -106,13 +107,14 @@ func (r *room) SubscribersSlice() []*subscriber {
 	return subscribers
 }
 
-func (r *room) State() map[string]any {
-	return map[string]any{
+func (r *room) State() envelope {
+	return envelope{
 		"players": r.SubscribersSlice(),
 		"room": envelope{
-			"name":   r.name,
-			"deck":   r.deck,
-			"issues": r.Issues(),
+			"inProgress": r.InProgress(),
+			"name":       r.name,
+			"deck":       r.deck,
+			"issues":     r.Issues(),
 		},
 	}
 }
@@ -132,6 +134,7 @@ func newRoom(name, deck string) *room {
 	return &room{
 		name:        name,
 		issues:      make([]*issue, 0),
+		activeIssue: nil,
 		deck:        deck,
 		subscribers: make(map[*subscriber]struct{}),
 	}

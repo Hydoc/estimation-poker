@@ -20,7 +20,7 @@ Content-Type: application/json
 WEBSOCKET ws://{{url}}/v1/rooms/subscribe/{{createdRoomId}}/Felix
 
 
-### Publish
+### Publish join
 POST {{url}}/v1/rooms/publish/{{createdRoomId}}
 Content-Type: application/json
 
@@ -28,6 +28,32 @@ Content-Type: application/json
   "message": {
     "type": "room:join",
     "data": null
+  }
+}
+
+### Publish issue:add
+POST {{url}}/v1/rooms/publish/{{createdRoomId}}
+Content-Type: application/json
+
+{
+  "message": {
+    "type": "issue:add",
+    "data": {
+      "title": "Good issue"
+    }
+  }
+}
+
+### Publish issue:estimate
+POST {{url}}/v1/rooms/publish/{{createdRoomId}}
+Content-Type: application/json
+
+{
+  "message": {
+    "type": "issue:estimate",
+    "data": {
+      "title": "Good issue"
+    }
   }
 }
 

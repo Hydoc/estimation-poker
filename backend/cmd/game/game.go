@@ -160,7 +160,7 @@ func (srv *gameServer) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := handler(foundRoom, input.Message.Data)
+	result, err := handler(foundRoom, input.Message)
 	if err != nil {
 		srv.badRequestResponse(w, r, err)
 		return
@@ -186,6 +186,10 @@ func (srv *gameServer) subscribeRoom(ctx context.Context, conn *websocket.Conn, 
 		return err
 	}
 	defer srv.deleteRoomSubscriber(s, roomId)
+
+	if err = writeTimeout(ctx, time.Second*5, conn, envelope{"id": s.Id}); err != nil {
+		return err
+	}
 
 	for {
 		select {

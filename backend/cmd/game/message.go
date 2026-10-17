@@ -2,24 +2,27 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
+	"uuid"
 
 	"github.com/Hydoc/estimation-poker/backend/internal/validator"
 )
 
 var (
 	// declare incoming messages here
-	roomJoin  = "room:join"
-	roomLeave = "room:leave"
-	issueAdd  = "issue:add"
+	roomJoin      = "room:join"
+	roomLeave     = "room:leave"
+	issueAdd      = "issue:add"
+	issueEstimate = "issue:estimate"
 
 	// declare outgoing messages here
 	issuesAll = "issues:all"
 	roomState = "room:state"
 )
 
-type HandlerFunc func(room *room, rawPayload json.RawMessage) (message outgoingMessage, err error)
+type HandlerFunc func(room *room, inc incomingMessage) (message outgoingMessage, err error)
 
 type messageHandlerRegistry struct {
 	handlersMu sync.RWMutex
@@ -32,10 +35,10 @@ func newMessageHandlerRegistry() *messageHandlerRegistry {
 	}
 }
 
-func (r *messageHandlerRegistry) register[T message](messageType string, handler func(room *room, msg T) (message outgoingMessage, e error)) {
-	r.handlers[messageType] = func(room *room, rawPayload json.RawMessage) (message outgoingMessage, e error) {
+func (r *messageHandlerRegistry) register[T message](messageType string, handler func(room *room, userId uuid.UUID, msg T) (message outgoingMessage, e error)) {
+	r.handlers[messageType] = func(room *room, inc incomingMessage) (message outgoingMessage, e error) {
 		var msg T
-		if err := json.Unmarshal(rawPayload, &msg); err != nil {
+		if err := json.Unmarshal(inc.Data, &msg); err != nil {
 			return outgoingMessage{}, fmt.Errorf("invalid payload: %w", err)
 		}
 
@@ -45,12 +48,20 @@ func (r *messageHandlerRegistry) register[T message](messageType string, handler
 			return outgoingMessage{}, fmt.Errorf("validation failed")
 		}
 
-		return handler(room, msg)
+		return handler(room, inc.UserId, msg)
 	}
 }
 
 type message interface {
 	Validate(v *validator.Validator)
+}
+
+type issueEstimateMessage struct {
+	Id uuid.UUID `json:"id"`
+}
+
+func (e issueEstimateMessage) Validate(v *validator.Validator) {
+	v.Check(uuid.Nil() != e.Id, "id", "must not be nil uuid")
 }
 
 type roundJoinMessage struct{}
@@ -70,7 +81,22 @@ func (i issueAddMessage) Validate(v *validator.Validator) {
 	v.Check(len(i.Title) <= 15, "title", "must not be more than 15 bytes long")
 }
 
-func handleIssueAddMessage(room *room, msg issueAddMessage) (outgoingMessage, error) {
+func handleIssueEstimateMessage(room *room, _ uuid.UUID, msg issueEstimateMessage) (outgoingMessage, error) {
+	room.mu.Lock()
+	defer room.mu.Unlock()
+
+	for _, iss := range room.issues {
+		if iss.Id == msg.Id {
+			room.activeIssue = iss
+			room.SetInProgress(true)
+			return outgoingMessage{Type: roomState, Data: room.State()}, nil
+		}
+	}
+
+	return outgoingMessage{}, errors.New("issue not found")
+}
+
+func handleIssueAddMessage(room *room, _ uuid.UUID, msg issueAddMessage) (outgoingMessage, error) {
 	room.addIssue(newIssue(msg.Title))
 
 	return outgoingMessage{
@@ -79,14 +105,14 @@ func handleIssueAddMessage(room *room, msg issueAddMessage) (outgoingMessage, er
 	}, nil
 }
 
-func handleRoundJoinMessage(room *room, _ roundJoinMessage) (outgoingMessage, error) {
+func handleRoundJoinMessage(room *room, _ uuid.UUID, _ roundJoinMessage) (outgoingMessage, error) {
 	return outgoingMessage{
 		Type: roomState,
 		Data: room.State(),
 	}, nil
 }
 
-func handleRoundLeaveMessage(room *room, _ roundLeaveMessage) (outgoingMessage, error) {
+func handleRoundLeaveMessage(room *room, _ uuid.UUID, _ roundLeaveMessage) (outgoingMessage, error) {
 	return outgoingMessage{
 		Type: roomState,
 		Data: room.State(),
@@ -94,8 +120,9 @@ func handleRoundLeaveMessage(room *room, _ roundLeaveMessage) (outgoingMessage, 
 }
 
 type incomingMessage struct {
-	Type string          `json:"type"`
-	Data json.RawMessage `json:"data"`
+	Type   string          `json:"type"`
+	UserId uuid.UUID       `json:"userId"`
+	Data   json.RawMessage `json:"data"`
 }
 
 type outgoingMessage struct {

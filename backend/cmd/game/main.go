@@ -33,5 +33,6 @@ func initMessageHandlerRegistry() *messageHandlerRegistry {
 	handlerRegistry.register(issueAdd, handleIssueAddMessage)
 	handlerRegistry.register(roomJoin, handleRoundJoinMessage)
 	handlerRegistry.register(roomLeave, handleRoundLeaveMessage)
+	handlerRegistry.register(issueEstimate, handleIssueEstimateMessage)
 	return handlerRegistry
 }
